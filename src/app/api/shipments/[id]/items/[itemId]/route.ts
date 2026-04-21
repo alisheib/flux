@@ -1,0 +1,106 @@
+import { NextRequest, NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import { verifyToken } from "@/lib/auth";
+import { prisma } from "@/lib/db";
+
+async function getAuth() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("flux-token")?.value;
+  if (!token) return null;
+  return verifyToken(token);
+}
+
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string; itemId: string }> }
+) {
+  try {
+    const auth = await getAuth();
+    if (!auth) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { id, itemId } = await params;
+
+    // Verify shipment belongs to org
+    const shipment = await prisma.shipment.findFirst({
+      where: { id, orgId: auth.orgId },
+    });
+    if (!shipment) {
+      return NextResponse.json({ error: "Shipment not found" }, { status: 404 });
+    }
+
+    const existing = await prisma.shipmentItem.findFirst({
+      where: { id: itemId, shipmentId: id },
+    });
+    if (!existing) {
+      return NextResponse.json({ error: "Item not found" }, { status: 404 });
+    }
+
+    const body = await request.json();
+    const { productId, name, thickness, width, height, color, unit, quantity, unitCost, notes } = body;
+
+    // Auto-calculate totalCost if quantity or unitCost changed
+    const newQty = quantity !== undefined ? quantity : existing.quantity;
+    const newUnitCost = unitCost !== undefined ? unitCost : existing.unitCost;
+    const totalCost = newQty * newUnitCost;
+
+    const item = await prisma.shipmentItem.update({
+      where: { id: itemId },
+      data: {
+        ...(productId !== undefined && { productId }),
+        ...(name !== undefined && { name }),
+        ...(thickness !== undefined && { thickness }),
+        ...(width !== undefined && { width }),
+        ...(height !== undefined && { height }),
+        ...(color !== undefined && { color }),
+        ...(unit !== undefined && { unit }),
+        ...(quantity !== undefined && { quantity }),
+        ...(unitCost !== undefined && { unitCost }),
+        totalCost,
+        ...(notes !== undefined && { notes }),
+      },
+      include: { product: { select: { id: true, name: true, sku: true } } },
+    });
+
+    return NextResponse.json(item);
+  } catch (error) {
+    console.error("PUT /api/shipments/[id]/items/[itemId] error:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}
+
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string; itemId: string }> }
+) {
+  try {
+    const auth = await getAuth();
+    if (!auth) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { id, itemId } = await params;
+
+    const shipment = await prisma.shipment.findFirst({
+      where: { id, orgId: auth.orgId },
+    });
+    if (!shipment) {
+      return NextResponse.json({ error: "Shipment not found" }, { status: 404 });
+    }
+
+    const existing = await prisma.shipmentItem.findFirst({
+      where: { id: itemId, shipmentId: id },
+    });
+    if (!existing) {
+      return NextResponse.json({ error: "Item not found" }, { status: 404 });
+    }
+
+    await prisma.shipmentItem.delete({ where: { id: itemId } });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("DELETE /api/shipments/[id]/items/[itemId] error:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}

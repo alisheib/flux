@@ -1,0 +1,315 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Organization (Multi-tenant) ───────────────────────────────────────────
+
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  logo      String?
+  currency  String   @default("USD")
+  locale    String   @default("en")
+  taxRate   Float    @default(0)
+  taxLabel  String   @default("TVA")
+  address   String?
+  phone     String?
+  email     String?
+  website   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users        User[]
+  shipments    Shipment[]
+  products     Product[]
+  categories   Category[]
+  sales        Sale[]
+  invoices     Invoice[]
+  settings     OrgSettings?
+  subscription Subscription?
+  auditLogs    AuditLog[]
+  expenses     ShipmentExpense[]
+}
+
+// ─── Users & Auth ──────────────────────────────────────────────────────────
+
+model User {
+  id                String    @id @default(cuid())
+  orgId             String
+  email             String    @unique
+  password          String
+  name              String
+  role              String    @default("salesman")
+  avatar            String?
+  active            Boolean   @default(true)
+  emailVerified     Boolean   @default(false)
+  verificationToken String?
+  lastLogin         DateTime?
+  resetToken        String?
+  resetTokenExpiry  DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  sales     Sale[]
+  auditLogs AuditLog[]
+
+  @@index([orgId])
+  @@index([email])
+}
+
+// ─── Shipments (Import Costing) ────────────────────────────────────────────
+
+model Shipment {
+  id              String   @id @default(cuid())
+  orgId           String
+  name            String
+  dossierNumber   String?
+  invoiceNumber   String?
+  containerNumber String?
+  containerType   String   @default("20HC")
+  containerCount  Int      @default(1)
+  supplier        String?
+  origin          String   @default("China")
+  exchangeRate    Float    @default(2630)
+  status          String   @default("clearing")
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  org      Organization      @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  items    ShipmentItem[]
+  expenses ShipmentExpense[]
+
+  @@index([orgId])
+}
+
+model ShipmentItem {
+  id         String  @id @default(cuid())
+  shipmentId String
+  productId  String?
+  name       String
+  thickness  Float?
+  width      Float?
+  height     Float?
+  color      String?
+  unit       String  @default("sheet")
+  quantity   Int
+  unitCost   Float
+  totalCost  Float
+  notes      String?
+
+  shipment Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  product  Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@index([shipmentId])
+  @@index([productId])
+}
+
+model ShipmentExpense {
+  id          String @id @default(cuid())
+  orgId       String
+  shipmentId  String
+  category    String
+  description String
+  amountLocal Float  @default(0)
+  amountUsd   Float  @default(0)
+  notes       String?
+
+  org      Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  shipment Shipment     @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+
+  @@index([shipmentId])
+  @@index([orgId])
+}
+
+// ─── Products & Inventory ──────────────────────────────────────────────────
+
+model Category {
+  id    String  @id @default(cuid())
+  orgId String
+  name  String
+  icon  String?
+  color String?
+
+  org      Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  products Product[]
+
+  @@index([orgId])
+}
+
+model Product {
+  id           String   @id @default(cuid())
+  orgId        String
+  categoryId   String?
+  sku          String?
+  name         String
+  description  String?
+  unit         String   @default("piece")
+  thickness    Float?
+  width        Float?
+  height       Float?
+  color        String?
+  sqmPerUnit   Float?
+  costPrice    Float    @default(0)
+  sellingPrice Float    @default(0)
+  stockQty     Float    @default(0)
+  minStockQty  Float    @default(0)
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  org           Organization   @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  category      Category?      @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  shipmentItems ShipmentItem[]
+  saleItems     SaleItem[]
+
+  @@index([orgId])
+  @@index([categoryId])
+}
+
+// ─── Sales & POS ───────────────────────────────────────────────────────────
+
+model Sale {
+  id            String   @id @default(cuid())
+  orgId         String
+  userId        String
+  invoiceId     String?  @unique
+  saleNumber    String
+  customer      String?
+  customerPhone String?
+  customerEmail String?
+  subtotal      Float
+  taxRate       Float    @default(0)
+  taxAmount     Float    @default(0)
+  discount      Float    @default(0)
+  total         Float
+  currency      String   @default("USD")
+  paymentMethod String   @default("cash")
+  status        String   @default("completed")
+  notes         String?
+  createdAt     DateTime @default(now())
+
+  org     Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  user    User         @relation(fields: [userId], references: [id])
+  invoice Invoice?
+  items   SaleItem[]
+
+  @@index([orgId])
+  @@index([userId])
+}
+
+model SaleItem {
+  id        String @id @default(cuid())
+  saleId    String
+  productId String
+  name      String
+  quantity  Float
+  unitPrice Float
+  total     Float
+
+  sale    Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([saleId])
+  @@index([productId])
+}
+
+// ─── Invoices ──────────────────────────────────────────────────────────────
+
+model Invoice {
+  id              String    @id @default(cuid())
+  orgId           String
+  saleId          String?   @unique
+  number          String
+  customer        String
+  customerPhone   String?
+  customerEmail   String?
+  customerAddress String?
+  subtotal        Float
+  taxRate         Float     @default(0)
+  taxAmount       Float     @default(0)
+  discount        Float     @default(0)
+  total           Float
+  currency        String
+  status          String    @default("issued")
+  issuedAt        DateTime  @default(now())
+  dueAt           DateTime?
+  paidAt          DateTime?
+  notes           String?
+
+  org  Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  sale Sale?        @relation(fields: [saleId], references: [id], onDelete: SetNull)
+
+  @@index([orgId])
+}
+
+// ─── Audit Log ─────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  orgId     String
+  userId    String
+  action    String
+  entity    String
+  entityId  String?
+  details   String?
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  org  Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  user User         @relation(fields: [userId], references: [id])
+
+  @@index([orgId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+// ─── Subscription & Billing ────────────────────────────────────────────
+
+model Subscription {
+  id          String    @id @default(cuid())
+  orgId       String    @unique
+  plan        String    @default("free") // free, starter, pro, enterprise
+  status      String    @default("active") // active, cancelled, past_due, trialing
+  maxUsers    Int       @default(1)
+  maxSalesMo  Int       @default(50) // max sales per month
+  features    String?   // JSON: enabled feature flags
+  trialEndsAt DateTime?
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  org Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+}
+
+// ─── Organization Settings ─────────────────────────────────────────────────
+
+model OrgSettings {
+  id              String  @id @default(cuid())
+  orgId           String  @unique
+  defaultMargin   Float   @default(10)
+  secondaryMargin Float   @default(5)
+  exchangeRate    Float   @default(2630)
+  invoicePrefix   String  @default("INV")
+  invoiceNextNum  Int     @default(1)
+  receiptPrefix   String  @default("RCP")
+  receiptNextNum  Int     @default(1)
+  rolePermissions String? // JSON string: { [module]: [roles] }
+
+  // Tally / TRA Integration
+  tallyEnabled    Boolean @default(false)
+  tallyTin        String? // Tax Identification Number
+  tallyVrn        String? // VAT Registration Number
+  tallySerial     String? // EFD Serial Number
+  tallyCertPath   String? // Certificate path
+  tallyApiUrl     String? // TRA API endpoint
+  tallyLastSync   DateTime?
+
+  org Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+}
