@@ -8,6 +8,7 @@ import {
   User,
   Mail,
   Lock,
+  Phone,
   Eye,
   EyeOff,
   ArrowRight,
@@ -135,6 +136,7 @@ export default function RegisterPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [phone, setPhone] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -147,8 +149,32 @@ export default function RegisterPage() {
       return;
     }
 
-    if (password.length < 6) {
-      toast.error("Password must be at least 6 characters");
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      toast.error("Please enter a valid email address");
+      return;
+    }
+
+    // Password strength
+    if (password.length < 8) {
+      toast.error("Password must be at least 8 characters");
+      return;
+    }
+    if (!/[A-Z]/.test(password)) {
+      toast.error("Password must contain at least one uppercase letter");
+      return;
+    }
+    if (!/[a-z]/.test(password)) {
+      toast.error("Password must contain at least one lowercase letter");
+      return;
+    }
+    if (!/[0-9]/.test(password)) {
+      toast.error("Password must contain at least one number");
+      return;
+    }
+    if (!/[^A-Za-z0-9]/.test(password)) {
+      toast.error("Password must contain at least one special character");
       return;
     }
 
@@ -163,7 +189,7 @@ export default function RegisterPage() {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orgName, name, email, password }),
+        body: JSON.stringify({ orgName, name, email, password, phone }),
       });
 
       const data = await res.json();
@@ -232,7 +258,7 @@ export default function RegisterPage() {
                 <InputGroupInput
                   id="orgName"
                   type="text"
-                  placeholder="Acme Corporation"
+                  placeholder="Your Company Ltd."
                   value={orgName}
                   onChange={(e) => setOrgName(e.target.value)}
                   disabled={loading}
@@ -254,7 +280,7 @@ export default function RegisterPage() {
                 <InputGroupInput
                   id="name"
                   type="text"
-                  placeholder="John Doe"
+                  placeholder="Full Name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   disabled={loading}
@@ -276,11 +302,33 @@ export default function RegisterPage() {
                 <InputGroupInput
                   id="email"
                   type="email"
-                  placeholder="you@company.com"
+                  placeholder="work@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   disabled={loading}
                   autoComplete="email"
+                  className="h-10"
+                />
+              </InputGroup>
+            </div>
+
+            {/* Phone */}
+            <div className="space-y-1.5">
+              <Label htmlFor="phone" className="text-sm font-medium">
+                Phone number
+              </Label>
+              <InputGroup className="h-10">
+                <InputGroupAddon align="inline-start">
+                  <Phone className="size-4 text-muted-foreground" />
+                </InputGroupAddon>
+                <InputGroupInput
+                  id="phone"
+                  type="tel"
+                  placeholder="+1 (555) 000-0000"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  disabled={loading}
+                  autoComplete="tel"
                   className="h-10"
                 />
               </InputGroup>
@@ -298,7 +346,7 @@ export default function RegisterPage() {
                 <InputGroupInput
                   id="password"
                   type={showPassword ? "text" : "password"}
-                  placeholder="Min. 6 characters"
+                  placeholder="Min. 8 chars, uppercase, number, special"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   disabled={loading}

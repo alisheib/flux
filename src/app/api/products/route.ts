@@ -66,27 +66,39 @@ export async function POST(request: NextRequest) {
       active,
     } = body;
 
-    if (!name) {
-      return NextResponse.json({ error: "Name is required" }, { status: 400 });
+    if (!name || !name.trim()) {
+      return NextResponse.json({ error: "Product name is required" }, { status: 400 });
+    }
+
+    if (costPrice !== undefined && costPrice !== null && costPrice < 0) {
+      return NextResponse.json({ error: "Cost price cannot be negative" }, { status: 400 });
+    }
+
+    if (sellingPrice !== undefined && sellingPrice !== null && sellingPrice < 0) {
+      return NextResponse.json({ error: "Selling price cannot be negative" }, { status: 400 });
+    }
+
+    if (stockQty !== undefined && stockQty !== null && stockQty < 0) {
+      return NextResponse.json({ error: "Stock quantity cannot be negative" }, { status: 400 });
     }
 
     const product = await prisma.product.create({
       data: {
         orgId: auth.orgId,
         categoryId: categoryId || null,
-        sku: sku || null,
-        name,
-        description: description || null,
+        sku: sku?.trim() || null,
+        name: name.trim(),
+        description: description?.trim() || null,
         unit: unit || "piece",
         thickness: thickness || null,
         width: width || null,
         height: height || null,
-        color: color || null,
-        sqmPerUnit: sqmPerUnit || null,
-        costPrice: costPrice || 0,
-        sellingPrice: sellingPrice || 0,
-        stockQty: stockQty || 0,
-        minStockQty: minStockQty || 0,
+        color: color?.trim() || null,
+        sqmPerUnit: sqmPerUnit != null ? Number(sqmPerUnit) : null,
+        costPrice: Number(costPrice) || 0,
+        sellingPrice: Number(sellingPrice) || 0,
+        stockQty: Number(stockQty) || 0,
+        minStockQty: Number(minStockQty) || 0,
         active: active !== undefined ? active : true,
       },
       include: {

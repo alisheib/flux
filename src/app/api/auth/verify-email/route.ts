@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import crypto from "crypto";
 import { cookies } from "next/headers";
 import { verifyToken } from "@/lib/auth";
+import { sendVerificationEmail } from "@/lib/email";
 
 // POST: Send verification email (or in dev mode, return token)
 export async function POST(request: NextRequest) {
@@ -28,10 +29,13 @@ export async function POST(request: NextRequest) {
       data: { verificationToken },
     });
 
-    // In production, send email here
+    // Send verification email
+    await sendVerificationEmail(user.email, user.name, verificationToken).catch((err) =>
+      console.error("Failed to send verification email:", err)
+    );
+
     return NextResponse.json({
       message: "Verification email sent",
-      ...(process.env.NODE_ENV !== "production" && { verificationToken }),
     });
   } catch (error) {
     console.error("Verify email error:", error);

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { verifyPassword, createToken } from "@/lib/auth";
+import { sendLoginNotification } from "@/lib/email";
 
 export async function POST(request: NextRequest) {
   try {
@@ -58,6 +59,12 @@ export async function POST(request: NextRequest) {
       where: { id: user.id },
       data: { lastLogin: new Date() },
     });
+
+    // Send login notification (non-blocking)
+    const ip = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || undefined;
+    sendLoginNotification(user.email, user.name, ip || undefined).catch((err) =>
+      console.error("Failed to send login notification:", err)
+    );
 
     // Set cookie and return user info
     const response = NextResponse.json({

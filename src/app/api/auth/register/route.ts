@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { hashPassword, createToken } from "@/lib/auth";
+import { sendVerificationEmail, sendWelcomeEmail } from "@/lib/email";
+import crypto from "crypto";
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { orgName, name, email, password } = body;
+    const { orgName, name, email, password, phone } = body;
 
     if (!orgName || !name || !email || !password) {
       return NextResponse.json(
@@ -14,9 +16,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (password.length < 6) {
+    if (password.length < 8) {
       return NextResponse.json(
-        { error: "Password must be at least 6 characters" },
+        { error: "Password must be at least 8 characters" },
+        { status: 400 }
+      );
+    }
+    if (!/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/[0-9]/.test(password) || !/[^A-Za-z0-9]/.test(password)) {
+      return NextResponse.json(
+        { error: "Password must contain uppercase, lowercase, number, and special character" },
+        { status: 400 }
+      );
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return NextResponse.json(
+        { error: "Please provide a valid email address" },
         { status: 400 }
       );
     }
@@ -42,10 +58,14 @@ export async function POST(request: NextRequest) {
       const org = await tx.organization.create({
         data: {
           name: orgName.trim(),
+          phone: phone?.trim() || null,
         },
       });
 
-      // Create admin User (org creator is auto-verified)
+      // Generate email verification token
+      const verificationToken = crypto.randomBytes(32).toString("hex");
+
+      // Create admin User
       const user = await tx.user.create({
         data: {
           orgId: org.id,
@@ -53,7 +73,8 @@ export async function POST(request: NextRequest) {
           password: hashedPassword,
           name: name.trim(),
           role: "admin",
-          emailVerified: true,
+          emailVerified: false,
+          verificationToken,
           lastLogin: new Date(),
         },
       });
@@ -90,7 +111,20 @@ export async function POST(request: NextRequest) {
       return { org, user };
     });
 
-    // Create JWT token
+    // Send verification email (non-blocking)
+    const verificationToken = result.user.verificationToken;
+    if (verificationToken) {
+      sendVerificationEmail(result.user.email, result.user.name, verificationToken).catch((err) =>
+        console.error("Failed to send verification email:", err)
+      );
+    }
+
+    // Send welcome email (non-blocking)
+    sendWelcomeEmail(result.user.email, result.user.name, result.org.name).catch((err) =>
+      console.error("Failed to send welcome email:", err)
+    );
+
+    // Create JWT token — allow login immediately but mark as unverified
     const token = await createToken({
       userId: result.user.id,
       orgId: result.org.id,
@@ -102,6 +136,7 @@ export async function POST(request: NextRequest) {
     // Set cookie and return success
     const response = NextResponse.json({
       success: true,
+      emailVerified: false,
       user: {
         id: result.user.id,
         name: result.user.name,

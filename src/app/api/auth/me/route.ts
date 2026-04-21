@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyToken } from "@/lib/auth";
+import { prisma } from "@/lib/db";
 
 export async function GET(request: NextRequest) {
   try {
@@ -21,6 +22,12 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Fetch fresh emailVerified status from DB
+    const user = await prisma.user.findUnique({
+      where: { id: payload.userId },
+      select: { emailVerified: true },
+    });
+
     return NextResponse.json({
       user: {
         userId: payload.userId,
@@ -28,6 +35,7 @@ export async function GET(request: NextRequest) {
         email: payload.email,
         name: payload.name,
         role: payload.role,
+        emailVerified: user?.emailVerified ?? false,
       },
     });
   } catch {

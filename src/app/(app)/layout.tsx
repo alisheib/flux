@@ -14,11 +14,17 @@ export default async function AppLayout({
     redirect("/login");
   }
 
-  // Fetch org name for the session context
-  const org = await prisma.organization.findUnique({
-    where: { id: session.orgId },
-    select: { name: true },
-  });
+  // Fetch org name and email verification status
+  const [org, dbUser] = await Promise.all([
+    prisma.organization.findUnique({
+      where: { id: session.orgId },
+      select: { name: true },
+    }),
+    prisma.user.findUnique({
+      where: { id: session.userId },
+      select: { emailVerified: true },
+    }),
+  ]);
 
   const user = {
     userId: session.userId,
@@ -27,6 +33,7 @@ export default async function AppLayout({
     name: session.name,
     role: session.role,
     orgName: org?.name || "",
+    emailVerified: dbUser?.emailVerified ?? false,
   };
 
   return <AppShell user={user}>{children}</AppShell>;
