@@ -48,26 +48,38 @@ src/
     forgot-password/  # Password recovery
     reset-password/   # Password reset
   components/         # Shared UI (sidebar, header, shell, shadcn)
-  lib/                # Auth, DB client, calculations, utils
+  lib/                # Auth, DB client, calculations, email, utils
 prisma/
   schema.prisma       # Database schema (PostgreSQL)
 tests/
   e2e.js              # 20 basic E2E tests
   e2e-advanced.js     # 20 advanced E2E tests (dialogs, popups, workflows)
+  e2e-register-login.js  # 10 auth flow tests (register, login, validation)
 ```
 
 ---
 
 ## Environment Variables
 
-| Variable | Where | Purpose |
-|----------|-------|---------|
-| `DATABASE_URL` | Vercel + `.env` | Neon PostgreSQL connection string |
-| `JWT_SECRET` | Vercel + `.env` | Signs auth tokens (32+ chars) |
-| `NEXT_PUBLIC_APP_URL` | Vercel + `.env` | Public URL (https://fluxtz.com) |
+| Variable | Where | Purpose | Required |
+|----------|-------|---------|----------|
+| `DATABASE_URL` | Vercel + `.env` | Neon PostgreSQL connection string | Yes |
+| `JWT_SECRET` | Vercel + `.env` | Signs auth tokens (32+ chars) | Yes |
+| `NEXT_PUBLIC_APP_URL` | Vercel + `.env` | Public URL (https://fluxtz.com) | Yes |
+| `RESEND_API_KEY` | Vercel + `.env` | Resend.com API key for sending emails | No (logs to console if missing) |
+| `FROM_EMAIL` | Vercel + `.env` | Sender address (e.g. `FLUX <noreply@fluxtz.com>`) | No (defaults to noreply@fluxtz.com) |
 
 **Current values are in Vercel → Project → Settings → Environment Variables.**
 Never commit `.env` to git (it's in `.gitignore`).
+
+### Current production values (for reference, secrets redacted):
+```
+DATABASE_URL=postgresql://neondb_owner:***@ep-soft-cake-alb9loyr.c-3.eu-central-1.aws.neon.tech/neondb?sslmode=require
+JWT_SECRET=LHHxKtrFOpyOglTfw0OYpaWFNbk8rHiu0GKMvQHxzN0=
+NEXT_PUBLIC_APP_URL=https://fluxtz.com
+RESEND_API_KEY=(not yet configured — sign up at resend.com)
+FROM_EMAIL=FLUX <noreply@fluxtz.com>
+```
 
 ---
 
@@ -182,11 +194,12 @@ Login as admin → Settings → Data Management → Seed Demo Data
 npm run dev
 
 # In another terminal:
-node tests/e2e.js            # 20 basic tests
-node tests/e2e-advanced.js   # 20 advanced tests (dialogs, popups)
+node tests/e2e.js              # 20 basic tests (pages, navigation, theme)
+node tests/e2e-advanced.js     # 20 advanced tests (dialogs, popups, workflows)
+node tests/e2e-register-login.js  # 10 auth tests (register, login, validation)
 ```
 
-All 40 tests must pass before deploying.
+All 50 tests must pass before deploying.
 
 ---
 
@@ -248,12 +261,62 @@ Saves 56 screenshots to `runtime/screenshots/light/` and `runtime/screenshots/da
 - PostgreSQL on Neon, deployed on Vercel
 - Domain: fluxtz.com
 
+### v1.1 — Production Hardening
+- **Password strength**: 8+ chars, uppercase, lowercase, number, special character
+- **Email validation**: regex check on register
+- **Phone number**: optional field on registration, stored on Organization
+- **Email verification**: token-based flow, verification banner in app, resend button
+- **Email service**: Resend integration (`src/lib/email.ts`)
+  - Verification email on register
+  - Welcome email on register
+  - Login notification email on every sign-in
+- **Product validation**: no negative prices/quantities, trim strings, no empty names
+- **Removed Google login** (no OAuth configured)
+- **Fixed all dropdowns**: 10 native `<select>` elements styled to match design system
+- **50 E2E tests** (20 basic + 20 advanced + 10 auth)
+- Professional placeholder text (no "John Doe", "Acme Corp")
+
 ### Key technical decisions
 - **Prisma 7** with `prisma.config.ts` for DB URL (not in schema.prisma)
-- **Plain PrismaClient** for PostgreSQL (no adapter needed, unlike SQLite)
+- **@prisma/adapter-pg** required for PostgreSQL in Prisma 7 (see `src/lib/db.ts`)
 - **JWT auth** with httpOnly cookies
 - **Multi-tenant** via `orgId` on all tables
 - **shadcn/ui** components with Tailwind CSS 4
+- **Native `<select>`** inside Radix Dialog (Base UI Select portals conflict with Dialog focus trap)
+- **Resend** for transactional emails (graceful degradation — logs if no API key)
+
+---
+
+## Email Service Setup (Resend)
+
+The app uses **Resend** (resend.com) for transactional emails. Without `RESEND_API_KEY`, emails are logged to console — the app works fine.
+
+### To enable real emails:
+1. Sign up at **resend.com** (free: 3000 emails/month)
+2. Add domain `fluxtz.com` in Resend → Domains
+3. Add DNS records Resend provides (DKIM, SPF, DMARC)
+4. Create API key in Resend → API Keys
+5. Add to Vercel: `RESEND_API_KEY=re_xxxxx`
+6. Add to Vercel: `FROM_EMAIL=FLUX <noreply@fluxtz.com>`
+7. Redeploy
+
+### Email templates (`src/lib/email.ts`):
+- `sendVerificationEmail()` — sent on register, link to verify
+- `sendWelcomeEmail()` — sent on register, onboarding steps
+- `sendLoginNotification()` — sent on every login, includes time and IP
+
+---
+
+## Security Notes
+
+- Passwords hashed with bcrypt (via `src/lib/auth.ts`)
+- Password policy: 8+ chars, uppercase, lowercase, number, special char
+- JWT tokens in httpOnly cookies (not accessible to JavaScript)
+- CSRF protection via SameSite=Lax cookies
+- Email verification flow (unverified users see warning banner)
+- Login notification emails (user alerted on each sign-in)
+- All API routes check auth via `getSession()` or `verifyToken()`
+- Multi-tenant isolation: all queries scoped by `orgId`
 
 ---
 
