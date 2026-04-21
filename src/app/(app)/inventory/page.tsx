@@ -1159,43 +1159,36 @@ export default function InventoryPage() {
               <div className="grid grid-cols-2 gap-3 mt-3">
                 <div className="space-y-1.5">
                   <Label>Category</Label>
-                  <Select
+                  <select
                     value={productForm.categoryId}
-                    onValueChange={(val: string | null) =>
-                      setProductForm((f) => ({ ...f, categoryId: val ?? "" }))
+                    onChange={(e) =>
+                      setProductForm((f) => ({ ...f, categoryId: e.target.value }))
                     }
+                    className="flex h-8 w-full items-center rounded-lg border border-input bg-transparent px-2.5 py-1.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
                   >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map((cat) => (
-                        <SelectItem key={cat.id} value={cat.id}>
-                          {cat.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    <option value="">Select category</option>
+                    {categories.map((cat) => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div className="space-y-1.5">
                   <Label>Unit</Label>
-                  <Select
+                  <select
                     value={productForm.unit}
-                    onValueChange={(val: string | null) =>
-                      setProductForm((f) => ({ ...f, unit: val ?? "piece" }))
+                    onChange={(e) =>
+                      setProductForm((f) => ({ ...f, unit: e.target.value }))
                     }
+                    className="flex h-8 w-full items-center rounded-lg border border-input bg-transparent px-2.5 py-1.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
                   >
-                    <SelectTrigger className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {unitOptions.map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    {unitOptions.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
             </div>
