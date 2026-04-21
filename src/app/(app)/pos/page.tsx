@@ -698,12 +698,13 @@ export default function POSPage() {
                     </div>
 
                     {/* Bottom row: qty controls, price, line total */}
-                    <div className="mt-2 flex items-center justify-between gap-3">
+                    <div className="mt-2.5 flex items-center justify-between gap-2">
                       {/* Quantity controls */}
-                      <div className="flex items-center gap-0.5">
+                      <div className="flex items-center gap-1">
                         <Button
                           variant="outline"
                           size="icon-xs"
+                          className="size-7"
                           onClick={() =>
                             updateCartQuantity(
                               item.productId,
@@ -724,11 +725,12 @@ export default function POSPage() {
                               parseInt(e.target.value) || 1
                             )
                           }
-                          className="h-6 w-12 text-center text-xs"
+                          className="h-7 w-12 text-center text-sm font-medium"
                         />
                         <Button
                           variant="outline"
                           size="icon-xs"
+                          className="size-7"
                           onClick={() =>
                             updateCartQuantity(
                               item.productId,
@@ -743,9 +745,7 @@ export default function POSPage() {
 
                       {/* Unit price (editable) */}
                       <div className="flex items-center gap-1">
-                        <span className="text-[10px] text-muted-foreground">
-                          @
-                        </span>
+                        <span className="text-xs text-muted-foreground">@</span>
                         <Input
                           type="number"
                           min={0}
@@ -757,12 +757,12 @@ export default function POSPage() {
                               parseFloat(e.target.value) || 0
                             )
                           }
-                          className="h-6 w-20 text-right text-xs"
+                          className="h-7 w-20 text-right text-sm font-medium"
                         />
                       </div>
 
                       {/* Line total */}
-                      <p className="shrink-0 text-sm font-bold text-foreground">
+                      <p className="shrink-0 text-sm font-bold text-foreground tabular-nums">
                         {formatCurrency(
                           item.unitPrice * item.quantity,
                           orgSettings.currency
@@ -782,7 +782,7 @@ export default function POSPage() {
               {/* Subtotal */}
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Subtotal</span>
-                <span className="font-medium text-foreground">
+                <span className="font-medium text-foreground tabular-nums">
                   {formatCurrency(subtotal, orgSettings.currency)}
                 </span>
               </div>

@@ -108,11 +108,23 @@ export function AppHeader({ onMenuToggle }: { onMenuToggle?: () => void } = {}) 
         <ThemeToggle />
 
         {/* Notification bell */}
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="size-4" />
-          <span className="absolute right-2 top-2 size-2 rounded-full bg-[#d97706] ring-2 ring-background" />
-          <span className="sr-only">Notifications</span>
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="relative">
+              <Bell className="size-4" />
+              <span className="sr-only">Notifications</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-72">
+            <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <div className="px-3 py-6 text-center">
+              <Bell className="mx-auto mb-2 size-8 text-muted-foreground/30" />
+              <p className="text-sm font-medium text-muted-foreground">No recent notifications</p>
+              <p className="text-xs text-muted-foreground/60 mt-1">You&apos;re all caught up</p>
+            </div>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
         {/* User dropdown */}
         <DropdownMenu>

@@ -375,14 +375,23 @@ export default function InvoicesPage() {
       const { generateInvoicePDF } = await import("@/lib/invoice-pdf");
       const blob = await generateInvoicePDF(data);
 
-      const url = URL.createObjectURL(blob);
+      // Create a proper blob with explicit PDF MIME type
+      const pdfBlob = new Blob([blob], { type: "application/pdf" });
+      const url = URL.createObjectURL(pdfBlob);
       const a = document.createElement("a");
       a.href = url;
       a.download = `invoice-${invoice.number}.pdf`;
+      // Append to DOM for cross-browser compatibility (Safari requires this)
+      document.body.appendChild(a);
       a.click();
-      URL.revokeObjectURL(url);
+      // Delay cleanup to ensure the download has started
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 100);
       toast.success("PDF downloaded");
-    } catch {
+    } catch (err) {
+      console.error("PDF generation error:", err);
       toast.error("Failed to generate PDF");
     }
   };

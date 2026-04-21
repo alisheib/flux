@@ -216,7 +216,22 @@ function InvoiceDocument({ invoice, org }: InvoicePDFData) {
 }
 
 export async function generateInvoicePDF(data: InvoicePDFData): Promise<Blob> {
-  const blob = await pdf(<InvoiceDocument {...data} />).toBlob();
+  // Ensure items is always an array (guards against undefined/null from API)
+  const safeData: InvoicePDFData = {
+    ...data,
+    invoice: {
+      ...data.invoice,
+      items: data.invoice.items || [],
+    },
+  };
+
+  const doc = <InvoiceDocument {...safeData} />;
+  const blob = await pdf(doc).toBlob();
+
+  if (!blob || blob.size === 0) {
+    throw new Error("PDF generation produced an empty blob");
+  }
+
   return blob;
 }
 
