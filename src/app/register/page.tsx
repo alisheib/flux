@@ -156,6 +156,15 @@ export default function RegisterPage() {
       return;
     }
 
+    // Phone validation (optional but if provided must be valid)
+    if (phone) {
+      const phoneClean = phone.replace(/[\s\-()]/g, "");
+      if (!/^\+?\d{7,15}$/.test(phoneClean)) {
+        toast.error("Please enter a valid phone number (e.g. +1234567890)");
+        return;
+      }
+    }
+
     // Password strength
     if (password.length < 8) {
       toast.error("Password must be at least 8 characters");
