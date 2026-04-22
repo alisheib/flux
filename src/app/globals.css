@@ -260,6 +260,28 @@
   }
 }
 
+/* Print styles — hide app shell, show only invoice */
+@media print {
+  aside, header, .print\\:hidden, [data-slot="dialog-overlay"],
+  .stripe-accent, nav, .toaster {
+    display: none !important;
+  }
+  body {
+    background: white !important;
+    color: #1a1813 !important;
+  }
+  main {
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+  #invoice-document {
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    max-width: 100% !important;
+  }
+}
+
 /* Phone input styling */
 .flux-phone-input .PhoneInputCountrySelect {
   color: inherit;

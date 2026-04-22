@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth-provider";
 import { PageHeader } from "@/components/page-header";
 import { formatCurrency, formatNumber } from "@/lib/calculations";
@@ -156,6 +157,7 @@ function StatusBadge({ status }: { status: string }) {
 
 export default function InvoicesPage() {
   const { user } = useAuth();
+  const router = useRouter();
 
   // Data
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -713,6 +715,15 @@ export default function InvoicesPage() {
                             >
                               <Eye className="mr-2 size-4" />
                               View
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                router.push(`/invoices/${invoice.id}`);
+                              }}
+                            >
+                              <Printer className="mr-2 size-4" />
+                              Print Invoice
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={(e) => {
