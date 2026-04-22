@@ -277,7 +277,7 @@ export default function POSPage() {
     setCart((prev) => prev.filter((item) => item.productId !== productId));
   }, []);
 
-  const clearCart = useCallback(() => {
+  const clearCart = useCallback((silent = false) => {
     setCart([]);
     setDiscountValue("");
     setDiscountType("amount");
@@ -287,6 +287,9 @@ export default function POSPage() {
     setNotes("");
     setPaymentMethod("cash");
     setCustomerExpanded(false);
+    if (!silent) {
+      toast.info("Cart cleared", { description: "All items have been removed." });
+    }
   }, []);
 
   // ── Totals Calculation ─────────────────────────────────────────────────
@@ -365,13 +368,13 @@ export default function POSPage() {
         })),
       });
       setReceiptDialogOpen(true);
-      clearCart();
+      clearCart(true);
       fetchData(); // refresh stock
-      toast.success("Sale completed successfully!");
+      toast.success("Sale completed!", { description: `Invoice #${saleData.saleNumber} generated • ${formatCurrency(total, orgSettings.currency)}` });
     } catch (error: unknown) {
       const message =
         error instanceof Error ? error.message : "Failed to complete sale";
-      toast.error(message);
+      toast.error("Sale failed", { description: message || "Please try again." });
     } finally {
       setCompletingSale(false);
     }
@@ -968,7 +971,7 @@ export default function POSPage() {
               {cart.length > 0 && (
                 <button
                   type="button"
-                  onClick={clearCart}
+                  onClick={() => clearCart()}
                   className="flex w-full items-center justify-center gap-1.5 py-1.5 text-xs font-medium text-muted-foreground hover:text-destructive transition-colors"
                 >
                   <Trash2 className="size-3" />

@@ -116,7 +116,7 @@ export default function SettingsPage() {
         setRolePerms(DEFAULT_PERMISSIONS);
       }
     } catch {
-      toast.error("Failed to load settings");
+      toast.error("Failed to load settings", { description: "Please try again or contact support." });
     } finally {
       setLoading(false);
     }
@@ -152,9 +152,9 @@ export default function SettingsPage() {
       const data: SettingsResponse = await res.json();
       setOrg(data.organization);
       setSettings(data.settings);
-      toast.success("Organization info saved");
+      toast.success("Organization saved", { description: "Your company details have been updated." });
     } catch {
-      toast.error("Failed to save organization info");
+      toast.error("Failed to save organization info", { description: "Please try again or contact support." });
     } finally {
       setSavingOrg(false);
     }
@@ -181,9 +181,9 @@ export default function SettingsPage() {
       const data: SettingsResponse = await res.json();
       setOrg(data.organization);
       setSettings(data.settings);
-      toast.success("Tax configuration saved");
+      toast.success("Tax settings saved", { description: "Tax configuration has been updated." });
     } catch {
-      toast.error("Failed to save tax configuration");
+      toast.error("Failed to save tax configuration", { description: "Please try again or contact support." });
     } finally {
       setSavingTax(false);
     }
@@ -212,9 +212,9 @@ export default function SettingsPage() {
       const data: SettingsResponse = await res.json();
       setOrg(data.organization);
       setSettings(data.settings);
-      toast.success("Invoice settings saved");
+      toast.success("Invoice settings saved", { description: "Invoice and receipt numbering updated." });
     } catch {
-      toast.error("Failed to save invoice settings");
+      toast.error("Failed to save invoice settings", { description: "Please try again or contact support." });
     } finally {
       setSavingInvoice(false);
     }
@@ -244,9 +244,9 @@ export default function SettingsPage() {
       const data: SettingsResponse = await res.json();
       setOrg(data.organization);
       setSettings(data.settings);
-      toast.success("Margin defaults saved");
+      toast.success("Margin settings saved", { description: "Default margins and exchange rate updated." });
     } catch {
-      toast.error("Failed to save margin defaults");
+      toast.error("Failed to save margin defaults", { description: "Please try again or contact support." });
     } finally {
       setSavingMargin(false);
     }
@@ -281,9 +281,9 @@ export default function SettingsPage() {
         }),
       });
       if (!res.ok) throw new Error("Failed to save");
-      toast.success("Role permissions saved");
+      toast.success("Permissions saved", { description: "Role access permissions have been updated." });
     } catch {
-      toast.error("Failed to save role permissions");
+      toast.error("Failed to save role permissions", { description: "Please try again or contact support." });
     } finally {
       setSavingRoles(false);
     }
@@ -308,7 +308,7 @@ export default function SettingsPage() {
       toast.success(enabled ? "TRA Tally integration enabled" : "TRA Tally integration disabled");
     } catch {
       setTallyEnabled(!enabled);
-      toast.error("Failed to update Tally integration setting");
+      toast.error("Failed to update Tally integration setting", { description: "Please try again or contact support." });
     } finally {
       setSavingTally(false);
     }
@@ -318,7 +318,7 @@ export default function SettingsPage() {
 
   const handleResetDatabase = async () => {
     if (!resetPassword) {
-      toast.error("Please enter your password to confirm");
+      toast.error("Please enter your password to confirm", { description: "Please try again or contact support." });
       return;
     }
     setResetting(true);
@@ -330,12 +330,12 @@ export default function SettingsPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to reset");
-      toast.success(data.message);
+      toast.success("Data reset complete", { description: "All business data has been permanently deleted." });
       setShowResetConfirm(false);
       setResetPassword("");
       fetchSettings();
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "Failed to reset database");
+      toast.error(e instanceof Error ? e.message : "Failed to reset database", { description: "Please try again or contact support." });
     } finally {
       setResetting(false);
     }
@@ -351,11 +351,11 @@ export default function SettingsPage() {
         headers: { "Content-Type": "application/json" },
       });
       if (!res.ok) throw new Error("Failed to seed data");
-      toast.success("Demo data seeded successfully");
+      toast.success("Demo data loaded", { description: "Sample data has been added to your workspace." });
       setShowSeedConfirm(false);
       fetchSettings();
     } catch {
-      toast.error("Failed to seed demo data");
+      toast.error("Failed to seed demo data", { description: "Please try again or contact support." });
     } finally {
       setSeedingData(false);
     }

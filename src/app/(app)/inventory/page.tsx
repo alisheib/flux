@@ -54,6 +54,7 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { validateRequired, validateNumber, validateSKU, numbersOnly } from "@/lib/validate";
 import {
   Plus,
   Search,
@@ -396,10 +397,11 @@ export default function InventoryPage() {
   };
 
   const handleSaveProduct = async () => {
-    if (!productForm.name.trim()) {
-      toast.error("Product name is required");
-      return;
-    }
+    if (!validateRequired(productForm.name, "Product name")) return;
+    if (productForm.sku && !validateSKU(productForm.sku)) return;
+    if ((parseFloat(productForm.costPrice) || 0) < 0) { toast.error("Invalid cost price", { description: "Cost price cannot be negative." }); return; }
+    if ((parseFloat(productForm.sellingPrice) || 0) < 0) { toast.error("Invalid selling price", { description: "Selling price cannot be negative." }); return; }
+    if ((parseFloat(productForm.stockQty) || 0) < 0) { toast.error("Invalid stock", { description: "Stock quantity cannot be negative." }); return; }
 
     setSavingProduct(true);
     try {
@@ -436,7 +438,8 @@ export default function InventoryPage() {
       }
 
       toast.success(
-        editingProduct ? "Product updated" : "Product created"
+        editingProduct ? "Product updated" : "Product created",
+        { description: editingProduct ? `"${productForm.name}" has been saved.` : `"${productForm.name}" has been added to inventory.` }
       );
       setProductDialogOpen(false);
       fetchData();
@@ -1269,6 +1272,7 @@ export default function InventoryPage() {
                         costPrice: e.target.value,
                       }))
                     }
+                    onKeyDown={numbersOnly}
                     placeholder="0.00"
                   />
                 </div>
@@ -1284,6 +1288,7 @@ export default function InventoryPage() {
                         sellingPrice: e.target.value,
                       }))
                     }
+                    onKeyDown={numbersOnly}
                     placeholder="0.00"
                   />
                 </div>
@@ -1299,6 +1304,7 @@ export default function InventoryPage() {
                         stockQty: e.target.value,
                       }))
                     }
+                    onKeyDown={numbersOnly}
                     placeholder="0"
                   />
                 </div>
@@ -1314,6 +1320,7 @@ export default function InventoryPage() {
                         minStockQty: e.target.value,
                       }))
                     }
+                    onKeyDown={numbersOnly}
                     placeholder="0"
                   />
                 </div>

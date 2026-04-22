@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import PhoneInput from "react-phone-number-input";
 import "react-phone-number-input/style.css";
+import { validateRequired, validateEmail, validatePassword, validatePhone } from "@/lib/validate";
 import { FluxLockup } from "@/components/flux-logo";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -145,51 +146,13 @@ export default function RegisterPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
-    if (!orgName || !name || !email || !password || !confirmPassword) {
-      toast.error("Please fill in all fields");
-      return;
-    }
-
-    // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      toast.error("Please enter a valid email address");
-      return;
-    }
-
-    // Phone validation (optional but if provided must be valid)
-    if (phone) {
-      const phoneClean = phone.replace(/[\s\-()]/g, "");
-      if (!/^\+?\d{7,15}$/.test(phoneClean)) {
-        toast.error("Please enter a valid phone number (e.g. +1234567890)");
-        return;
-      }
-    }
-
-    // Password strength
-    if (password.length < 8) {
-      toast.error("Password must be at least 8 characters");
-      return;
-    }
-    if (!/[A-Z]/.test(password)) {
-      toast.error("Password must contain at least one uppercase letter");
-      return;
-    }
-    if (!/[a-z]/.test(password)) {
-      toast.error("Password must contain at least one lowercase letter");
-      return;
-    }
-    if (!/[0-9]/.test(password)) {
-      toast.error("Password must contain at least one number");
-      return;
-    }
-    if (!/[^A-Za-z0-9]/.test(password)) {
-      toast.error("Password must contain at least one special character");
-      return;
-    }
-
+    if (!validateRequired(orgName, "Organization name")) return;
+    if (!validateRequired(name, "Full name")) return;
+    if (!validateEmail(email)) return;
+    if (!validatePhone(phone)) return;
+    if (!validatePassword(password)) return;
     if (password !== confirmPassword) {
-      toast.error("Passwords do not match");
+      toast.error("Passwords don't match", { description: "Please make sure both password fields are identical." });
       return;
     }
 
@@ -205,14 +168,18 @@ export default function RegisterPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        toast.error(data.error || "Registration failed");
+        if (res.status === 409) {
+          toast.error("Email already registered", { description: "An account with this email already exists. Try signing in instead." });
+        } else {
+          toast.error("Registration failed", { description: data.error || "Please check your details and try again." });
+        }
         return;
       }
 
-      toast.success("Account created successfully! Welcome to Flux.");
+      toast.success("Welcome to FLUX!", { description: `${orgName} workspace is ready. Check your email to verify your account.` });
       router.push("/");
     } catch {
-      toast.error("Something went wrong. Please try again.");
+      toast.error("Connection error", { description: "Could not reach the server. Please check your internet connection." });
     } finally {
       setLoading(false);
     }

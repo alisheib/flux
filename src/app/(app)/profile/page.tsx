@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { Loader2, Save, User, Lock, Mail, Shield, Building2, Calendar } from "lucide-react";
+import { validateRequired, validatePassword } from "@/lib/validate";
 import { PageHeader } from "@/components/page-header";
 import { useAuth } from "@/components/auth-provider";
 import { Button } from "@/components/ui/button";
@@ -64,7 +65,7 @@ export default function ProfilePage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      toast.success("Name updated. Refresh to see changes in sidebar.");
+      toast.success("Profile updated", { description: "Your display name has been saved." });
       fetchProfile();
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : "Failed to update");
@@ -75,9 +76,9 @@ export default function ProfilePage() {
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentPassword) { toast.error("Enter your current password"); return; }
-    if (!newPassword || newPassword.length < 6) { toast.error("New password must be at least 6 characters"); return; }
-    if (newPassword !== confirmPassword) { toast.error("Passwords don't match"); return; }
+    if (!validateRequired(currentPassword, "Current password")) return;
+    if (!validatePassword(newPassword)) return;
+    if (newPassword !== confirmPassword) { toast.error("Passwords don't match", { description: "New password and confirmation must be identical." }); return; }
     setSavingPassword(true);
     try {
       const res = await fetch("/api/auth/profile", {
@@ -87,7 +88,7 @@ export default function ProfilePage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      toast.success("Password changed successfully");
+      toast.success("Password changed", { description: "Your password has been updated successfully." });
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");

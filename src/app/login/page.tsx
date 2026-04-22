@@ -127,15 +127,19 @@ function LoginForm() {
 
   React.useEffect(() => {
     if (verified === "true") {
-      toast.success("Email verified successfully! You can now sign in.");
+      toast.success("Email verified!", { description: "Your email has been confirmed. You can now sign in." });
     }
   }, [verified]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
-    if (!email || !password) {
-      toast.error("Please fill in all fields");
+    if (!email.trim()) {
+      toast.error("Email is required", { description: "Please enter your email address." });
+      return;
+    }
+    if (!password) {
+      toast.error("Password is required", { description: "Please enter your password." });
       return;
     }
 
@@ -151,14 +155,20 @@ function LoginForm() {
       const data = await res.json();
 
       if (!res.ok) {
-        toast.error(data.error || "Login failed");
+        if (res.status === 401) {
+          toast.error("Invalid credentials", { description: "The email or password you entered is incorrect." });
+        } else if (res.status === 403) {
+          toast.error("Account deactivated", { description: data.error || "Please contact your administrator." });
+        } else {
+          toast.error("Login failed", { description: data.error || "Please try again." });
+        }
         return;
       }
 
-      toast.success(`Welcome back, ${data.user.name}!`);
+      toast.success(`Welcome back, ${data.user.name}!`, { description: `Signed in as ${data.user.role} • ${data.user.orgName}` });
       router.push(redirect);
     } catch {
-      toast.error("Something went wrong. Please try again.");
+      toast.error("Connection error", { description: "Could not reach the server. Please check your internet connection." });
     } finally {
       setLoading(false);
     }

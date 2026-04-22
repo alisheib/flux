@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
+import { validateRequired, validateEmail, validatePassword } from "@/lib/validate";
 import {
   Plus,
   Pencil,
@@ -168,10 +169,10 @@ export default function UsersPage() {
       role: form.get("role") as string,
     };
 
-    if (!body.name || !body.email || !body.password) {
-      toast.error("Name, email, and password are required");
-      return;
-    }
+    if (!validateRequired(body.name, "Name")) return;
+    if (!validateEmail(body.email)) return;
+    if (!validatePassword(body.password)) return;
+    if (!validateRequired(body.role, "Role")) return;
 
     try {
       setSaving(true);
@@ -180,16 +181,16 @@ export default function UsersPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
+      const data = await res.json();
       if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "Failed to create user");
+        toast.error("Failed to create user", { description: data.error || "Please try again." });
+        return;
       }
-      toast.success("User created successfully");
+      toast.success("User created", { description: `${body.name} has been added as ${body.role}.` });
       setShowAddUser(false);
       fetchUsers();
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Failed to create user";
-      toast.error(message);
+    } catch {
+      toast.error("Failed to create user", { description: "Please try again." });
     } finally {
       setSaving(false);
     }
