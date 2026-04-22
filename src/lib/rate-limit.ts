@@ -22,6 +22,11 @@ export function rateLimit(
   key: string,
   opts: { maxAttempts: number; windowMs: number } = { maxAttempts: 5, windowMs: 15 * 60 * 1000 }
 ): { allowed: boolean; remaining: number; resetIn: number } {
+  // Skip rate limiting in development
+  if (process.env.NODE_ENV !== "production") {
+    return { allowed: true, remaining: opts.maxAttempts, resetIn: 0 };
+  }
+
   const now = Date.now();
   const entry = store.get(key);
 

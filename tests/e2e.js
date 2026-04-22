@@ -49,9 +49,9 @@ async function login() {
   const emailInput = await page.$('input[type="email"]');
   const pwInput = await page.$('input[type="password"]');
   await emailInput.click({ clickCount: 3 });
-  await emailInput.type("admin@flux.com");
+  await emailInput.type("break@test.com");
   await pwInput.click({ clickCount: 3 });
-  await pwInput.type("password123");
+  await pwInput.type("BreakIt99!");
 
   await new Promise((r) => setTimeout(r, 500));
   await page.click('button[type="submit"]');
@@ -65,7 +65,7 @@ async function login() {
       const r = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: "admin@flux.com", password: "password123" }),
+        body: JSON.stringify({ email: "break@test.com", password: "BreakIt99!" }),
       });
       return { ok: r.ok, status: r.status };
     });

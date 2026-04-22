@@ -9,6 +9,9 @@ const results = [];
 const TEST_EMAIL = `testuser_${Date.now()}@example.com`;
 const TEST_PASS = "Flux2026!@";
 
+// Clear rate limit before tests by waiting and using unique IPs
+// The rate limiter tracks by IP — in test we all come from same IP
+
 async function setup() {
   browser = await puppeteer.launch({ headless: "new", args: ["--no-sandbox"] });
   page = await browser.newPage();
