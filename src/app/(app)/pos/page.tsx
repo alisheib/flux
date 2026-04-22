@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth-provider";
 import { formatCurrency, formatNumber } from "@/lib/calculations";
 import { Button } from "@/components/ui/button";
@@ -427,9 +428,11 @@ export default function POSPage() {
     window.open(url, "_blank");
   };
 
+  const router = useRouter();
+
   const handlePrint = () => {
     if (lastSale?.invoice?.id) {
-      window.open(`/invoice/${lastSale.invoice.id}`, '_blank');
+      router.push(`/invoices/${lastSale.invoice.id}`);
     }
   };
 
