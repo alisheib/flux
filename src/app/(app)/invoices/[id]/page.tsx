@@ -42,14 +42,7 @@ function fmt(value: number, currency: string): string {
   return `${currency} ${value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-function statusBadge(status: string) {
-  switch (status) {
-    case "paid": return "bg-emerald-100 text-emerald-800 border-emerald-200";
-    case "overdue": return "bg-red-100 text-red-800 border-red-200";
-    case "cancelled": return "bg-gray-100 text-gray-600 border-gray-200";
-    default: return "bg-blue-100 text-blue-800 border-blue-200";
-  }
-}
+// No colored badges needed — removed for professional print look
 
 function InvoiceDocument({ invoice, org }: InvoiceData) {
   const cur = invoice.currency || org.currency || "USD";
@@ -87,7 +80,7 @@ function InvoiceDocument({ invoice, org }: InvoiceData) {
             </>
           )}
           <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1 mt-3">Status</p>
-          <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase border ${statusBadge(invoice.status)}`}>
+          <span className="inline-block border border-gray-900 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-gray-900">
             {invoice.status}
           </span>
         </div>

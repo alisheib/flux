@@ -6,14 +6,7 @@ function fmt(value: number, currency: string): string {
   return `${currency} ${value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-function statusStyle(status: string) {
-  switch (status) {
-    case "paid": return { bg: "#d1fae5", color: "#065f46", border: "#a7f3d0" };
-    case "overdue": return { bg: "#fee2e2", color: "#991b1b", border: "#fecaca" };
-    case "cancelled": return { bg: "#f3f4f6", color: "#4b5563", border: "#e5e7eb" };
-    default: return { bg: "#dbeafe", color: "#1e40af", border: "#bfdbfe" };
-  }
-}
+// Status rendered as simple black-bordered text box — professional print style
 
 export default async function InvoicePrintPage({
   params,
@@ -40,7 +33,7 @@ export default async function InvoicePrintPage({
   const org = invoice.org;
   const items = invoice.sale?.items || [];
   const cur = invoice.currency || org.currency || "USD";
-  const sc = statusStyle(invoice.status);
+  // Status uses simple black box styling
 
   return (
     <html>
@@ -144,8 +137,7 @@ export default async function InvoicePrintPage({
               )}
               <div className="meta-label" style={{ marginTop: 12 }}>Status</div>
               <div
-                className="status-badge"
-                style={{ background: sc.bg, color: sc.color, border: `1px solid ${sc.border}` }}
+                style={{ display: 'inline-block', border: '1.5px solid #1a1813', padding: '4px 12px', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: '#1a1813' }}
               >
                 {invoice.status}
               </div>
