@@ -38,6 +38,7 @@ import {
   ReceiptText,
   Loader2,
   ClipboardCheck,
+  Download,
 } from "lucide-react";
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -430,9 +431,41 @@ export default function POSPage() {
 
   const router = useRouter();
 
+  const [downloadingReceipt, setDownloadingReceipt] = useState(false);
+
   const handlePrint = () => {
     if (lastSale?.invoice?.id) {
       router.push(`/invoices/${lastSale.invoice.id}`);
+    }
+  };
+
+  const handleDownloadReceipt = async () => {
+    if (!lastSale) return;
+    setDownloadingReceipt(true);
+    try {
+      const res = await fetch(`/api/sales/${lastSale.id}/receipt`);
+      const contentType = res.headers.get("content-type") || "";
+      if (contentType.includes("application/pdf")) {
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `receipt-${lastSale.saleNumber}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 200);
+        toast.success("Receipt downloaded", { description: `receipt-${lastSale.saleNumber}.pdf` });
+      } else {
+        // Fallback: HTML print
+        const html = await res.text();
+        const win = window.open("", "_blank");
+        if (win) { win.document.write(html); win.document.close(); setTimeout(() => win.print(), 400); }
+        toast.info("Use 'Save as PDF' in the print dialog");
+      }
+    } catch {
+      toast.error("Failed to generate receipt");
+    } finally {
+      setDownloadingReceipt(false);
     }
   };
 
@@ -1247,7 +1280,17 @@ export default function POSPage() {
                 className="gap-1.5"
               >
                 <Printer className="size-4" />
-                Print
+                Invoice
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleDownloadReceipt}
+                disabled={downloadingReceipt}
+                className="gap-1.5"
+              >
+                {downloadingReceipt ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4" />}
+                Receipt
               </Button>
               <Button
                 size="sm"

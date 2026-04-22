@@ -122,6 +122,13 @@ export function buildInvoiceHTML(data: InvoiceTemplateData): string {
       size: A4;
       margin: 20mm 18mm;
     }
+    /* Remove browser-added headers/footers (date, URL, page number) */
+    @page {
+      @top-left { content: none; }
+      @top-right { content: none; }
+      @bottom-left { content: none; }
+      @bottom-right { content: none; }
+    }
     table { border-collapse: collapse; }
   </style>
 </head>

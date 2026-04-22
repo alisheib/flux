@@ -91,6 +91,9 @@ export default async function InvoicePrintPage({
             .page { padding: 20px; }
             body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
           }
+          @page {
+            margin: 15mm;
+          }
         `}</style>
       </head>
       <body>
