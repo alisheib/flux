@@ -83,9 +83,10 @@ export async function GET(
       await page.setContent(html, { waitUntil: "networkidle0" });
 
       const pdfBuffer = await page.pdf({
-        width: "148mm", // A5 width
-        height: "210mm", // A5 height
+        width: "148mm",
+        height: "210mm",
         printBackground: true,
+        displayHeaderFooter: false,
         margin: { top: "0", bottom: "0", left: "0", right: "0" },
       });
 
