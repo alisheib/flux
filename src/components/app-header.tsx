@@ -24,6 +24,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "sonner";
 
 /* ------------------------------------------------------------------ */
@@ -108,23 +109,24 @@ export function AppHeader({ onMenuToggle }: { onMenuToggle?: () => void } = {}) 
         <ThemeToggle />
 
         {/* Notification bell */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
+        <Popover>
+          <PopoverTrigger asChild>
             <Button variant="ghost" size="icon" className="relative">
               <Bell className="size-4" />
               <span className="sr-only">Notifications</span>
             </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-72">
-            <DropdownMenuLabel>Notifications</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <div className="px-3 py-6 text-center">
-              <Bell className="mx-auto mb-2 size-8 text-muted-foreground/30" />
-              <p className="text-sm font-medium text-muted-foreground">No recent notifications</p>
-              <p className="text-xs text-muted-foreground/60 mt-1">You&apos;re all caught up</p>
+          </PopoverTrigger>
+          <PopoverContent align="end" className="w-80 p-0">
+            <div className="flex items-center justify-between border-b border-border px-4 py-3">
+              <h4 className="text-sm font-semibold text-foreground">Notifications</h4>
             </div>
-          </DropdownMenuContent>
-        </DropdownMenu>
+            <div className="px-4 py-8 text-center">
+              <Bell className="mx-auto mb-3 size-10 text-muted-foreground/20" />
+              <p className="text-sm font-medium text-muted-foreground">No recent notifications</p>
+              <p className="mt-1 text-xs text-muted-foreground/50">You&apos;re all caught up</p>
+            </div>
+          </PopoverContent>
+        </Popover>
 
         {/* User dropdown */}
         <DropdownMenu>

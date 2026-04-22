@@ -18,6 +18,7 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  turbopack: {},
   webpack: (config) => {
     // @react-pdf/renderer requires these aliases to work correctly with Next.js
     config.resolve.alias = {
