@@ -63,34 +63,20 @@ export default function InvoiceViewPage() {
 
   const handleDownloadPDF = async () => {
     setDownloading(true);
+    toast.info("Generating PDF...");
     try {
       const res = await fetch(`/api/invoices/${params.id}/download`);
-      const contentType = res.headers.get("content-type") || "";
-
-      if (contentType.includes("application/pdf")) {
-        // Server generated a real PDF
-        const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `${data?.invoice.number || "invoice"}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 200);
-        toast.success("PDF downloaded", { description: `${data?.invoice.number}.pdf` });
-      } else {
-        // Fallback: server returned HTML — open in new tab for browser print
-        const html = await res.text();
-        const win = window.open("", "_blank");
-        if (win) {
-          win.document.write(html);
-          win.document.close();
-          setTimeout(() => win.print(), 400);
-        }
-        toast.info("Use 'Save as PDF' in the print dialog");
-      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${data?.invoice.number || "invoice"}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 200);
+      toast.success("Download complete", { description: `${data?.invoice.number}.pdf saved` });
     } catch {
-      toast.error("Failed to generate PDF", { description: "Please try again." });
+      toast.error("Download failed", { description: "Please try again." });
     } finally {
       setDownloading(false);
     }

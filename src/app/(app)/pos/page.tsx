@@ -442,28 +442,20 @@ export default function POSPage() {
   const handleDownloadReceipt = async () => {
     if (!lastSale) return;
     setDownloadingReceipt(true);
+    toast.info("Generating receipt...");
     try {
       const res = await fetch(`/api/sales/${lastSale.id}/receipt`);
-      const contentType = res.headers.get("content-type") || "";
-      if (contentType.includes("application/pdf")) {
-        const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `receipt-${lastSale.saleNumber}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 200);
-        toast.success("Receipt downloaded", { description: `receipt-${lastSale.saleNumber}.pdf` });
-      } else {
-        // Fallback: HTML print
-        const html = await res.text();
-        const win = window.open("", "_blank");
-        if (win) { win.document.write(html); win.document.close(); setTimeout(() => win.print(), 400); }
-        toast.info("Use 'Save as PDF' in the print dialog");
-      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `receipt-${lastSale.saleNumber}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 200);
+      toast.success("Download complete", { description: `receipt-${lastSale.saleNumber}.pdf saved` });
     } catch {
-      toast.error("Failed to generate receipt");
+      toast.error("Download failed", { description: "Please try again." });
     } finally {
       setDownloadingReceipt(false);
     }
