@@ -131,11 +131,12 @@ model ShipmentExpense {
 // ─── Products & Inventory ──────────────────────────────────────────────────
 
 model Category {
-  id    String  @id @default(cuid())
-  orgId String
-  name  String
-  icon  String?
-  color String?
+  id     String  @id @default(cuid())
+  orgId  String
+  name   String
+  icon   String?
+  color  String?
+  fields String? // JSON array of enabled optional product fields, e.g. ["thickness","width","height","color"]
 
   org      Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
   products Product[]

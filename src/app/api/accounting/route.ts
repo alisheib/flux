@@ -23,6 +23,7 @@ export async function GET() {
     }
 
     const orgId = auth.orgId;
+    const now = new Date();
 
     // Get all shipments with items and expenses
     const shipments = await prisma.shipment.findMany({
@@ -130,8 +131,37 @@ export async function GET() {
       .map(([category, total]) => ({ category, total: Math.round(total * 100) / 100 }))
       .sort((a, b) => b.total - a.total);
 
+    // Monthly revenue vs costs for last 6 months
+    const monthlyMap = new Map<string, { revenue: number; costs: number }>();
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      monthlyMap.set(key, { revenue: 0, costs: 0 });
+    }
+    for (const sale of sales) {
+      const d = new Date(sale.createdAt);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      const entry = monthlyMap.get(key);
+      if (entry) entry.revenue += sale.items.reduce((s, i) => s + i.total, 0);
+    }
+    for (const shipment of shipments) {
+      const d = new Date(shipment.createdAt);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      const entry = monthlyMap.get(key);
+      if (entry) {
+        entry.costs += shipment.items.reduce((s, i) => s + i.totalCost, 0);
+        entry.costs += shipment.expenses.reduce((s, e) => s + e.amountUsd, 0);
+      }
+    }
+    const monthlyData = Array.from(monthlyMap.entries()).map(([month, data]) => ({
+      month,
+      revenue: Math.round(data.revenue * 100) / 100,
+      costs: Math.round(data.costs * 100) / 100,
+    }));
+
     return NextResponse.json({
       shipments: shipmentPnL,
+      monthlyData,
       totals: {
         totalFob: Math.round(overallTotalFob * 100) / 100,
         totalExpenses: Math.round(overallTotalExpenses * 100) / 100,

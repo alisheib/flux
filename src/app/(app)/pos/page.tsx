@@ -123,14 +123,26 @@ export default function POSPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
 
-  // Cart state
-  const [cart, setCart] = useState<CartItem[]>([]);
+  // Cart state — persisted to localStorage
+  const [cart, setCart] = useState<CartItem[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const saved = localStorage.getItem("flux-pos-cart");
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
   const [discountValue, setDiscountValue] = useState<string>("");
   const [discountType, setDiscountType] = useState<"amount" | "percent">(
     "amount"
   );
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [notes, setNotes] = useState("");
+
+  // Persist cart to localStorage
+  useEffect(() => {
+    try { localStorage.setItem("flux-pos-cart", JSON.stringify(cart)); }
+    catch { /* storage full or unavailable */ }
+  }, [cart]);
 
   // Customer info
   const [customerExpanded, setCustomerExpanded] = useState(false);
@@ -303,11 +315,11 @@ export default function POSPage() {
   );
 
   const discountAmount = useMemo(() => {
-    const val = parseFloat(discountValue) || 0;
+    const val = Math.max(0, parseFloat(discountValue) || 0);
     if (discountType === "percent") {
-      return (subtotal * val) / 100;
+      return (subtotal * Math.min(val, 100)) / 100;
     }
-    return val;
+    return Math.min(val, subtotal);
   }, [subtotal, discountValue, discountType]);
 
   const taxableAmount = subtotal - discountAmount;

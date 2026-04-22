@@ -168,7 +168,8 @@ export async function exportToExcel(options: ExcelExportOptions) {
 
       // Number formatting
       if (col?.type === "currency") {
-        cell.numFmt = `#,##0.00`;
+        const sym = currency === "TSH" || currency === "TZS" ? "TSh " : currency === "EUR" ? "€" : currency === "GBP" ? "£" : "$";
+        cell.numFmt = `${sym}#,##0.00`;
       } else if (col?.type === "percent") {
         cell.numFmt = `0.0"%"`;
       } else if (col?.type === "number") {
@@ -224,7 +225,8 @@ export async function exportToExcel(options: ExcelExportOptions) {
       };
 
       if (col?.type === "currency") {
-        cell.numFmt = `#,##0.00`;
+        const sym = currency === "TSH" || currency === "TZS" ? "TSh " : currency === "EUR" ? "€" : currency === "GBP" ? "£" : "$";
+        cell.numFmt = `${sym}#,##0.00`;
       } else if (col?.type === "percent") {
         cell.numFmt = `0.0"%"`;
       } else if (col?.type === "number") {

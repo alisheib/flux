@@ -67,6 +67,7 @@ interface DashboardData {
     month: string;
     count: number;
     revenue: number;
+    costs: number;
   }[];
 }
 
@@ -169,8 +170,7 @@ export default function DashboardPage() {
     return {
       name: label,
       revenue: m.revenue,
-      // Estimate costs as ~60% of revenue for visual demo
-      costs: Math.round(m.revenue * 0.6 * 100) / 100,
+      costs: m.costs ?? 0,
     };
   });
 

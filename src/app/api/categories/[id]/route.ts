@@ -30,7 +30,7 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { name, icon, color } = body;
+    const { name, icon, color, fields } = body;
 
     const category = await prisma.category.update({
       where: { id },
@@ -38,6 +38,7 @@ export async function PUT(
         ...(name !== undefined && { name }),
         ...(icon !== undefined && { icon }),
         ...(color !== undefined && { color }),
+        ...(fields !== undefined && { fields: fields ? JSON.stringify(fields) : null }),
       },
       include: {
         _count: { select: { products: true } },

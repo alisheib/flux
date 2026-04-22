@@ -17,6 +17,17 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Auto-mark overdue invoices (issued + past due date)
+    const now = new Date();
+    await prisma.invoice.updateMany({
+      where: {
+        orgId: auth.orgId,
+        status: "issued",
+        dueAt: { lt: now },
+      },
+      data: { status: "overdue" },
+    });
+
     const invoices = await prisma.invoice.findMany({
       where: { orgId: auth.orgId },
       include: {
@@ -24,6 +35,7 @@ export async function GET() {
           select: {
             id: true,
             saleNumber: true,
+            items: { select: { id: true, name: true, quantity: true, unitPrice: true, total: true } },
             user: { select: { id: true, name: true } },
           },
         },

@@ -113,6 +113,18 @@ export async function GET(request: NextRequest) {
           });
         }
 
+        // Create subscription (free plan)
+        await tx.subscription.create({
+          data: {
+            orgId: org.id,
+            plan: "free",
+            status: "active",
+            maxUsers: 3,
+            maxSalesMo: 50,
+            features: JSON.stringify(["pos", "inventory", "invoices"]),
+          },
+        });
+
         const newUser = await tx.user.create({
           data: {
             orgId: org.id,

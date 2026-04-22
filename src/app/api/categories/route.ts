@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, icon, color } = body;
+    const { name, icon, color, fields } = body;
 
     if (!name) {
       return NextResponse.json({ error: "Name is required" }, { status: 400 });
@@ -52,6 +52,7 @@ export async function POST(request: NextRequest) {
         name,
         icon: icon || null,
         color: color || null,
+        fields: fields ? JSON.stringify(fields) : null,
       },
       include: {
         _count: { select: { products: true } },

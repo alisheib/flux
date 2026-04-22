@@ -74,6 +74,7 @@ import {
   FolderOpen,
   MoreHorizontal,
   Layers,
+  Power,
 } from "lucide-react";
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -103,7 +104,24 @@ interface Category {
   name: string;
   icon: string | null;
   color: string | null;
+  fields: string | null; // JSON array: ["thickness","width","height","color"]
   _count?: { products: number };
+}
+
+// Optional product fields that can be toggled per category
+const OPTIONAL_PRODUCT_FIELDS = [
+  { key: "thickness", label: "Thickness" },
+  { key: "width", label: "Width" },
+  { key: "height", label: "Height" },
+  { key: "color", label: "Color" },
+] as const;
+
+type OptionalFieldKey = (typeof OPTIONAL_PRODUCT_FIELDS)[number]["key"];
+
+function parseCategoryFields(fields: string | null): OptionalFieldKey[] {
+  if (!fields) return [];
+  try { return JSON.parse(fields); }
+  catch { return []; }
 }
 
 interface OrgSettings {
@@ -216,6 +234,7 @@ export default function InventoryPage() {
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [categoryName, setCategoryName] = useState("");
+  const [categoryFields, setCategoryFields] = useState<OptionalFieldKey[]>([]);
   const [savingCategory, setSavingCategory] = useState(false);
 
   // Category delete
@@ -453,6 +472,21 @@ export default function InventoryPage() {
     }
   };
 
+  const toggleProductActive = async (product: Product) => {
+    try {
+      const res = await fetch(`/api/products/${product.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ active: !product.active }),
+      });
+      if (!res.ok) throw new Error("Failed to update product");
+      toast.success(product.active ? "Product deactivated" : "Product reactivated");
+      fetchData();
+    } catch {
+      toast.error("Failed to update product status");
+    }
+  };
+
   const openDeleteProduct = (product: Product) => {
     setDeletingProduct(product);
     setDeleteDialogOpen(true);
@@ -486,12 +520,14 @@ export default function InventoryPage() {
   const openAddCategory = () => {
     setEditingCategory(null);
     setCategoryName("");
+    setCategoryFields([]);
     setCategoryDialogOpen(true);
   };
 
   const openEditCategory = (cat: Category) => {
     setEditingCategory(cat);
     setCategoryName(cat.name);
+    setCategoryFields(parseCategoryFields(cat.fields));
     setCategoryDialogOpen(true);
   };
 
@@ -511,7 +547,7 @@ export default function InventoryPage() {
       const response = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: categoryName.trim() }),
+        body: JSON.stringify({ name: categoryName.trim(), fields: categoryFields }),
       });
 
       if (!response.ok) {
@@ -704,6 +740,10 @@ export default function InventoryPage() {
               <DropdownMenuItem onClick={() => openEditProduct(product)}>
                 <Pencil className="mr-2 size-4" />
                 Edit
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => toggleProductActive(product)}>
+                <Power className="mr-2 size-4" />
+                {product.active ? "Deactivate" : "Reactivate"}
               </DropdownMenuItem>
               <DropdownMenuItem
                 variant="destructive"
@@ -1185,63 +1225,75 @@ export default function InventoryPage() {
               </div>
             </div>
 
-            <Separator />
-
-            {/* Section: Dimensions */}
-            <div>
-              <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">Dimensions & Appearance</h4>
-              <div className="grid grid-cols-4 gap-3">
-                <div className="space-y-1.5">
-                  <Label>Thickness</Label>
-                  <Input
-                    type="number"
-                    step="0.1"
-                    value={productForm.thickness}
-                    onChange={(e) =>
-                      setProductForm((f) => ({
-                        ...f,
-                        thickness: e.target.value,
-                      }))
-                    }
-                    placeholder="mm"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Width</Label>
-                  <Input
-                    type="number"
-                    step="0.1"
-                    value={productForm.width}
-                    onChange={(e) =>
-                      setProductForm((f) => ({ ...f, width: e.target.value }))
-                    }
-                    placeholder="mm"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Height</Label>
-                  <Input
-                    type="number"
-                    step="0.1"
-                    value={productForm.height}
-                    onChange={(e) =>
-                      setProductForm((f) => ({ ...f, height: e.target.value }))
-                    }
-                    placeholder="mm"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Color</Label>
-                  <Input
-                    value={productForm.color}
-                    onChange={(e) =>
-                      setProductForm((f) => ({ ...f, color: e.target.value }))
-                    }
-                    placeholder="Color"
-                  />
-                </div>
-              </div>
-            </div>
+            {(() => {
+              const selectedCat = categories.find((c) => c.id === productForm.categoryId);
+              const enabledFields = selectedCat ? parseCategoryFields(selectedCat.fields) : [];
+              if (enabledFields.length === 0) return null;
+              return (
+                <>
+                  <Separator />
+                  <div>
+                    <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">Dimensions & Appearance</h4>
+                    <div className={`grid gap-3 ${enabledFields.length <= 2 ? "grid-cols-2" : "grid-cols-4"}`}>
+                      {enabledFields.includes("thickness") && (
+                        <div className="space-y-1.5">
+                          <Label>Thickness</Label>
+                          <Input
+                            type="number"
+                            step="0.1"
+                            value={productForm.thickness}
+                            onChange={(e) =>
+                              setProductForm((f) => ({ ...f, thickness: e.target.value }))
+                            }
+                            placeholder="mm"
+                          />
+                        </div>
+                      )}
+                      {enabledFields.includes("width") && (
+                        <div className="space-y-1.5">
+                          <Label>Width</Label>
+                          <Input
+                            type="number"
+                            step="0.1"
+                            value={productForm.width}
+                            onChange={(e) =>
+                              setProductForm((f) => ({ ...f, width: e.target.value }))
+                            }
+                            placeholder="mm"
+                          />
+                        </div>
+                      )}
+                      {enabledFields.includes("height") && (
+                        <div className="space-y-1.5">
+                          <Label>Height</Label>
+                          <Input
+                            type="number"
+                            step="0.1"
+                            value={productForm.height}
+                            onChange={(e) =>
+                              setProductForm((f) => ({ ...f, height: e.target.value }))
+                            }
+                            placeholder="mm"
+                          />
+                        </div>
+                      )}
+                      {enabledFields.includes("color") && (
+                        <div className="space-y-1.5">
+                          <Label>Color</Label>
+                          <Input
+                            value={productForm.color}
+                            onChange={(e) =>
+                              setProductForm((f) => ({ ...f, color: e.target.value }))
+                            }
+                            placeholder="Color"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </>
+              );
+            })()}
 
             <Separator />
 
@@ -1374,27 +1426,63 @@ export default function InventoryPage() {
         open={categoryDialogOpen}
         onOpenChange={setCategoryDialogOpen}
       >
-        <DialogContent className="sm:max-w-sm rounded-xl">
+        <DialogContent className="sm:max-w-md rounded-xl">
           <DialogHeader>
             <DialogTitle>
               {editingCategory ? "Edit Category" : "Add Category"}
             </DialogTitle>
             <DialogDescription>
               {editingCategory
-                ? "Update the category name."
-                : "Enter a name for the new category."}
+                ? "Update the category and choose which fields its products need."
+                : "Create a category and choose which fields its products need."}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-1.5">
-            <Label>Name *</Label>
-            <Input
-              value={categoryName}
-              onChange={(e) => setCategoryName(e.target.value)}
-              placeholder="Category name"
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleSaveCategory();
-              }}
-            />
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label>Name *</Label>
+              <Input
+                value={categoryName}
+                onChange={(e) => setCategoryName(e.target.value)}
+                placeholder="Category name"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleSaveCategory();
+                }}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">Product Fields</Label>
+              <p className="text-xs text-muted-foreground/70">Choose which fields products in this category need.</p>
+              <div className="grid grid-cols-2 gap-2">
+                {OPTIONAL_PRODUCT_FIELDS.map((field) => {
+                  const active = categoryFields.includes(field.key);
+                  return (
+                    <button
+                      key={field.key}
+                      type="button"
+                      onClick={() =>
+                        setCategoryFields((prev) =>
+                          active
+                            ? prev.filter((f) => f !== field.key)
+                            : [...prev, field.key]
+                        )
+                      }
+                      className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors ${
+                        active
+                          ? "border-[#d97706] bg-[#d97706]/10 text-foreground"
+                          : "border-border text-muted-foreground hover:border-foreground/30"
+                      }`}
+                    >
+                      <span className={`size-3.5 rounded border-2 flex items-center justify-center ${
+                        active ? "border-[#d97706] bg-[#d97706]" : "border-muted-foreground/40"
+                      }`}>
+                        {active && <span className="text-white text-[10px] font-bold leading-none">✓</span>}
+                      </span>
+                      {field.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
           <DialogFooter>
             <button

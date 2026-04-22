@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { verifyToken } from "@/lib/auth";
+import { verifyToken, hasMinRole } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 
 async function getAuth() {
@@ -17,14 +17,25 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    if (!hasMinRole(auth.role, "accountant")) {
+      return NextResponse.json({ error: "Access denied" }, { status: 403 });
+    }
+
     const orgId = auth.orgId;
     const { searchParams } = request.nextUrl;
     const fromStr = searchParams.get("from");
     const toStr = searchParams.get("to");
 
-    // Build date range
+    // Build date range with validation
     const from = fromStr ? new Date(fromStr) : new Date(0);
     const to = toStr ? new Date(toStr + "T23:59:59.999Z") : new Date();
+
+    if (isNaN(from.getTime()) || isNaN(to.getTime())) {
+      return NextResponse.json({ error: "Invalid date format" }, { status: 400 });
+    }
+    if (from > to) {
+      return NextResponse.json({ error: "'from' date must be before 'to' date" }, { status: 400 });
+    }
 
     // Sales in date range
     const sales = await prisma.sale.findMany({

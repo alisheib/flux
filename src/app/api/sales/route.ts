@@ -60,9 +60,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!paymentMethod) {
+    const VALID_PAYMENT_METHODS = ["cash", "card", "bank_transfer", "mobile_money"];
+    if (!paymentMethod || !VALID_PAYMENT_METHODS.includes(paymentMethod)) {
       return NextResponse.json(
-        { error: "Payment method is required" },
+        { error: `Invalid payment method. Allowed: ${VALID_PAYMENT_METHODS.join(", ")}` },
         { status: 400 }
       );
     }
@@ -107,7 +108,7 @@ export async function POST(request: NextRequest) {
         sum + item.quantity * item.unitPrice,
       0
     );
-    const discountAmount = discount || 0;
+    const discountAmount = Math.max(0, Math.min(discount || 0, subtotal));
     const taxableAmount = subtotal - discountAmount;
     const taxRate = org.taxRate;
     const taxAmount = Math.round(taxableAmount * (taxRate / 100) * 100) / 100;

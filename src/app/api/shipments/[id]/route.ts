@@ -75,6 +75,15 @@ export async function PUT(
       notes,
     } = body;
 
+    // Validate status if provided
+    const VALID_STATUSES = ["clearing", "in_transit", "in_warehouse", "completed"];
+    if (status !== undefined && !VALID_STATUSES.includes(status)) {
+      return NextResponse.json(
+        { error: `Invalid status. Allowed: ${VALID_STATUSES.join(", ")}` },
+        { status: 400 }
+      );
+    }
+
     const shipment = await prisma.shipment.update({
       where: { id },
       data: {

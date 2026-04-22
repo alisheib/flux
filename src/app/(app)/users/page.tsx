@@ -494,9 +494,9 @@ export default function UsersPage() {
                   id="add-password"
                   name="password"
                   type="password"
-                  placeholder="Minimum 6 characters"
+                  placeholder="Minimum 8 characters"
                   className="mt-1.5"
-                  minLength={6}
+                  minLength={8}
                   required
                 />
               </div>
@@ -584,9 +584,9 @@ export default function UsersPage() {
                     id="edit-password"
                     name="password"
                     type="password"
-                    placeholder="Enter new password..."
+                    placeholder="Min. 8 characters"
                     className="mt-1.5"
-                    minLength={6}
+                    minLength={8}
                   />
                 </div>
                 <div className="sm:col-span-2">
