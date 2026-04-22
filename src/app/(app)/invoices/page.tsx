@@ -719,7 +719,7 @@ export default function InvoicesPage() {
                             <DropdownMenuItem
                               onClick={(e) => {
                                 e.stopPropagation();
-                                router.push(`/invoices/${invoice.id}`);
+                                window.open(`/invoice/${invoice.id}`, '_blank');
                               }}
                             >
                               <Printer className="mr-2 size-4" />

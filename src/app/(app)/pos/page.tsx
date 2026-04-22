@@ -95,6 +95,7 @@ interface SaleResult {
   paymentMethod: string;
   items: { name: string; quantity: number; unitPrice: number; total: number }[];
   createdAt: string;
+  invoice?: { id: string; number: string };
 }
 
 // ── Main POS Page ────────────────────────────────────────────────────────────
@@ -427,7 +428,9 @@ export default function POSPage() {
   };
 
   const handlePrint = () => {
-    window.print();
+    if (lastSale?.invoice?.id) {
+      window.open(`/invoice/${lastSale.invoice.id}`, '_blank');
+    }
   };
 
   // ── Stock pill style ───────────────────────────────────────────────────

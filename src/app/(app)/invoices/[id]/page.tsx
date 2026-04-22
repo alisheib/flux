@@ -91,7 +91,7 @@ export default function InvoiceViewPage() {
           Back to Invoices
         </Button>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => window.print()}>
+          <Button variant="outline" size="sm" onClick={() => window.open(`/invoice/${params.id}`, '_blank')}>
             <Printer className="mr-2 size-4" />
             Print / Save PDF
           </Button>
