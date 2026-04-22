@@ -56,6 +56,7 @@ export async function GET(
       },
       org: {
         name: invoice.org.name,
+        logo: invoice.org.logo,
         address: invoice.org.address,
         phone: invoice.org.phone,
         email: invoice.org.email,

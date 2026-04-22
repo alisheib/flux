@@ -28,6 +28,7 @@ interface InvoiceData {
   };
   org: {
     name: string;
+    logo: string | null;
     address: string | null;
     phone: string | null;
     email: string | null;
@@ -106,6 +107,9 @@ export default function InvoiceViewPage() {
         {/* Header */}
         <div className="flex justify-between mb-8">
           <div>
+            {org.logo && (
+              <img src={org.logo} alt={org.name} className="mb-3 h-12 w-auto object-contain" />
+            )}
             <h1 className="text-xl font-bold text-gray-900">{org.name}</h1>
             {org.address && <p className="text-sm text-gray-500 mt-1">{org.address}</p>}
             {org.phone && <p className="text-sm text-gray-500">{org.phone}</p>}
