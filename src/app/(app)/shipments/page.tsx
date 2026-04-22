@@ -60,6 +60,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { FormSelect } from "@/components/ui/form-select";
 
 // ─── Types ─────────────────────────────────────────────────────────────
 
@@ -1179,18 +1180,12 @@ export default function ShipmentsPage() {
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="edit-containerType">Container Type</Label>
-                  <select
+                  <FormSelect
                     id="edit-containerType"
                     name="containerType"
                     defaultValue={selectedShipment.containerType}
-                    className="flex h-9 w-full items-center rounded-lg border border-input bg-background px-3 py-2 text-sm font-[inherit] outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-input/30 dark:hover:bg-input/50 appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236b7280%22%20stroke-width%3D%222%22%3E%3Cpath%20d%3D%22m6%209%206%206%206-6%22%2F%3E%3C%2Fsvg%3E')] bg-[length:16px] bg-[right_8px_center] bg-no-repeat pr-8"
-                  >
-                    {CONTAINER_TYPES.map((t) => (
-                      <option key={t} value={t}>
-                        {t}
-                      </option>
-                    ))}
-                  </select>
+                    options={CONTAINER_TYPES.map((t) => ({ value: t, label: t }))}
+                  />
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="edit-containerCount">Container Count</Label>
@@ -1204,18 +1199,12 @@ export default function ShipmentsPage() {
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="edit-status">Status</Label>
-                  <select
+                  <FormSelect
                     id="edit-status"
                     name="status"
                     defaultValue={selectedShipment.status}
-                    className="flex h-9 w-full items-center rounded-lg border border-input bg-background px-3 py-2 text-sm font-[inherit] outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-input/30 dark:hover:bg-input/50 appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236b7280%22%20stroke-width%3D%222%22%3E%3Cpath%20d%3D%22m6%209%206%206%206-6%22%2F%3E%3C%2Fsvg%3E')] bg-[length:16px] bg-[right_8px_center] bg-no-repeat pr-8"
-                  >
-                    {STATUSES.map((s) => (
-                      <option key={s} value={s}>
-                        {STATUS_CONFIG[s]?.label || s}
-                      </option>
-                    ))}
-                  </select>
+                    options={STATUSES.map((s) => ({ value: s, label: STATUS_CONFIG[s]?.label || s }))}
+                  />
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="edit-supplier">Supplier</Label>
@@ -1620,18 +1609,12 @@ export default function ShipmentsPage() {
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="new-containerType">Container Type</Label>
-                <select
+                <FormSelect
                   id="new-containerType"
                   name="containerType"
                   defaultValue="20HC"
-                  className="flex h-9 w-full items-center rounded-lg border border-input bg-background px-3 py-2 text-sm font-[inherit] outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-input/30 dark:hover:bg-input/50 appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236b7280%22%20stroke-width%3D%222%22%3E%3Cpath%20d%3D%22m6%209%206%206%206-6%22%2F%3E%3C%2Fsvg%3E')] bg-[length:16px] bg-[right_8px_center] bg-no-repeat pr-8"
-                >
-                  {CONTAINER_TYPES.map((t) => (
-                    <option key={t} value={t}>
-                      {t}
-                    </option>
-                  ))}
-                </select>
+                  options={CONTAINER_TYPES.map((t) => ({ value: t, label: t }))}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="new-containerCount">Container Count</Label>
@@ -1785,18 +1768,12 @@ function ItemForm({
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="item-unit">Unit</Label>
-          <select
+          <FormSelect
             id="item-unit"
             name="unit"
             defaultValue={item?.unit || "sheet"}
-            className="flex h-9 w-full items-center rounded-lg border border-input bg-background px-3 py-2 text-sm font-[inherit] outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-input/30 dark:hover:bg-input/50 appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236b7280%22%20stroke-width%3D%222%22%3E%3Cpath%20d%3D%22m6%209%206%206%206-6%22%2F%3E%3C%2Fsvg%3E')] bg-[length:16px] bg-[right_8px_center] bg-no-repeat pr-8"
-          >
-            {ITEM_UNITS.map((u) => (
-              <option key={u} value={u}>
-                {u}
-              </option>
-            ))}
-          </select>
+            options={ITEM_UNITS.map((u) => ({ value: u, label: u }))}
+          />
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="item-quantity">Quantity *</Label>
@@ -1867,19 +1844,12 @@ function ExpenseForm({
       <div className="grid grid-cols-2 gap-4">
         <div className="col-span-2 space-y-1.5">
           <Label htmlFor="expense-category">Category *</Label>
-          <select
+          <FormSelect
             id="expense-category"
             name="category"
             defaultValue={expense?.category || "Shipping"}
-            className="flex h-9 w-full items-center rounded-lg border border-input bg-background px-3 py-2 text-sm font-[inherit] outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-input/30 dark:hover:bg-input/50 appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236b7280%22%20stroke-width%3D%222%22%3E%3Cpath%20d%3D%22m6%209%206%206%206-6%22%2F%3E%3C%2Fsvg%3E')] bg-[length:16px] bg-[right_8px_center] bg-no-repeat pr-8"
-            required
-          >
-            {EXPENSE_CATEGORIES.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
+            options={EXPENSE_CATEGORIES.map((c) => ({ value: c, label: c }))}
+          />
         </div>
         <div className="col-span-2 space-y-1.5">
           <Label htmlFor="expense-description">Description *</Label>

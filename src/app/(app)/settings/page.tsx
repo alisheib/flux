@@ -30,6 +30,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { FormSelect } from "@/components/ui/form-select";
 
 // ─── Types ─────────────────────────────────────────────────────────────
 
@@ -462,18 +463,13 @@ export default function SettingsPage() {
               </div>
               <div>
                 <Label htmlFor="org-currency">Currency</Label>
-                <select
+                <FormSelect
                   id="org-currency"
                   name="currency"
                   defaultValue={org?.currency || "USD"}
-                  className="mt-1.5 flex h-9 w-full items-center rounded-lg border border-input bg-background px-3 py-2 text-sm font-[inherit] outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-input/30 dark:hover:bg-input/50 appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236b7280%22%20stroke-width%3D%222%22%3E%3Cpath%20d%3D%22m6%209%206%206%206-6%22%2F%3E%3C%2Fsvg%3E')] bg-[length:16px] bg-[right_8px_center] bg-no-repeat pr-8"
-                >
-                  {CURRENCIES.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
+                  options={CURRENCIES.map((c) => ({ value: c, label: c }))}
+                  className="mt-1.5"
+                />
               </div>
             </div>
             <div className="flex justify-end">

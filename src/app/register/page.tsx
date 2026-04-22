@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import PhoneInput from "react-phone-number-input";
 import "react-phone-number-input/style.css";
+import PhoneCountrySelect from "@/components/phone-country-select";
 import { validateRequired, validateEmail, validatePassword, validatePhone } from "@/lib/validate";
 import { FluxLockup } from "@/components/flux-logo";
 import { Button } from "@/components/ui/button";
@@ -297,10 +298,11 @@ export default function RegisterPage() {
               <PhoneInput
                 international
                 defaultCountry="TZ"
+                countrySelectComponent={PhoneCountrySelect}
                 value={phone}
                 onChange={(val) => setPhone(val || "")}
                 disabled={loading}
-                className="flux-phone-input flex h-10 w-full items-center rounded-lg border border-input bg-background px-3 text-sm transition-colors focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50 dark:bg-input/30 [&_.PhoneInputInput]:border-0 [&_.PhoneInputInput]:bg-transparent [&_.PhoneInputInput]:outline-none [&_.PhoneInputInput]:text-sm [&_.PhoneInputInput]:h-full [&_.PhoneInputInput]:flex-1 [&_.PhoneInputCountry]:mr-2 [&_.PhoneInputCountryIcon]:size-5 [&_.PhoneInputCountrySelect]:bg-transparent [&_.PhoneInputCountrySelect]:text-sm [&_.PhoneInputCountrySelectArrow]:opacity-50"
+                className="flux-phone-input flex h-10 w-full items-center rounded-lg border border-input bg-background px-3 text-sm transition-colors focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50 dark:bg-input/30 [&_.PhoneInputInput]:border-0 [&_.PhoneInputInput]:bg-transparent [&_.PhoneInputInput]:outline-none [&_.PhoneInputInput]:text-sm [&_.PhoneInputInput]:h-full [&_.PhoneInputInput]:flex-1 [&_.PhoneInputCountry]:mr-2"
               />
             </div>
 

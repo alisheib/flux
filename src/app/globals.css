@@ -283,18 +283,7 @@
 }
 
 /* Phone input styling */
-.flux-phone-input .PhoneInputCountrySelect {
-  color: inherit;
-  font-family: inherit;
-}
 .flux-phone-input .PhoneInputInput::placeholder {
   color: var(--muted-foreground);
   opacity: 0.6;
-}
-.dark .flux-phone-input .PhoneInputCountrySelectArrow {
-  border-color: #888;
-}
-.dark .flux-phone-input .PhoneInputCountrySelect option {
-  background: #1a1813;
-  color: #f5f5f4;
 }
