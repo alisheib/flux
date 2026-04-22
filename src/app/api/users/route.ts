@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { verifyToken, hashPassword, hasMinRole } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { logAudit } from "@/lib/audit";
+import { checkSubscriptionLimit } from "@/lib/subscription-check";
 
 async function getAuth() {
   const cookieStore = await cookies();
@@ -73,6 +75,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const subCheck = await checkSubscriptionLimit(auth.orgId, "create_user");
+    if (!subCheck.allowed) return NextResponse.json({ error: subCheck.reason }, { status: 403 });
+
     // Check email uniqueness
     const existingUser = await prisma.user.findUnique({
       where: { email: email.toLowerCase().trim() },
@@ -105,6 +110,8 @@ export async function POST(request: NextRequest) {
         createdAt: true,
       },
     });
+
+    await logAudit({ orgId: auth.orgId, userId: auth.userId, action: "create", entity: "user", entityId: user.id, details: `Created user: ${user.email} (${user.role})` });
 
     return NextResponse.json(user, { status: 201 });
   } catch (error) {

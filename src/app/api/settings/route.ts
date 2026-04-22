@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { verifyToken, hasMinRole } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { logAudit } from "@/lib/audit";
 
 async function getAuth() {
   const cookieStore = await cookies();
@@ -151,6 +152,8 @@ export async function PUT(request: NextRequest) {
       where: { id: auth.orgId },
       include: { settings: true },
     });
+
+    await logAudit({ orgId: auth.orgId, userId: auth.userId, action: "update", entity: "settings", details: "Updated organization settings" });
 
     return NextResponse.json({
       organization: {

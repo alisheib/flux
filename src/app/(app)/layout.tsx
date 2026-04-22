@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { AppShell } from "@/components/app-shell";
+import { ErrorBoundary } from "@/components/error-boundary";
 
 export default async function AppLayout({
   children,
@@ -36,5 +37,9 @@ export default async function AppLayout({
     emailVerified: dbUser?.emailVerified ?? false,
   };
 
-  return <AppShell user={user}>{children}</AppShell>;
+  return (
+    <AppShell user={user}>
+      <ErrorBoundary>{children}</ErrorBoundary>
+    </AppShell>
+  );
 }

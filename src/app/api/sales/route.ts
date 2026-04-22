@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { verifyToken } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { parsePagination, paginatedResponse } from "@/lib/pagination";
+import { logAudit } from "@/lib/audit";
+import { checkSubscriptionLimit } from "@/lib/subscription-check";
+import { recordStockMovement } from "@/lib/stock";
 
 async function getAuth() {
   const cookieStore = await cookies();
@@ -10,24 +14,32 @@ async function getAuth() {
   return verifyToken(token);
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const auth = await getAuth();
     if (!auth) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const sales = await prisma.sale.findMany({
-      where: { orgId: auth.orgId },
-      include: {
-        user: { select: { id: true, name: true, email: true } },
-        items: { include: { product: { select: { id: true, name: true } } } },
-        invoice: { select: { id: true, number: true, status: true } },
-      },
-      orderBy: { createdAt: "desc" },
-    });
+    const pagination = parsePagination(request);
+    const where = { orgId: auth.orgId };
 
-    return NextResponse.json(sales);
+    const [total, sales] = await Promise.all([
+      prisma.sale.count({ where }),
+      prisma.sale.findMany({
+        where,
+        include: {
+          user: { select: { id: true, name: true, email: true } },
+          items: { include: { product: { select: { id: true, name: true } } } },
+          invoice: { select: { id: true, number: true, status: true } },
+        },
+        orderBy: { createdAt: "desc" },
+        skip: pagination.skip,
+        take: pagination.limit,
+      }),
+    ]);
+
+    return NextResponse.json(paginatedResponse(sales, total, pagination));
   } catch (error) {
     console.error("GET /api/sales error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
@@ -40,6 +52,9 @@ export async function POST(request: NextRequest) {
     if (!auth) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    const subCheck = await checkSubscriptionLimit(auth.orgId, "create_sale");
+    if (!subCheck.allowed) return NextResponse.json({ error: subCheck.reason }, { status: 403 });
 
     const body = await request.json();
     const {
@@ -187,13 +202,15 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      // Decrement stock for each product
+      // Decrement stock for each product (with stock movement tracking)
       for (const item of items) {
-        await tx.product.update({
-          where: { id: item.productId },
-          data: {
-            stockQty: { decrement: item.quantity },
-          },
+        await recordStockMovement(tx, {
+          orgId: auth.orgId,
+          productId: item.productId,
+          userId: auth.userId,
+          type: "sale",
+          quantity: -item.quantity,
+          reference: saleNumber,
         });
       }
 
@@ -217,6 +234,8 @@ export async function POST(request: NextRequest) {
         user: { select: { id: true, name: true, email: true } },
       },
     });
+
+    await logAudit({ orgId: auth.orgId, userId: auth.userId, action: "create", entity: "sale", entityId: sale.id, details: `Created sale: ${saleNumber}, total: ${total}` });
 
     return NextResponse.json(fullSale, { status: 201 });
   } catch (error) {

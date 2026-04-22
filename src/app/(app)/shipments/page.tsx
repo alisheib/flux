@@ -214,10 +214,10 @@ export default function ShipmentsPage() {
   const fetchShipments = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await fetch("/api/shipments");
+      const res = await fetch("/api/shipments?limit=500");
       if (!res.ok) throw new Error("Failed to fetch shipments");
       const data = await res.json();
-      setShipments(data);
+      setShipments(data.data || data);
     } catch {
       toast.error("Failed to load shipments");
     } finally {

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { verifyToken } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { logAudit } from "@/lib/audit";
+import { recordStockMovement } from "@/lib/stock";
 
 async function getAuth() {
   const cookieStore = await cookies();
@@ -65,13 +67,16 @@ export async function DELETE(
 
     // Restore stock and delete sale in a transaction
     await prisma.$transaction(async (tx) => {
-      // Restore stock for each item
+      // Restore stock for each item (with stock movement tracking)
       for (const item of sale.items) {
-        await tx.product.update({
-          where: { id: item.productId },
-          data: {
-            stockQty: { increment: item.quantity },
-          },
+        await recordStockMovement(tx, {
+          orgId: auth.orgId,
+          productId: item.productId,
+          userId: auth.userId,
+          type: "refund",
+          quantity: +item.quantity,
+          reference: sale.saleNumber,
+          notes: `Stock restored from deleted sale ${sale.saleNumber}`,
         });
       }
 
@@ -83,6 +88,8 @@ export async function DELETE(
       // Delete sale (cascade deletes sale items)
       await tx.sale.delete({ where: { id } });
     });
+
+    await logAudit({ orgId: auth.orgId, userId: auth.userId, action: "delete", entity: "sale", entityId: id, details: `Deleted sale: ${sale.saleNumber}` });
 
     return NextResponse.json({ success: true });
   } catch (error) {

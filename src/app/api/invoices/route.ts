@@ -1,7 +1,8 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { verifyToken } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { parsePagination, paginatedResponse } from "@/lib/pagination";
 
 async function getAuth() {
   const cookieStore = await cookies();
@@ -10,7 +11,7 @@ async function getAuth() {
   return verifyToken(token);
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const auth = await getAuth();
     if (!auth) {
@@ -28,22 +29,30 @@ export async function GET() {
       data: { status: "overdue" },
     });
 
-    const invoices = await prisma.invoice.findMany({
-      where: { orgId: auth.orgId },
-      include: {
-        sale: {
-          select: {
-            id: true,
-            saleNumber: true,
-            items: { select: { id: true, name: true, quantity: true, unitPrice: true, total: true } },
-            user: { select: { id: true, name: true } },
+    const pagination = parsePagination(request);
+    const where = { orgId: auth.orgId };
+
+    const [total, invoices] = await Promise.all([
+      prisma.invoice.count({ where }),
+      prisma.invoice.findMany({
+        where,
+        include: {
+          sale: {
+            select: {
+              id: true,
+              saleNumber: true,
+              items: { select: { id: true, name: true, quantity: true, unitPrice: true, total: true } },
+              user: { select: { id: true, name: true } },
+            },
           },
         },
-      },
-      orderBy: { issuedAt: "desc" },
-    });
+        orderBy: { issuedAt: "desc" },
+        skip: pagination.skip,
+        take: pagination.limit,
+      }),
+    ]);
 
-    return NextResponse.json(invoices);
+    return NextResponse.json(paginatedResponse(invoices, total, pagination));
   } catch (error) {
     console.error("GET /api/invoices error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

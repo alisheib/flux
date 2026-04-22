@@ -32,8 +32,10 @@ model Organization {
   invoices     Invoice[]
   settings     OrgSettings?
   subscription Subscription?
-  auditLogs    AuditLog[]
-  expenses     ShipmentExpense[]
+  auditLogs      AuditLog[]
+  expenses       ShipmentExpense[]
+  stockMovements StockMovement[]
+  creditNotes    CreditNote[]
 }
 
 // ─── Users & Auth ──────────────────────────────────────────────────────────
@@ -55,9 +57,10 @@ model User {
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
-  org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
-  sales     Sale[]
-  auditLogs AuditLog[]
+  org            Organization   @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  sales          Sale[]
+  auditLogs      AuditLog[]
+  stockMovements StockMovement[]
 
   @@index([orgId])
   @@index([email])
@@ -165,11 +168,13 @@ model Product {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  org           Organization   @relation(fields: [orgId], references: [id], onDelete: Cascade)
-  category      Category?      @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  shipmentItems ShipmentItem[]
-  saleItems     SaleItem[]
+  org            Organization    @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  category       Category?       @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  shipmentItems  ShipmentItem[]
+  saleItems      SaleItem[]
+  stockMovements StockMovement[]
 
+  @@unique([orgId, sku])
   @@index([orgId])
   @@index([categoryId])
 }
@@ -196,10 +201,11 @@ model Sale {
   notes         String?
   createdAt     DateTime @default(now())
 
-  org     Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
-  user    User         @relation(fields: [userId], references: [id])
-  invoice Invoice?
-  items   SaleItem[]
+  org         Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  user        User         @relation(fields: [userId], references: [id])
+  invoice     Invoice?
+  items       SaleItem[]
+  creditNotes CreditNote[]
 
   @@index([orgId])
   @@index([userId])
@@ -313,4 +319,50 @@ model OrgSettings {
   tallyLastSync   DateTime?
 
   org Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+}
+
+// ─── Stock Movements (Inventory Audit Trail) ─────────────────────────────
+
+model StockMovement {
+  id        String   @id @default(cuid())
+  orgId     String
+  productId String
+  userId    String?
+  type      String // sale, refund, adjustment, shipment_received, manual
+  quantity  Float // positive = stock in, negative = stock out
+  balance   Float // stock balance after this movement
+  reference String? // sale number, shipment name, credit note number
+  notes     String?
+  createdAt DateTime @default(now())
+
+  org     Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  product Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user    User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([orgId])
+  @@index([productId])
+  @@index([createdAt])
+}
+
+// ─── Credit Notes (Refunds) ──────────────────────────────────────────────
+
+model CreditNote {
+  id           String   @id @default(cuid())
+  orgId        String
+  saleId       String
+  number       String
+  reason       String
+  items        String // JSON: [{productId, name, quantity, unitPrice, total}]
+  subtotal     Float
+  taxAmount    Float
+  total        Float
+  restockItems Boolean  @default(true)
+  status       String   @default("issued") // issued, void
+  createdAt    DateTime @default(now())
+
+  org  Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  sale Sale         @relation(fields: [saleId], references: [id], onDelete: Cascade)
+
+  @@index([orgId])
+  @@index([saleId])
 }

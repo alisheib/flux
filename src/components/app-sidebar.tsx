@@ -11,6 +11,8 @@ import {
   FileText,
   Calculator,
   BarChart3,
+  Activity,
+  ArrowUpDown,
   Users,
   Settings,
   LogOut,
@@ -53,6 +55,8 @@ const navItems: NavItem[] = [
   { label: "Accounting", icon: Calculator, href: "/accounting", module: "accounting" },
   { label: "Reports", icon: BarChart3, href: "/reports", module: "reports" },
   { label: "Tally (TRA)", icon: Zap, href: "/tally", module: "tally" },
+  { label: "Activity", icon: Activity, href: "/activity", module: "audit" },
+  { label: "Stock", icon: ArrowUpDown, href: "/stock-movements", module: "inventory" },
   { label: "Users", icon: Users, href: "/users", module: "users" },
   { label: "Settings", icon: Settings, href: "/settings", module: "settings" },
 ];

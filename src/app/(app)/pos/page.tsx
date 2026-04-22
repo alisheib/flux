@@ -166,14 +166,15 @@ export default function POSPage() {
   const fetchData = useCallback(async () => {
     try {
       const [productsRes, categoriesRes, settingsRes] = await Promise.all([
-        fetch("/api/products"),
+        fetch("/api/products?limit=500"),
         fetch("/api/categories"),
         fetch("/api/settings"),
       ]);
 
       if (productsRes.ok) {
         const data = await productsRes.json();
-        setProducts(data.filter((p: Product) => p.active));
+        const list = data.data || data;
+        setProducts(list.filter((p: Product) => p.active));
       }
       if (categoriesRes.ok) {
         setCategories(await categoriesRes.json());

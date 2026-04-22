@@ -187,11 +187,14 @@ export default function InvoicesPage() {
   const fetchData = useCallback(async () => {
     try {
       const [invoicesRes, settingsRes] = await Promise.all([
-        fetch("/api/invoices"),
+        fetch("/api/invoices?limit=500"),
         fetch("/api/settings"),
       ]);
 
-      if (invoicesRes.ok) setInvoices(await invoicesRes.json());
+      if (invoicesRes.ok) {
+        const invoicesJson = await invoicesRes.json();
+        setInvoices(invoicesJson.data || invoicesJson);
+      }
       if (settingsRes.ok) {
         const data = await settingsRes.json();
         setOrgSettings({

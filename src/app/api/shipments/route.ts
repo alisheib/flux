@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { verifyToken } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { parsePagination, paginatedResponse } from "@/lib/pagination";
+import { logAudit } from "@/lib/audit";
 
 async function getAuth() {
   const cookieStore = await cookies();
@@ -10,22 +12,30 @@ async function getAuth() {
   return verifyToken(token);
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const auth = await getAuth();
     if (!auth) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const shipments = await prisma.shipment.findMany({
-      where: { orgId: auth.orgId },
-      include: {
-        _count: { select: { items: true, expenses: true } },
-      },
-      orderBy: { createdAt: "desc" },
-    });
+    const pagination = parsePagination(request);
+    const where = { orgId: auth.orgId };
 
-    return NextResponse.json(shipments);
+    const [total, shipments] = await Promise.all([
+      prisma.shipment.count({ where }),
+      prisma.shipment.findMany({
+        where,
+        include: {
+          _count: { select: { items: true, expenses: true } },
+        },
+        orderBy: { createdAt: "desc" },
+        skip: pagination.skip,
+        take: pagination.limit,
+      }),
+    ]);
+
+    return NextResponse.json(paginatedResponse(shipments, total, pagination));
   } catch (error) {
     console.error("GET /api/shipments error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
@@ -77,6 +87,8 @@ export async function POST(request: NextRequest) {
         _count: { select: { items: true, expenses: true } },
       },
     });
+
+    await logAudit({ orgId: auth.orgId, userId: auth.userId, action: "create", entity: "shipment", entityId: shipment.id, details: `Created shipment: ${shipment.name}` });
 
     return NextResponse.json(shipment, { status: 201 });
   } catch (error) {

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { verifyToken } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { parsePagination, paginatedResponse } from "@/lib/pagination";
+import { logAudit } from "@/lib/audit";
 
 async function getAuth() {
   const cookieStore = await cookies();
@@ -17,6 +19,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const pagination = parsePagination(request);
     const { searchParams } = new URL(request.url);
     const categoryId = searchParams.get("categoryId");
 
@@ -25,15 +28,20 @@ export async function GET(request: NextRequest) {
       where.categoryId = categoryId;
     }
 
-    const products = await prisma.product.findMany({
-      where,
-      include: {
-        category: { select: { id: true, name: true, icon: true, color: true } },
-      },
-      orderBy: { name: "asc" },
-    });
+    const [total, products] = await Promise.all([
+      prisma.product.count({ where }),
+      prisma.product.findMany({
+        where,
+        include: {
+          category: { select: { id: true, name: true, icon: true, color: true } },
+        },
+        orderBy: { name: "asc" },
+        skip: pagination.skip,
+        take: pagination.limit,
+      }),
+    ]);
 
-    return NextResponse.json(products);
+    return NextResponse.json(paginatedResponse(products, total, pagination));
   } catch (error) {
     console.error("GET /api/products error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
@@ -105,6 +113,8 @@ export async function POST(request: NextRequest) {
         category: { select: { id: true, name: true, icon: true, color: true } },
       },
     });
+
+    await logAudit({ orgId: auth.orgId, userId: auth.userId, action: "create", entity: "product", entityId: product.id, details: `Created product: ${product.name}` });
 
     return NextResponse.json(product, { status: 201 });
   } catch (error) {

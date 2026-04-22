@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { verifyToken } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { logAudit } from "@/lib/audit";
 
 async function getAuth() {
   const cookieStore = await cookies();
@@ -105,6 +106,8 @@ export async function PUT(
       },
     });
 
+    await logAudit({ orgId: auth.orgId, userId: auth.userId, action: "update", entity: "shipment", entityId: shipment.id, details: `Updated shipment: ${shipment.name}` });
+
     return NextResponse.json(shipment);
   } catch (error) {
     console.error("PUT /api/shipments/[id] error:", error);
@@ -132,6 +135,8 @@ export async function DELETE(
     }
 
     await prisma.shipment.delete({ where: { id } });
+
+    await logAudit({ orgId: auth.orgId, userId: auth.userId, action: "delete", entity: "shipment", entityId: id, details: `Deleted shipment: ${existing.name}` });
 
     return NextResponse.json({ success: true });
   } catch (error) {

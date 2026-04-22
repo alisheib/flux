@@ -22,6 +22,7 @@ export const ALL_MODULES = [
   "accounting",
   "reports",
   "tally",
+  "audit",
   "users",
   "settings",
 ] as const;
@@ -38,6 +39,7 @@ export const DEFAULT_PERMISSIONS: RolePermissions = {
   accounting: ["admin", "accountant"],
   reports: ["admin", "manager", "accountant"],
   tally: ["admin", "accountant"],
+  audit: ["admin", "manager", "accountant"],
   users: ["admin"],
   settings: ["admin"],
 };

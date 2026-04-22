@@ -249,12 +249,15 @@ export default function InventoryPage() {
   const fetchData = useCallback(async () => {
     try {
       const [productsRes, categoriesRes, settingsRes] = await Promise.all([
-        fetch("/api/products"),
+        fetch("/api/products?limit=500"),
         fetch("/api/categories"),
         fetch("/api/settings"),
       ]);
 
-      if (productsRes.ok) setProducts(await productsRes.json());
+      if (productsRes.ok) {
+        const productsJson = await productsRes.json();
+        setProducts(productsJson.data || productsJson);
+      }
       if (categoriesRes.ok) setCategories(await categoriesRes.json());
       if (settingsRes.ok) {
         const data = await settingsRes.json();
