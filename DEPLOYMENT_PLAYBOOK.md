@@ -166,24 +166,42 @@ SSL is auto-provisioned by Vercel (free).
 git clone https://github.com/alisheib/flux.git
 cd flux
 npm install
+```
 
-# Create .env with:
-# DATABASE_URL="postgresql://..."
-# JWT_SECRET="your-secret"
-# NEXT_PUBLIC_APP_URL="http://localhost:3000"
+### Create `.env` file in project root:
+```env
+DATABASE_URL="postgresql://neondb_owner:YOUR_PASSWORD@ep-YOUR-ENDPOINT.c-3.eu-central-1.aws.neon.tech/neondb?sslmode=require"
+JWT_SECRET="generate-with-openssl-rand-base64-32"
+NEXT_PUBLIC_APP_URL="http://localhost:3000"
+# Optional:
+RESEND_API_KEY="re_xxxxxxxxxxxx"
+FROM_EMAIL="FLUX <noreply@fluxtz.com>"
+```
 
-npx prisma generate
-npx prisma db push
-npm run dev
+To generate a JWT secret: `openssl rand -base64 32`
+
+### Start the app:
+```bash
+npx prisma generate    # Generate Prisma client
+npx prisma db push     # Sync schema to database
+npm run dev            # Start dev server on port 3000
 ```
 
 Open http://localhost:3000
 
-### Seed demo data:
-Login as admin → Settings → Data Management → Seed Demo Data
+### Important: Prisma 7 configuration
+- `prisma/schema.prisma` has `provider = "postgresql"` but NO `url` field
+- The database URL is configured in `prisma.config.ts` via `process.env.DATABASE_URL`
+- The Prisma client uses `@prisma/adapter-pg` (see `src/lib/db.ts`)
+- Next.js 16 uses Turbopack — `turbopack: {}` is set in `next.config.ts` alongside webpack config
 
-### Default demo credentials (after seeding):
-- `admin@flux.com` / `password123`
+### First-time setup:
+1. Open http://localhost:3000/register
+2. Create your admin account (org name, name, email, strong password)
+3. Optionally go to Settings → Data Management → Seed Demo Data
+
+### Seed demo credentials (only if you seed data):
+- `admin@flux.com` / `password123` (note: doesn't meet new password policy — only works via seed API)
 
 ---
 
@@ -228,10 +246,35 @@ Saves 56 screenshots to `runtime/screenshots/light/` and `runtime/screenshots/da
 - Register at `/register` to create org + admin
 - Optionally seed demo data from Settings
 
+### Build fails with "Expected 1 arguments, but got 0" on PrismaClient
+- Prisma 7 requires an adapter. `src/lib/db.ts` must use `@prisma/adapter-pg`:
+  ```typescript
+  import { PrismaPg } from "@prisma/adapter-pg";
+  const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
+  new PrismaClient({ adapter });
+  ```
+
+### Build fails with "webpack config and no turbopack config"
+- Next.js 16 uses Turbopack by default. Add `turbopack: {}` to `next.config.ts`
+
+### Turbopack error with @react-pdf/renderer
+- The `canvas` module alias (`canvas: false`) is in webpack config
+- Both `turbopack: {}` and `webpack` config coexist in `next.config.ts`
+
+### Rate limit blocking tests (429 errors)
+- Rate limiting is disabled in development (`NODE_ENV !== "production"`)
+- If you get 429 locally, check `src/lib/rate-limit.ts` — the dev bypass should work
+
 ### Domain not working
 - DNS propagation takes 5-30 minutes
 - Verify A record (`@` → `76.76.21.21`) and CNAME (`www` → `cname.vercel-dns.com`)
 - Check Vercel → Settings → Domains for green checkmarks
+- SSL "PR_END_OF_FILE_ERROR" means cert not yet provisioned — wait 10 min
+
+### Dropdowns disappearing in dialogs
+- Base UI Select portals conflict with Radix Dialog focus trap
+- Use native `<select>` inside Dialog components (not shadcn Select)
+- See `src/app/(app)/inventory/page.tsx` for the pattern
 
 ---
 
