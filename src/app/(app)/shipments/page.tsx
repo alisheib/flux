@@ -1599,7 +1599,7 @@ export default function ShipmentsPage() {
                 <Input
                   id="new-dossierNumber"
                   name="dossierNumber"
-                  placeholder="DOS-001"
+                  placeholder="Dossier number"
                 />
               </div>
               <div className="space-y-1.5">
@@ -1607,7 +1607,7 @@ export default function ShipmentsPage() {
                 <Input
                   id="new-invoiceNumber"
                   name="invoiceNumber"
-                  placeholder="INV-001"
+                  placeholder="Invoice reference"
                 />
               </div>
               <div className="space-y-1.5">
@@ -1615,7 +1615,7 @@ export default function ShipmentsPage() {
                 <Input
                   id="new-containerNumber"
                   name="containerNumber"
-                  placeholder="ABCD1234567"
+                  placeholder="Container number"
                 />
               </div>
               <div className="space-y-1.5">
@@ -1739,7 +1739,7 @@ function ItemForm({
             id="item-name"
             name="name"
             defaultValue={item?.name || ""}
-            placeholder="e.g., Aluminum Sheet 0.4mm"
+            placeholder="Item description"
             required
           />
         </div>

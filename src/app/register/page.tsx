@@ -235,7 +235,7 @@ export default function RegisterPage() {
                 <InputGroupInput
                   id="orgName"
                   type="text"
-                  placeholder="Your Company Ltd."
+                  placeholder="Organization name"
                   value={orgName}
                   onChange={(e) => setOrgName(e.target.value)}
                   disabled={loading}
@@ -257,7 +257,7 @@ export default function RegisterPage() {
                 <InputGroupInput
                   id="name"
                   type="text"
-                  placeholder="Full Name"
+                  placeholder="Enter your full name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   disabled={loading}
@@ -279,7 +279,7 @@ export default function RegisterPage() {
                 <InputGroupInput
                   id="email"
                   type="email"
-                  placeholder="work@example.com"
+                  placeholder="name@company.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   disabled={loading}

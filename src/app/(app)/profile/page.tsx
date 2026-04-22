@@ -171,7 +171,7 @@ export default function ProfilePage() {
           <form onSubmit={handleSaveName} className="flex items-end gap-3">
             <div className="flex-1 space-y-1.5">
               <Label htmlFor="profile-name">Full Name</Label>
-              <Input id="profile-name" value={name} onChange={e => setName(e.target.value)} placeholder="Your name" />
+              <Input id="profile-name" value={name} onChange={e => setName(e.target.value)} placeholder="Enter your name" />
             </div>
             <Button type="submit" disabled={savingName} className="bg-[#d97706] text-[#1a1813] hover:bg-[#c2410c]">
               {savingName ? <Loader2 className="size-4 animate-spin mr-1.5" /> : <Save className="size-4 mr-1.5" />}

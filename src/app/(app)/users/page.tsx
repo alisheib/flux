@@ -471,7 +471,7 @@ export default function UsersPage() {
                 <Input
                   id="add-name"
                   name="name"
-                  placeholder="John Doe"
+                  placeholder="Enter full name"
                   className="mt-1.5"
                   required
                 />
@@ -482,7 +482,7 @@ export default function UsersPage() {
                   id="add-email"
                   name="email"
                   type="email"
-                  placeholder="john@example.com"
+                  placeholder="name@company.com"
                   className="mt-1.5"
                   required
                 />

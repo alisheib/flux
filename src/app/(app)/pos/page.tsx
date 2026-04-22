@@ -885,7 +885,7 @@ export default function POSPage() {
               {customerExpanded && (
                 <div className="space-y-2 pb-2">
                   <Input
-                    placeholder="Customer name"
+                    placeholder="Customer name (optional)"
                     value={customerName}
                     onChange={(e) => setCustomerName(e.target.value)}
                     className="h-8 text-xs"
@@ -897,7 +897,7 @@ export default function POSPage() {
                     className="h-8 text-xs"
                   />
                   <Input
-                    placeholder="Email"
+                    placeholder="customer@email.com"
                     value={customerEmail}
                     onChange={(e) => setCustomerEmail(e.target.value)}
                     className="h-8 text-xs"

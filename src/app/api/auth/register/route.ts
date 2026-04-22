@@ -2,10 +2,21 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { hashPassword, createToken } from "@/lib/auth";
 import { sendVerificationEmail, sendWelcomeEmail } from "@/lib/email";
+import { rateLimit } from "@/lib/rate-limit";
 import crypto from "crypto";
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limit: 3 registrations per IP per hour
+    const ip = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown";
+    const { allowed } = rateLimit(`register:${ip}`, { maxAttempts: 3, windowMs: 60 * 60 * 1000 });
+    if (!allowed) {
+      return NextResponse.json(
+        { error: "Too many registration attempts. Please try again later." },
+        { status: 429 }
+      );
+    }
+
     const body = await request.json();
     const { orgName, name, email, password, phone } = body;
 
@@ -150,7 +161,7 @@ export async function POST(request: NextRequest) {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: 60 * 60 * 24 * 7,
+      maxAge: 60 * 60 * 8, // 8 hours
       path: "/",
     });
 

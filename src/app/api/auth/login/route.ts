@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { verifyPassword, createToken } from "@/lib/auth";
 import { sendLoginNotification } from "@/lib/email";
+import { rateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,6 +13,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: "Email and password are required" },
         { status: 400 }
+      );
+    }
+
+    // Rate limit: 5 attempts per email per 15 minutes
+    const ip = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown";
+    const rateLimitKey = `login:${email.toLowerCase().trim()}:${ip}`;
+    const { allowed, remaining, resetIn } = rateLimit(rateLimitKey, { maxAttempts: 5, windowMs: 15 * 60 * 1000 });
+
+    if (!allowed) {
+      const minutes = Math.ceil(resetIn / 60000);
+      return NextResponse.json(
+        { error: `Too many login attempts. Please try again in ${minutes} minutes.` },
+        { status: 429 }
       );
     }
 
@@ -61,7 +75,6 @@ export async function POST(request: NextRequest) {
     });
 
     // Send login notification (non-blocking)
-    const ip = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || undefined;
     sendLoginNotification(user.email, user.name, ip || undefined).catch((err) =>
       console.error("Failed to send login notification:", err)
     );
@@ -82,7 +95,7 @@ export async function POST(request: NextRequest) {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: 60 * 60 * 24 * 7,
+      maxAge: 60 * 60 * 8, // 8 hours
       path: "/",
     });
 

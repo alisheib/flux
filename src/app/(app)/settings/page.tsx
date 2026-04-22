@@ -405,7 +405,7 @@ export default function SettingsPage() {
                   id="org-name"
                   name="name"
                   defaultValue={org?.name || ""}
-                  placeholder="Your Company Name"
+                  placeholder="Company name"
                   className="mt-1.5 text-base h-11"
                 />
               </div>
@@ -415,7 +415,7 @@ export default function SettingsPage() {
                   id="org-address"
                   name="address"
                   defaultValue={org?.address || ""}
-                  placeholder="123 Business St, City"
+                  placeholder="Street, City, Country"
                   className="mt-1.5"
                 />
               </div>
@@ -425,7 +425,7 @@ export default function SettingsPage() {
                   id="org-phone"
                   name="phone"
                   defaultValue={org?.phone || ""}
-                  placeholder="+255 xxx xxx xxx"
+                  placeholder="+1 234 567 890"
                   className="mt-1.5"
                 />
               </div>
@@ -436,7 +436,7 @@ export default function SettingsPage() {
                   name="email"
                   type="email"
                   defaultValue={org?.email || ""}
-                  placeholder="info@company.com"
+                  placeholder="contact@company.com"
                   className="mt-1.5"
                 />
               </div>
@@ -446,7 +446,7 @@ export default function SettingsPage() {
                   id="org-website"
                   name="website"
                   defaultValue={org?.website || ""}
-                  placeholder="https://company.com"
+                  placeholder="https://yoursite.com"
                   className="mt-1.5"
                 />
               </div>
@@ -456,7 +456,7 @@ export default function SettingsPage() {
                   id="org-logo"
                   name="logo"
                   defaultValue={org?.logo || ""}
-                  placeholder="https://example.com/logo.png"
+                  placeholder="https://cdn.yoursite.com/logo.png"
                   className="mt-1.5"
                 />
               </div>
@@ -517,7 +517,7 @@ export default function SettingsPage() {
                   id="tax-label"
                   name="taxLabel"
                   defaultValue={org?.taxLabel || "TVA"}
-                  placeholder="e.g., TVA, VAT, GST"
+                  placeholder="VAT"
                   className="mt-1.5"
                 />
               </div>

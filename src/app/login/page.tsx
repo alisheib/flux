@@ -155,7 +155,9 @@ function LoginForm() {
       const data = await res.json();
 
       if (!res.ok) {
-        if (res.status === 401) {
+        if (res.status === 429) {
+          toast.error("Too many attempts", { description: data.error || "Please wait before trying again." });
+        } else if (res.status === 401) {
           toast.error("Invalid credentials", { description: "The email or password you entered is incorrect." });
         } else if (res.status === 403) {
           toast.error("Account deactivated", { description: data.error || "Please contact your administrator." });

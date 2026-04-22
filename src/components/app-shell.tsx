@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { AuthProvider, type AuthUser } from "@/components/auth-provider";
 import { AppSidebar } from "@/components/app-sidebar";
 import { AppHeader } from "@/components/app-header";
+import { SessionGuard } from "@/components/session-guard";
 import { Mail, X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -71,6 +72,7 @@ export function AppShell({ user, children }: AppShellProps) {
 
   return (
     <AuthProvider user={user}>
+      <SessionGuard>
       <div className="flex h-screen overflow-hidden">
         {/* Desktop sidebar */}
         <div className="hidden md:block">
@@ -96,6 +98,7 @@ export function AppShell({ user, children }: AppShellProps) {
           <main className="flex-1 overflow-y-auto p-3 sm:p-4 lg:p-6">{children}</main>
         </div>
       </div>
+      </SessionGuard>
     </AuthProvider>
   );
 }
