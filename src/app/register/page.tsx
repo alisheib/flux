@@ -8,13 +8,14 @@ import {
   User,
   Mail,
   Lock,
-  Phone,
   Eye,
   EyeOff,
   ArrowRight,
   Loader2,
   TrendingUp,
 } from "lucide-react";
+import PhoneInput from "react-phone-number-input";
+import "react-phone-number-input/style.css";
 import { FluxLockup } from "@/components/flux-logo";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -326,21 +327,14 @@ export default function RegisterPage() {
               <Label htmlFor="phone" className="text-sm font-medium">
                 Phone number
               </Label>
-              <InputGroup className="h-10">
-                <InputGroupAddon align="inline-start">
-                  <Phone className="size-4 text-muted-foreground" />
-                </InputGroupAddon>
-                <InputGroupInput
-                  id="phone"
-                  type="tel"
-                  placeholder="+1 (555) 000-0000"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  disabled={loading}
-                  autoComplete="tel"
-                  className="h-10"
-                />
-              </InputGroup>
+              <PhoneInput
+                international
+                defaultCountry="TZ"
+                value={phone}
+                onChange={(val) => setPhone(val || "")}
+                disabled={loading}
+                className="flux-phone-input flex h-10 w-full items-center rounded-lg border border-input bg-background px-3 text-sm transition-colors focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50 dark:bg-input/30 [&_.PhoneInputInput]:border-0 [&_.PhoneInputInput]:bg-transparent [&_.PhoneInputInput]:outline-none [&_.PhoneInputInput]:text-sm [&_.PhoneInputInput]:h-full [&_.PhoneInputInput]:flex-1 [&_.PhoneInputCountry]:mr-2 [&_.PhoneInputCountryIcon]:size-5 [&_.PhoneInputCountrySelect]:bg-transparent [&_.PhoneInputCountrySelect]:text-sm [&_.PhoneInputCountrySelectArrow]:opacity-50"
+              />
             </div>
 
             {/* Password */}
