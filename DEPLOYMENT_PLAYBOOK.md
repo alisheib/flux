@@ -276,6 +276,19 @@ Saves 56 screenshots to `runtime/screenshots/light/` and `runtime/screenshots/da
 - **50 E2E tests** (20 basic + 20 advanced + 10 auth)
 - Professional placeholder text (no "John Doe", "Acme Corp")
 
+### v1.2 — Security & Validation
+- **Session expiry**: JWT 8 hours (was 7 days), cookie maxAge 8 hours
+- **Inactivity logout**: 30-min auto-logout with 2-min warning toast
+- **Session guard**: periodic JWT validation every 5 minutes
+- **Rate limiting**: 5 login attempts/15 min, 3 registrations/hour (production only)
+- **HSTS**: Strict-Transport-Security with preload
+- **Branded toasts**: rich color system (emerald/red/amber/sky), close button, descriptions
+- **Full validation**: email, password strength, phone, numbers-only, SKU format, required fields
+- **Input restrictors**: numbersOnly on price/quantity fields blocks invalid keystrokes
+- **Notification bell**: Popover dropdown with empty state
+- **International phone input**: country flag dropdown with auto country code on register
+- **50 E2E tests**: 3 consecutive runs, 150 executions, 0 failures
+
 ### Key technical decisions
 - **Prisma 7** with `prisma.config.ts` for DB URL (not in schema.prisma)
 - **@prisma/adapter-pg** required for PostgreSQL in Prisma 7 (see `src/lib/db.ts`)
@@ -309,16 +322,37 @@ The app uses **Resend** (resend.com) for transactional emails. Without `RESEND_A
 
 ## Security Notes
 
-- Passwords hashed with bcrypt (via `src/lib/auth.ts`)
+### Authentication & Sessions
+- Passwords hashed with **bcrypt** 12 rounds (via `src/lib/auth.ts`)
 - Password policy: 8+ chars, uppercase, lowercase, number, special char
-- JWT tokens in httpOnly cookies (not accessible to JavaScript)
-- CSRF protection via SameSite=Lax cookies
+- JWT tokens in **httpOnly** cookies (not accessible to JavaScript)
+- CSRF protection via **SameSite=Lax** cookies
+- **8-hour session expiry** (JWT + cookie maxAge)
+- **30-minute inactivity auto-logout** with 2-min warning toast (`src/components/session-guard.tsx`)
+- **Periodic JWT check** every 5 minutes (catches server-side invalidation)
+
+### Rate Limiting (`src/lib/rate-limit.ts`)
+- **Login**: 5 attempts per IP+email per 15 minutes → 429
+- **Register**: 3 attempts per IP per hour → 429
+- Rate limiting disabled in development (`NODE_ENV !== "production"`)
+- In-memory store with automatic cleanup every 5 minutes
+
+### Headers (via `next.config.ts`)
+- `Strict-Transport-Security`: 1 year, includeSubDomains, preload (HSTS)
+- `X-Frame-Options`: DENY (no iframe embedding)
+- `X-Content-Type-Options`: nosniff
+- `X-XSS-Protection`: 1; mode=block
+- `Referrer-Policy`: strict-origin-when-cross-origin
+- `Permissions-Policy`: camera, microphone, geolocation, payment all blocked
+
+### Data Protection
 - Email verification flow (unverified users see warning banner)
-- Login notification emails (user alerted on each sign-in)
+- Login notification emails (user alerted on each sign-in with IP)
 - All API routes check auth via `getSession()` or `verifyToken()`
 - Multi-tenant isolation: all queries scoped by `orgId`
+- Middleware blocks all unauthenticated access to app routes
 
 ---
 
-*Last updated: April 21, 2026*
+*Last updated: April 22, 2026*
 *Powered by Ali Sheib*
