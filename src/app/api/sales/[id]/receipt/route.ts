@@ -68,19 +68,25 @@ export async function GET(
     const html = buildReceiptHTML(data);
 
     // Try server-side PDF
+    const filename = `receipt-${sale.invoice?.number || sale.saleNumber}`;
+
     try {
       const chromium = await import("@sparticuz/chromium");
       const puppeteer = await import("puppeteer-core");
 
+      const execPath = await chromium.default.executablePath();
+      if (!execPath) throw new Error("Chromium binary not found");
+
       const browser = await puppeteer.default.launch({
-        args: chromium.default.args,
-        executablePath: await chromium.default.executablePath(),
+        args: [...chromium.default.args, "--no-sandbox", "--disable-gpu"],
+        executablePath: execPath,
         headless: true,
         defaultViewport: { width: 420, height: 600 },
       });
 
       const page = await browser.newPage();
-      await page.setContent(html, { waitUntil: "networkidle0" });
+      await page.setContent(html, { waitUntil: "domcontentloaded", timeout: 10000 });
+      await new Promise((r) => setTimeout(r, 1000));
 
       const pdfBuffer = await page.pdf({
         width: "148mm",
@@ -96,17 +102,18 @@ export async function GET(
         status: 200,
         headers: {
           "Content-Type": "application/pdf",
-          "Content-Disposition": `attachment; filename="receipt-${sale.invoice?.number || sale.saleNumber}.pdf"`,
+          "Content-Disposition": `attachment; filename="${filename}.pdf"`,
           "Cache-Control": "no-store",
         },
       });
     } catch {
-      // Fallback: return HTML
+      // Fallback: return HTML as downloadable file
       return new NextResponse(html, {
         status: 200,
         headers: {
           "Content-Type": "text/html; charset=utf-8",
-          "X-PDF-Fallback": "html",
+          "Content-Disposition": `attachment; filename="${filename}.html"`,
+          "Cache-Control": "no-store",
         },
       });
     }

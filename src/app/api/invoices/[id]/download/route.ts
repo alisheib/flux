@@ -75,15 +75,19 @@ export async function GET(
       const chromium = await import("@sparticuz/chromium");
       const puppeteer = await import("puppeteer-core");
 
+      const execPath = await chromium.default.executablePath();
+      if (!execPath) throw new Error("Chromium binary not found");
+
       const browser = await puppeteer.default.launch({
-        args: chromium.default.args,
-        executablePath: await chromium.default.executablePath(),
+        args: [...chromium.default.args, "--no-sandbox", "--disable-gpu"],
+        executablePath: execPath,
         headless: true,
         defaultViewport: { width: 794, height: 1123 },
       });
 
       const page = await browser.newPage();
-      await page.setContent(html, { waitUntil: "networkidle0" });
+      await page.setContent(html, { waitUntil: "domcontentloaded", timeout: 10000 });
+      await new Promise((r) => setTimeout(r, 1000)); // Let fonts load
 
       const pdfBuffer = await page.pdf({
         format: "A4",
@@ -103,13 +107,14 @@ export async function GET(
         },
       });
     } catch (puppeteerError) {
-      // Fallback: return HTML for client-side printing
-      console.error("Server-side PDF failed, falling back to HTML:", puppeteerError);
+      // Fallback: return HTML as downloadable file
+      console.error("Server-side PDF failed:", puppeteerError);
       return new NextResponse(html, {
         status: 200,
         headers: {
           "Content-Type": "text/html; charset=utf-8",
-          "X-PDF-Fallback": "html",
+          "Content-Disposition": `attachment; filename="${invoice.number}.html"`,
+          "Cache-Control": "no-store",
         },
       });
     }

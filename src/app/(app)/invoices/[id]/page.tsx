@@ -66,15 +66,31 @@ export default function InvoiceViewPage() {
     toast.info("Generating PDF...");
     try {
       const res = await fetch(`/api/invoices/${params.id}/download`);
+      if (!res.ok) throw new Error("Server error");
+      const contentType = res.headers.get("content-type") || "";
       const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${data?.invoice.number || "invoice"}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 200);
-      toast.success("Download complete", { description: `${data?.invoice.number}.pdf saved` });
+
+      if (contentType.includes("text/html")) {
+        // Fallback: open HTML in new tab for browser Save as PDF
+        const html = await blob.text();
+        const win = window.open("", "_blank");
+        if (win) {
+          win.document.write(html);
+          win.document.close();
+          setTimeout(() => win.print(), 500);
+        }
+        toast.info("Use 'Save as PDF' in the print dialog", { description: "Server PDF unavailable — using browser print" });
+      } else {
+        // Direct PDF download
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${data?.invoice.number || "invoice"}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 200);
+        toast.success("Download complete", { description: `${data?.invoice.number}.pdf saved` });
+      }
     } catch {
       toast.error("Download failed", { description: "Please try again." });
     } finally {
