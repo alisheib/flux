@@ -982,7 +982,41 @@ export default function ReceivablesPage() {
       ]);
 
       if (arRes.ok) {
-        const arData = await arRes.json();
+        const raw = await arRes.json();
+        // Map API response to page interface
+        const agingColors = ["#16a34a", "#d97706", "#ea580c", "#dc2626"];
+        const arData: ReceivablesData = {
+          customers: (raw.customers || []).map((c: Record<string, unknown>) => ({
+            id: c.name,
+            name: c.name,
+            phone: c.phone,
+            email: c.email,
+            outstanding: c.totalOwed ?? 0,
+            lastPaymentDate: c.lastPayment,
+            oldestDebtDays: c.oldestDebt ?? 0,
+            status: c.status ?? "current",
+            invoiceCount: c.transactionCount ?? 0,
+          })),
+          invoices: [],
+          payments: [],
+          kpis: {
+            totalOutstanding: raw.totals?.totalOutstanding ?? 0,
+            overdueAmount: raw.totals?.overdueAmount ?? 0,
+            overdueCount: raw.totals?.overdueCount ?? 0,
+            collectedThisMonth: raw.totals?.collectedThisMonth ?? 0,
+            collectedDelta: 0,
+            avgDaysToPay: 0,
+            avgDaysDelta: 0,
+            customersWithDebt: (raw.customers || []).filter((c: Record<string, unknown>) => (c.totalOwed as number) > 0).length,
+            oldestDebtDays: Math.max(0, ...(raw.customers || []).map((c: Record<string, unknown>) => (c.oldestDebt as number) ?? 0)),
+          },
+          aging: (raw.agingBuckets || []).map((b: Record<string, unknown>, i: number) => ({
+            label: b.label,
+            amount: b.amount ?? 0,
+            count: b.count ?? 0,
+            color: agingColors[i] || "#6b7280",
+          })),
+        };
         setData(arData);
       }
       if (settingsRes.ok) {
