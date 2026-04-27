@@ -75,6 +75,28 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validate each item has positive quantity and unitPrice
+    for (const item of items) {
+      if (!item.productId || typeof item.productId !== "string") {
+        return NextResponse.json(
+          { error: "Each item must have a valid productId" },
+          { status: 400 }
+        );
+      }
+      if (typeof item.quantity !== "number" || item.quantity <= 0) {
+        return NextResponse.json(
+          { error: "Each item must have a quantity greater than 0" },
+          { status: 400 }
+        );
+      }
+      if (typeof item.unitPrice !== "number" || item.unitPrice <= 0) {
+        return NextResponse.json(
+          { error: "Each item must have a unitPrice greater than 0" },
+          { status: 400 }
+        );
+      }
+    }
+
     const VALID_PAYMENT_METHODS = ["cash", "card", "bank_transfer", "mobile_money", "credit"];
     if (!paymentMethod || !VALID_PAYMENT_METHODS.includes(paymentMethod)) {
       return NextResponse.json(

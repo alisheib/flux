@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { parsePagination, paginatedResponse } from "@/lib/pagination";
 import { recordStockMovement } from "@/lib/stock";
 import { logAudit } from "@/lib/audit";
+import { rateLimit } from "@/lib/rate-limit";
 
 async function getAuth() {
   const cookieStore = await cookies();
@@ -69,6 +70,17 @@ export async function POST(request: NextRequest) {
     const auth = await getAuth();
     if (!auth) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Rate limit: 10 credit note requests per minute per user
+    const rateLimitKey = `credit-note:${auth.userId}`;
+    const { allowed, resetIn } = rateLimit(rateLimitKey, { maxAttempts: 10, windowMs: 60 * 1000 });
+    if (!allowed) {
+      const seconds = Math.ceil(resetIn / 1000);
+      return NextResponse.json(
+        { error: `Too many credit note requests. Please try again in ${seconds} seconds.` },
+        { status: 429 }
+      );
     }
 
     const body = await request.json();

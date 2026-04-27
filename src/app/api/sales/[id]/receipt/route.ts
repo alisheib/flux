@@ -68,7 +68,8 @@ export async function GET(
     const html = buildReceiptHTML(data);
 
     // Try server-side PDF
-    const filename = `receipt-${sale.invoice?.number || sale.saleNumber}`;
+    const rawFilename = `receipt-${sale.invoice?.number || sale.saleNumber}`;
+    const filename = rawFilename.replace(/[^a-zA-Z0-9_\-]/g, "_");
 
     try {
       const chromium = await import("@sparticuz/chromium");

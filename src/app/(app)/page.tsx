@@ -54,6 +54,7 @@ interface DashboardData {
     currency: string;
     paymentMethod: string;
     createdAt: string;
+    user?: { id: string; name: string } | null;
   }[];
   lowStockProducts: {
     id: string;
@@ -394,37 +395,43 @@ export default function DashboardPage() {
                 </p>
               </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Customer</TableHead>
-                    <TableHead className="text-right">Total</TableHead>
-                    <TableHead className="text-right">Payment</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {data.recentSales.slice(0, 8).map((sale) => (
-                    <TableRow key={sale.id}>
-                      <TableCell className="text-muted-foreground">
-                        {new Date(sale.createdAt).toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                        })}
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        {sale.customer || "Walk-in"}
-                      </TableCell>
-                      <TableCell className="text-right font-semibold">
-                        {formatCurrency(sale.total, sale.currency || currency)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {paymentBadge(sale.paymentMethod)}
-                      </TableCell>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Customer</TableHead>
+                      <TableHead className="max-sm:hidden">Sold by</TableHead>
+                      <TableHead className="text-right">Total</TableHead>
+                      <TableHead className="text-right">Payment</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {data.recentSales.slice(0, 8).map((sale) => (
+                      <TableRow key={sale.id}>
+                        <TableCell className="text-muted-foreground">
+                          {new Date(sale.createdAt).toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                          })}
+                        </TableCell>
+                        <TableCell className="font-medium">
+                          {sale.customer || "Walk-in"}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground text-sm max-sm:hidden">
+                          {sale.user?.name || "--"}
+                        </TableCell>
+                        <TableCell className="text-right font-semibold">
+                          {formatCurrency(sale.total, sale.currency || currency)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {paymentBadge(sale.paymentMethod)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             )}
           </CardContent>
         </Card>

@@ -94,6 +94,7 @@ interface Invoice {
   sale?: {
     id: string;
     items: InvoiceItem[];
+    user?: { id: string; name: string } | null;
   } | null;
 }
 
@@ -641,6 +642,7 @@ export default function InvoicesPage() {
                   <TableHead className="text-xs font-medium uppercase tracking-wide text-muted-foreground text-right">Subtotal</TableHead>
                   <TableHead className="text-xs font-medium uppercase tracking-wide text-muted-foreground text-right">Tax</TableHead>
                   <TableHead className="text-xs font-medium uppercase tracking-wide text-muted-foreground text-right">Total</TableHead>
+                  <TableHead className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Sold by</TableHead>
                   <TableHead className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Status</TableHead>
                   <TableHead className="w-10"></TableHead>
                 </TableRow>
@@ -648,7 +650,7 @@ export default function InvoicesPage() {
               <TableBody>
                 {filteredInvoices.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="py-16 text-center">
+                    <TableCell colSpan={9} className="py-16 text-center">
                       <div className="flex flex-col items-center gap-2 text-muted-foreground">
                         <ReceiptText className="size-10 opacity-30" />
                         <p className="text-sm font-medium">
@@ -695,6 +697,13 @@ export default function InvoicesPage() {
                       </TableCell>
                       <TableCell className="text-right font-semibold text-foreground">
                         {formatCurrency(invoice.total, invoice.currency)}
+                      </TableCell>
+                      <TableCell>
+                        {invoice.sale?.user?.name ? (
+                          <span className="text-xs text-muted-foreground">{invoice.sale.user.name}</span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground/50">--</span>
+                        )}
                       </TableCell>
                       <TableCell>
                         <StatusBadge status={invoice.status} />

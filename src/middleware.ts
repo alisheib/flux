@@ -19,16 +19,24 @@ const publicPaths = [
   "/api/seed",
 ];
 
+function addSecurityHeaders(response: NextResponse): NextResponse {
+  response.headers.set("X-Content-Type-Options", "nosniff");
+  response.headers.set("X-Frame-Options", "DENY");
+  response.headers.set("X-XSS-Protection", "1; mode=block");
+  response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  return response;
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Allow public paths (v2 - includes forgot/reset password + Google OAuth)
   if (publicPaths.some((p) => pathname === p || pathname.startsWith(p + "/"))) {
-    return NextResponse.next();
+    return addSecurityHeaders(NextResponse.next());
   }
   // Also match exact paths
   if (publicPaths.includes(pathname)) {
-    return NextResponse.next();
+    return addSecurityHeaders(NextResponse.next());
   }
 
   // Allow static assets and _next
@@ -37,7 +45,7 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/favicon") ||
     pathname.includes(".")
   ) {
-    return NextResponse.next();
+    return addSecurityHeaders(NextResponse.next());
   }
 
   // Check auth token
@@ -51,7 +59,7 @@ export async function middleware(request: NextRequest) {
 
   try {
     await jwtVerify(token, JWT_SECRET);
-    return NextResponse.next();
+    return addSecurityHeaders(NextResponse.next());
   } catch {
     const loginUrl = new URL("/login", request.url);
     return NextResponse.redirect(loginUrl);

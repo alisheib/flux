@@ -4,6 +4,7 @@ import { verifyToken, hasMinRole } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { parsePagination, paginatedResponse } from "@/lib/pagination";
 import { logAudit } from "@/lib/audit";
+import { rateLimit } from "@/lib/rate-limit";
 
 async function getAuth() {
   const cookieStore = await cookies();
@@ -71,6 +72,17 @@ export async function POST(request: NextRequest) {
     const auth = await getAuth();
     if (!auth) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Rate limit: 10 payment requests per minute per user
+    const rateLimitKey = `payment:${auth.userId}`;
+    const { allowed, resetIn } = rateLimit(rateLimitKey, { maxAttempts: 10, windowMs: 60 * 1000 });
+    if (!allowed) {
+      const seconds = Math.ceil(resetIn / 1000);
+      return NextResponse.json(
+        { error: `Too many payment requests. Please try again in ${seconds} seconds.` },
+        { status: 429 }
+      );
     }
 
     if (!hasMinRole(auth.role, "accountant")) {

@@ -69,6 +69,7 @@ export async function GET(
     };
 
     const html = buildInvoiceHTML(data);
+    const safeFilename = invoice.number.replace(/[^a-zA-Z0-9_\-]/g, "_");
 
     // Try server-side Puppeteer PDF generation
     try {
@@ -102,7 +103,7 @@ export async function GET(
         status: 200,
         headers: {
           "Content-Type": "application/pdf",
-          "Content-Disposition": `attachment; filename="${invoice.number}.pdf"`,
+          "Content-Disposition": `attachment; filename="${safeFilename}.pdf"`,
           "Cache-Control": "no-store",
         },
       });
@@ -113,7 +114,7 @@ export async function GET(
         status: 200,
         headers: {
           "Content-Type": "text/html; charset=utf-8",
-          "Content-Disposition": `attachment; filename="${invoice.number}.html"`,
+          "Content-Disposition": `attachment; filename="${safeFilename}.html"`,
           "Cache-Control": "no-store",
         },
       });
