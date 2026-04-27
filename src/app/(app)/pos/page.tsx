@@ -18,6 +18,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { ReceiptSheet } from "@/components/receipt-sheet";
 import { toast } from "sonner";
 import {
   Search,
@@ -160,6 +161,15 @@ export default function POSPage() {
   const [mobileView, setMobileView] = useState<"products" | "cart">(
     "products"
   );
+
+  // Mobile detection for receipt sheet
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
   // ── Data Fetching ──────────────────────────────────────────────────────
 
@@ -1041,7 +1051,7 @@ export default function POSPage() {
           Confirmation Dialog — Review before finalizing
          ══════════════════════════════════════════════════════════════════ */}
       <Dialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <ClipboardCheck className="size-5 text-[var(--flux-brand)]" />
@@ -1158,10 +1168,21 @@ export default function POSPage() {
       </Dialog>
 
       {/* ══════════════════════════════════════════════════════════════════
-          Receipt Dialog
+          Receipt — Mobile: bottom sheet / Desktop: dialog
          ══════════════════════════════════════════════════════════════════ */}
+      {isMobile ? (
+        <ReceiptSheet
+          open={receiptDialogOpen}
+          onClose={() => setReceiptDialogOpen(false)}
+          sale={lastSale}
+          orgSettings={orgSettings}
+          onNewSale={() => setReceiptDialogOpen(false)}
+          onDownloadReceipt={handleDownloadReceipt}
+          onWhatsApp={(sale) => shareWhatsApp(sale)}
+        />
+      ) : (
       <Dialog open={receiptDialogOpen} onOpenChange={setReceiptDialogOpen}>
-        <DialogContent className="sm:max-w-lg" showCloseButton={false}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg" showCloseButton={false}>
           <DialogHeader className="sr-only">
             <DialogTitle>Sale Complete</DialogTitle>
             <DialogDescription>Receipt details</DialogDescription>
@@ -1287,7 +1308,7 @@ export default function POSPage() {
           )}
 
           {lastSale && (
-            <DialogFooter className="flex-row gap-2 pt-2 border-t border-border -mx-6 px-6 -mb-6 pb-4 mt-2">
+            <DialogFooter className="flex-col sm:flex-row gap-2 pt-2 border-t border-border -mx-6 px-6 -mb-6 pb-4 mt-2">
               <Button
                 variant="outline"
                 size="sm"
@@ -1318,7 +1339,7 @@ export default function POSPage() {
               <Button
                 size="sm"
                 onClick={() => setReceiptDialogOpen(false)}
-                className="gap-1.5 ml-auto"
+                className="gap-1.5 sm:ml-auto"
               >
                 <Plus className="size-4" />
                 New Sale
@@ -1327,6 +1348,7 @@ export default function POSPage() {
           )}
         </DialogContent>
       </Dialog>
+      )}
     </div>
   );
 }

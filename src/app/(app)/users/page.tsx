@@ -458,7 +458,7 @@ export default function UsersPage() {
 
       {/* ── Add User Dialog ──────────────────────────────────── */}
       <Dialog open={showAddUser} onOpenChange={setShowAddUser}>
-        <DialogContent>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Add User</DialogTitle>
             <DialogDescription>
@@ -542,7 +542,7 @@ export default function UsersPage() {
           if (!open) setEditingUser(null);
         }}
       >
-        <DialogContent>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit User</DialogTitle>
             <DialogDescription>
@@ -635,7 +635,7 @@ export default function UsersPage() {
           if (!open) setDeletingUser(null);
         }}
       >
-        <DialogContent>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Delete User</DialogTitle>
             <DialogDescription>

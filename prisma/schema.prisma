@@ -36,6 +36,7 @@ model Organization {
   expenses       ShipmentExpense[]
   stockMovements StockMovement[]
   creditNotes    CreditNote[]
+  payments       Payment[]
 }
 
 // ─── Users & Auth ──────────────────────────────────────────────────────────
@@ -206,6 +207,7 @@ model Sale {
   invoice     Invoice?
   items       SaleItem[]
   creditNotes CreditNote[]
+  payments    Payment[]
 
   @@index([orgId])
   @@index([userId])
@@ -359,6 +361,26 @@ model CreditNote {
   restockItems Boolean  @default(true)
   status       String   @default("issued") // issued, void
   createdAt    DateTime @default(now())
+
+  org  Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  sale Sale         @relation(fields: [saleId], references: [id], onDelete: Cascade)
+
+  @@index([orgId])
+  @@index([saleId])
+}
+
+// ─── Payments (Accounts Receivable) ──────────────────────────────────────
+
+model Payment {
+  id        String   @id @default(cuid())
+  orgId     String
+  saleId    String
+  amount    Float
+  method    String // mpesa, tigo, airtel, bank, cash, card
+  reference String? // M-Pesa ref, bank ref, etc.
+  notes     String?
+  date      DateTime @default(now())
+  createdAt DateTime @default(now())
 
   org  Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
   sale Sale         @relation(fields: [saleId], references: [id], onDelete: Cascade)

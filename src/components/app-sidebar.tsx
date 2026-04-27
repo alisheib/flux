@@ -19,6 +19,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Zap,
+  Wallet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { canAccessModule, type RolePermissions } from "@/lib/auth-client";
@@ -53,6 +54,7 @@ const navItems: NavItem[] = [
   { label: "Shipments", icon: Ship, href: "/shipments", module: "shipments" },
   { label: "Invoices", icon: FileText, href: "/invoices", module: "invoices" },
   { label: "Accounting", icon: Calculator, href: "/accounting", module: "accounting" },
+  { label: "Receivables", icon: Wallet, href: "/receivables", module: "receivables" },
   { label: "Reports", icon: BarChart3, href: "/reports", module: "reports" },
   { label: "Tally (TRA)", icon: Zap, href: "/tally", module: "tally" },
   { label: "Activity", icon: Activity, href: "/activity", module: "audit" },

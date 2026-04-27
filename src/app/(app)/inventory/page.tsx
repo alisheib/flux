@@ -1167,7 +1167,7 @@ export default function InventoryPage() {
             {/* Section: Basic Info */}
             <div>
               <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">Basic Information</h4>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label>Name *</Label>
                   <Input
@@ -1203,7 +1203,7 @@ export default function InventoryPage() {
                   rows={2}
                 />
               </div>
-              <div className="grid grid-cols-2 gap-3 mt-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
                 <div className="space-y-1.5">
                   <Label>Category</Label>
                   <FormSelect
@@ -1237,7 +1237,7 @@ export default function InventoryPage() {
                   <Separator />
                   <div>
                     <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">Dimensions & Appearance</h4>
-                    <div className={`grid gap-3 ${enabledFields.length <= 2 ? "grid-cols-2" : "grid-cols-4"}`}>
+                    <div className={`grid gap-3 ${enabledFields.length <= 2 ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-2 sm:grid-cols-4"}`}>
                       {enabledFields.includes("thickness") && (
                         <div className="space-y-1.5">
                           <Label>Thickness</Label>
@@ -1303,7 +1303,7 @@ export default function InventoryPage() {
             {/* Section: Pricing & Stock */}
             <div>
               <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">Pricing & Stock</h4>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label>Cost Price</Label>
                   <Input

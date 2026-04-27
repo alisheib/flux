@@ -1136,7 +1136,7 @@ export default function ShipmentsPage() {
 
         {/* ── Edit Shipment Dialog ──────────────────────────────── */}
         <Dialog open={showEditShipment} onOpenChange={setShowEditShipment}>
-          <DialogContent className="max-w-lg rounded-xl">
+          <DialogContent className="max-h-[90vh] overflow-y-auto max-w-lg rounded-xl">
             <DialogHeader>
               <DialogTitle>Edit Shipment</DialogTitle>
               <DialogDescription>
@@ -1144,8 +1144,8 @@ export default function ShipmentsPage() {
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleUpdateShipment} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="col-span-2 space-y-1.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="sm:col-span-2 space-y-1.5">
                   <Label htmlFor="edit-name">Name *</Label>
                   <Input
                     id="edit-name"
@@ -1232,7 +1232,7 @@ export default function ShipmentsPage() {
                     defaultValue={selectedShipment.exchangeRate}
                   />
                 </div>
-                <div className="col-span-2 space-y-1.5">
+                <div className="sm:col-span-2 space-y-1.5">
                   <Label htmlFor="edit-notes">Notes</Label>
                   <Textarea
                     id="edit-notes"
@@ -1565,7 +1565,7 @@ export default function ShipmentsPage() {
 
       {/* ── New Shipment Dialog ──────────────────────────────── */}
       <Dialog open={showNewShipment} onOpenChange={setShowNewShipment}>
-        <DialogContent className="max-w-lg rounded-xl">
+        <DialogContent className="max-h-[90vh] overflow-y-auto max-w-lg rounded-xl">
           <DialogHeader>
             <DialogTitle>New Shipment</DialogTitle>
             <DialogDescription>
@@ -1573,8 +1573,8 @@ export default function ShipmentsPage() {
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleCreateShipment} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="col-span-2 space-y-1.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="sm:col-span-2 space-y-1.5">
                 <Label htmlFor="new-name">Name *</Label>
                 <Input
                   id="new-name"
@@ -1652,7 +1652,7 @@ export default function ShipmentsPage() {
                   defaultValue={2630}
                 />
               </div>
-              <div className="col-span-2 space-y-1.5">
+              <div className="sm:col-span-2 space-y-1.5">
                 <Label htmlFor="new-notes">Notes</Label>
                 <Textarea
                   id="new-notes"

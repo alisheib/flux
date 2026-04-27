@@ -481,7 +481,7 @@ export default function StockMovementsPage() {
 
       {/* ── Stock Adjustment Dialog ───────────────────────────────────── */}
       <Dialog open={showAdjustDialog} onOpenChange={setShowAdjustDialog}>
-        <DialogContent className="max-w-md rounded-xl">
+        <DialogContent className="max-h-[90vh] overflow-y-auto max-w-md rounded-xl">
           <DialogHeader>
             <DialogTitle>Adjust Stock</DialogTitle>
             <DialogDescription>

@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const VALID_PAYMENT_METHODS = ["cash", "card", "bank_transfer", "mobile_money"];
+    const VALID_PAYMENT_METHODS = ["cash", "card", "bank_transfer", "mobile_money", "credit"];
     if (!paymentMethod || !VALID_PAYMENT_METHODS.includes(paymentMethod)) {
       return NextResponse.json(
         { error: `Invalid payment method. Allowed: ${VALID_PAYMENT_METHODS.join(", ")}` },
@@ -159,7 +159,7 @@ export async function POST(request: NextRequest) {
           total,
           currency: currency || org.currency,
           paymentMethod,
-          status: "completed",
+          status: paymentMethod === "credit" ? "credit" : "completed",
           notes: notes || null,
           items: {
             create: items.map(
