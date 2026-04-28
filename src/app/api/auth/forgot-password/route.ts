@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import crypto from "crypto";
+import { sendPasswordResetEmail } from "@/lib/email";
 
 export async function POST(request: NextRequest) {
   try {
@@ -32,11 +33,17 @@ export async function POST(request: NextRequest) {
       data: { resetToken, resetTokenExpiry },
     });
 
-    // In production, you would send an email here.
-    // For now, return the token so the admin can share the link.
+    // Send password reset email
+    try {
+      await sendPasswordResetEmail(user.email, user.name, resetToken);
+    } catch (emailError) {
+      console.error("Failed to send password reset email:", emailError);
+      // Don't fail the request — the token is still saved
+    }
+
     return NextResponse.json({
       message:
-        "If an account with that email exists, a reset link has been generated.",
+        "If an account with that email exists, a reset link has been sent.",
       // Only include token in development for testing
       ...(process.env.NODE_ENV !== "production" && { resetToken }),
     });

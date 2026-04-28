@@ -374,7 +374,7 @@ export default function InvoicesPage() {
   const downloadPdf = async (invoice: Invoice) => {
     try {
       toast.info("Generating PDF...");
-      const res = await fetch(`/api/invoices/${invoice.id}/pdf`);
+      const res = await fetch(`/api/invoices/${invoice.id}/download`);
       if (!res.ok) throw new Error("Failed to fetch invoice data");
       const data = await res.json();
 
@@ -478,13 +478,15 @@ export default function InvoicesPage() {
         title="Invoices"
         description="Manage and track all invoices"
       >
-        <button
+        <Button
+          variant="outline"
+          size="sm"
           onClick={handleExport}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-sm font-medium text-foreground shadow-sm hover:bg-muted/60 transition-colors"
+          className="gap-1.5"
         >
           <Download className="size-4 text-muted-foreground" />
           Export Excel
-        </button>
+        </Button>
       </PageHeader>
 
       {/* KPI Cards */}
@@ -616,12 +618,14 @@ export default function InvoicesPage() {
             />
           </div>
           {(dateFrom || dateTo) && (
-            <button
+            <Button
+              variant="link"
+              size="sm"
               onClick={() => { setDateFrom(""); setDateTo(""); }}
-              className="text-xs font-medium text-[#d97706] hover:underline"
+              className="h-auto p-0 text-xs font-medium text-[#d97706] hover:underline"
             >
               Clear dates
-            </button>
+            </Button>
           )}
           {(dateFrom || dateTo) && (
             <span className="text-xs text-muted-foreground">
@@ -678,8 +682,8 @@ export default function InvoicesPage() {
                         {new Date(invoice.issuedAt).toLocaleDateString()}
                       </TableCell>
                       <TableCell>
-                        <div>
-                          <p className="text-sm font-medium text-foreground">
+                        <div className="truncate max-w-[200px]">
+                          <p className="text-sm font-medium text-foreground truncate">
                             {invoice.customer}
                           </p>
                           {invoice.customerPhone && (
@@ -1012,36 +1016,43 @@ export default function InvoicesPage() {
 
               {/* Footer Actions */}
               <div className="border-t border-border px-4 sm:px-6 py-4 flex flex-wrap items-center gap-2">
-                <button
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => downloadPdf(selectedInvoice)}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 sm:px-3 py-1.5 text-xs sm:text-sm font-medium text-foreground shadow-sm hover:bg-muted/60 transition-colors"
+                  className="gap-1.5"
                 >
                   <Download className="size-4" />
                   <span className="hidden xs:inline">Download</span> PDF
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => shareWhatsApp(selectedInvoice)}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 sm:px-3 py-1.5 text-xs sm:text-sm font-medium text-emerald-600 dark:text-emerald-400 shadow-sm hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-colors"
+                  className="gap-1.5 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10"
                 >
                   <MessageCircle className="size-4" />
                   WhatsApp
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => sendEmail(selectedInvoice)}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 sm:px-3 py-1.5 text-xs sm:text-sm font-medium text-foreground shadow-sm hover:bg-muted/60 transition-colors"
+                  className="gap-1.5"
                 >
                   <Mail className="size-4" />
                   Email
-                </button>
+                </Button>
                 {selectedInvoice.status !== "paid" &&
                   selectedInvoice.status !== "cancelled" && (
-                    <button
+                    <Button
+                      size="sm"
                       onClick={() => markAsPaid(selectedInvoice)}
-                      className="inline-flex items-center gap-1.5 rounded-lg bg-[#d97706] px-2.5 sm:px-3 py-1.5 text-xs sm:text-sm font-medium text-[#1a1813] shadow-sm hover:bg-[#c2410c] transition-colors sm:ml-auto"
+                      className="gap-1.5 bg-[#d97706] text-[#1a1813] hover:bg-[#c2410c] sm:ml-auto"
                     >
                       <CheckCircle className="size-4" />
                       Mark as Paid
-                    </button>
+                    </Button>
                   )}
               </div>
             </div>

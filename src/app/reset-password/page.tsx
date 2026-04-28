@@ -149,7 +149,7 @@ function ResetForm() {
             <InputGroupInput
               id="password"
               type={showPassword ? "text" : "password"}
-              placeholder="At least 6 characters"
+              placeholder="Minimum 8 characters"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               disabled={loading}

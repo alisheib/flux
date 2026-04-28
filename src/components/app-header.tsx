@@ -1,6 +1,7 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
+import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Bell,
@@ -9,6 +10,7 @@ import {
   ChevronDown,
   ChevronRight,
   Menu,
+  AlertTriangle,
 } from "lucide-react";
 import { useAuth } from "@/components/auth-provider";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -49,6 +51,118 @@ function getPageTitle(pathname: string): string {
   // Try matching prefix for nested routes
   const base = "/" + pathname.split("/").filter(Boolean)[0];
   return pageTitles[base] || "Page";
+}
+
+/* ------------------------------------------------------------------ */
+/*  Notification Bell                                                 */
+/* ------------------------------------------------------------------ */
+
+interface LowStockProduct {
+  id: string;
+  name: string;
+  sku: string | null;
+  stockQty: number;
+  minStockQty: number;
+  unit: string | null;
+}
+
+function NotificationBell() {
+  const [lowStock, setLowStock] = useState<LowStockProduct[]>([]);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/dashboard")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!cancelled && data?.lowStockProducts) {
+          setLowStock(data.lowStockProducts);
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setLoaded(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const count = lowStock.length;
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button variant="ghost" size="icon" className="relative">
+          <Bell className="size-4" />
+          {count > 0 && (
+            <span className="absolute -right-0.5 -top-0.5 flex size-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+              {count > 9 ? "9+" : count}
+            </span>
+          )}
+          <span className="sr-only">Notifications</span>
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-80 p-0">
+        <div className="flex items-center justify-between border-b border-border px-4 py-3">
+          <h4 className="text-sm font-semibold text-foreground">Notifications</h4>
+          {count > 0 && (
+            <Badge variant="secondary" className="text-[10px]">
+              {count} alert{count !== 1 ? "s" : ""}
+            </Badge>
+          )}
+        </div>
+        {!loaded ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="size-5 animate-spin rounded-full border-2 border-muted-foreground/20 border-t-muted-foreground" />
+          </div>
+        ) : count === 0 ? (
+          <div className="px-4 py-8 text-center">
+            <Bell className="mx-auto mb-3 size-10 text-muted-foreground/20" />
+            <p className="text-sm font-medium text-muted-foreground">You&apos;re all caught up</p>
+            <p className="mt-1 text-xs text-muted-foreground/50">No low-stock alerts right now</p>
+          </div>
+        ) : (
+          <>
+            <div className="max-h-72 overflow-y-auto">
+              {lowStock.map((product) => (
+                <div
+                  key={product.id}
+                  className="flex items-start gap-3 border-b border-border px-4 py-3 last:border-b-0 hover:bg-muted/40 transition-colors"
+                >
+                  <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-red-500/12">
+                    <AlertTriangle className="size-4 text-red-500" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-foreground truncate">
+                      {product.name}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {product.stockQty} {product.unit || "units"} remaining (min: {product.minStockQty})
+                    </p>
+                  </div>
+                  <Badge
+                    variant="secondary"
+                    className="shrink-0 bg-red-500/12 text-red-600 dark:text-red-400 text-[10px]"
+                  >
+                    Low stock
+                  </Badge>
+                </div>
+              ))}
+            </div>
+            <div className="border-t border-border px-4 py-2.5">
+              <Link
+                href="/inventory"
+                className="block text-center text-xs font-medium text-[#d97706] hover:underline"
+              >
+                View all inventory
+              </Link>
+            </div>
+          </>
+        )}
+      </PopoverContent>
+    </Popover>
+  );
 }
 
 /* ------------------------------------------------------------------ */
@@ -109,24 +223,7 @@ export function AppHeader({ onMenuToggle }: { onMenuToggle?: () => void } = {}) 
         <ThemeToggle />
 
         {/* Notification bell */}
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="ghost" size="icon" className="relative">
-              <Bell className="size-4" />
-              <span className="sr-only">Notifications</span>
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent align="end" className="w-80 p-0">
-            <div className="flex items-center justify-between border-b border-border px-4 py-3">
-              <h4 className="text-sm font-semibold text-foreground">Notifications</h4>
-            </div>
-            <div className="px-4 py-8 text-center">
-              <Bell className="mx-auto mb-3 size-10 text-muted-foreground/20" />
-              <p className="text-sm font-medium text-muted-foreground">No recent notifications</p>
-              <p className="mt-1 text-xs text-muted-foreground/50">You&apos;re all caught up</p>
-            </div>
-          </PopoverContent>
-        </Popover>
+        <NotificationBell />
 
         {/* User dropdown */}
         <DropdownMenu>

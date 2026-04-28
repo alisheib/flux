@@ -360,6 +360,7 @@ function CustomerDetailDialog({
   currency,
   onClose,
   onRecordPayment,
+  onWhatsAppReminder,
 }: {
   customer: CustomerDebt | null;
   invoices: OutstandingInvoice[];
@@ -367,6 +368,7 @@ function CustomerDetailDialog({
   currency: string;
   onClose: () => void;
   onRecordPayment: () => void;
+  onWhatsAppReminder: (customer: CustomerDebt) => void;
 }) {
   const [tab, setTab] = useState("outstanding");
 
@@ -639,7 +641,7 @@ function CustomerDetailDialog({
                   size="sm"
                   className="mt-2 gap-1.5"
                   onClick={() =>
-                    toast.info("Statement generation coming soon")
+                    toast.info("Statement PDF generation is being set up for your organization.")
                   }
                 >
                   <Download className="size-3.5" />
@@ -652,13 +654,14 @@ function CustomerDetailDialog({
 
         {/* Footer */}
         <div className="flex flex-col gap-2 border-t border-border px-6 py-3 sm:flex-row sm:items-center">
-          <Button variant="outline" size="sm" className="gap-1.5">
+          <Button variant="outline" size="sm" className="gap-1.5" onClick={() => customer.phone && window.open('tel:' + customer.phone)}>
             <Phone className="size-3.5" />
             Call
           </Button>
           <Button
             size="sm"
             className="gap-1.5 bg-emerald-600 text-white hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-700"
+            onClick={() => onWhatsAppReminder(customer)}
           >
             <MessageCircle className="size-3.5" />
             WhatsApp reminder
@@ -1159,7 +1162,44 @@ export default function ReceivablesPage() {
           variant="outline"
           size="sm"
           className="gap-1.5"
-          onClick={() => toast.info("Export coming soon")}
+          onClick={async () => {
+            const { exportToExcel } = await import("@/lib/excel-export");
+
+            const totalOutstanding = filteredCustomers.reduce((s, c) => s + c.outstanding, 0);
+
+            await exportToExcel({
+              sheetName: "Receivables",
+              title: "Receivables Report",
+              subtitle: `${filteredCustomers.length} customers | ${statusFilter !== "all" ? `Status: ${statusFilter} | ` : ""}Generated ${new Date().toLocaleDateString()}`,
+              currency,
+              filename: `receivables-${new Date().toISOString().split("T")[0]}`,
+              columns: [
+                { header: "Customer", key: "name", width: 25, type: "string" },
+                { header: "Phone", key: "phone", width: 18, type: "string" },
+                { header: "Outstanding", key: "outstanding", width: 16, type: "currency" },
+                { header: "Invoices", key: "invoiceCount", width: 12, type: "number" },
+                { header: "Oldest Debt (days)", key: "oldestDebtDays", width: 18, type: "number" },
+                { header: "Last Payment", key: "lastPaymentDate", width: 16, type: "string" },
+                { header: "Status", key: "status", width: 12, type: "string" },
+              ],
+              data: filteredCustomers.map((c) => ({
+                name: c.name,
+                phone: c.phone || "",
+                outstanding: c.outstanding,
+                invoiceCount: c.invoiceCount,
+                oldestDebtDays: c.oldestDebtDays,
+                lastPaymentDate: c.lastPaymentDate || "",
+                status: c.status.charAt(0).toUpperCase() + c.status.slice(1),
+              })),
+              totalsRow: {
+                name: "TOTALS",
+                outstanding: totalOutstanding,
+                invoiceCount: filteredCustomers.reduce((s, c) => s + c.invoiceCount, 0),
+              },
+            });
+
+            toast.success("Excel report downloaded");
+          }}
         >
           <Download className="size-4 text-muted-foreground" />
           Export
@@ -1543,6 +1583,7 @@ export default function ReceivablesPage() {
         payments={paymentHistory}
         currency={currency}
         onClose={() => setSelectedCustomer(null)}
+        onWhatsAppReminder={sendWhatsAppReminder}
         onRecordPayment={() => {
           setPaymentFor(selectedCustomer);
           setPaymentOpen(true);
