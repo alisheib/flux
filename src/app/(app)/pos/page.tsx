@@ -124,11 +124,12 @@ export default function POSPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
 
-  // Cart state — persisted to localStorage
+  // Cart state — persisted to localStorage per user
+  const cartKey = `flux-pos-cart-${user?.userId || "anon"}`;
   const [cart, setCart] = useState<CartItem[]>(() => {
     if (typeof window === "undefined") return [];
     try {
-      const saved = localStorage.getItem("flux-pos-cart");
+      const saved = localStorage.getItem(cartKey);
       return saved ? JSON.parse(saved) : [];
     } catch { return []; }
   });
@@ -139,11 +140,11 @@ export default function POSPage() {
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [notes, setNotes] = useState("");
 
-  // Persist cart to localStorage
+  // Persist cart to localStorage (scoped to user)
   useEffect(() => {
-    try { localStorage.setItem("flux-pos-cart", JSON.stringify(cart)); }
+    try { localStorage.setItem(cartKey, JSON.stringify(cart)); }
     catch { /* storage full or unavailable */ }
-  }, [cart]);
+  }, [cart, cartKey]);
 
   // Customer info
   const [customerExpanded, setCustomerExpanded] = useState(false);

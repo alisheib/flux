@@ -186,6 +186,10 @@ export function AppHeader({ onMenuToggle }: { onMenuToggle?: () => void } = {}) 
 
   async function handleLogout() {
     try {
+      // Clear user-scoped cart data
+      if (user?.userId) {
+        try { localStorage.removeItem(`flux-pos-cart-${user.userId}`); } catch {}
+      }
       await fetch("/api/auth/logout", { method: "POST" });
       router.push("/login");
     } catch {
