@@ -114,7 +114,17 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           {children}
-          <Toaster position="top-right" richColors />
+          <Toaster
+            position="top-right"
+            richColors
+            toastOptions={{
+              style: {
+                borderRadius: "10px",
+                fontSize: "14px",
+                borderLeft: "3px solid var(--ring)",
+              },
+            }}
+          />
         </ThemeProvider>
       </body>
     </html>

@@ -304,3 +304,104 @@
   color: var(--muted-foreground);
   opacity: 0.6;
 }
+
+/* ================================================================
+   FLUX Component Styles (from Claude Design)
+   ================================================================ */
+
+/* Focus rings — accent amber */
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* Toast left-border accent */
+[data-sonner-toast] {
+  border-left: 3px solid var(--ring) !important;
+  border-radius: 10px !important;
+  font-size: 14px !important;
+}
+[data-sonner-toast][data-type="success"] {
+  border-left-color: #10b981 !important;
+}
+[data-sonner-toast][data-type="error"] {
+  border-left-color: #ef4444 !important;
+}
+[data-sonner-toast][data-type="warning"] {
+  border-left-color: #f59e0b !important;
+}
+[data-sonner-toast][data-type="info"] {
+  border-left-color: #3b82f6 !important;
+}
+
+/* KPI card icon tones */
+.kpi-icon-blue { background: color-mix(in oklab, #3b82f6 12%, transparent); color: #2563eb; }
+.kpi-icon-green { background: color-mix(in oklab, #10b981 14%, transparent); color: #047857; }
+.kpi-icon-amber { background: color-mix(in oklab, #f59e0b 15%, transparent); color: #b45309; }
+.kpi-icon-purple { background: #ede9fe; color: #6d28d9; }
+.kpi-icon-accent { background: color-mix(in oklab, #d97706 15%, transparent); color: #9a3412; }
+.dark .kpi-icon-blue { background: rgba(59,130,246,0.15); color: #93c5fd; }
+.dark .kpi-icon-green { background: rgba(16,185,129,0.15); color: #6ee7b7; }
+.dark .kpi-icon-amber { background: rgba(245,158,11,0.15); color: #fcd34d; }
+.dark .kpi-icon-purple { background: rgba(139,92,246,0.18); color: #c4b5fd; }
+.dark .kpi-icon-accent { background: rgba(217,119,6,0.18); color: #ecb467; }
+
+/* Badge variants — Claude Design */
+.badge-accent { @apply bg-amber-100 text-amber-800 dark:bg-amber-500/18 dark:text-amber-300; }
+.badge-success { @apply bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300; }
+.badge-warn { @apply bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300; }
+.badge-danger { @apply bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300; }
+.badge-info { @apply bg-blue-100 text-blue-700 dark:bg-blue-500/22 dark:text-blue-300; }
+.badge-violet { @apply bg-purple-100 text-purple-800 dark:bg-purple-500/20 dark:text-purple-300; }
+
+/* Feature icon box (landing page, can be reused) */
+.feature-icon-box {
+  width: 44px; height: 44px; border-radius: 10px;
+  background: linear-gradient(135deg, rgba(217,119,6,0.25), rgba(217,119,6,0.08));
+  border: 1px solid rgba(217,119,6,0.25);
+  display: inline-flex; align-items: center; justify-content: center;
+  color: #f59e0b;
+}
+
+/* WhatsApp button */
+.btn-whatsapp {
+  @apply bg-white text-[#128c7e] dark:bg-[#141209];
+  box-shadow: inset 0 0 0 1px rgba(37,211,102,0.25);
+}
+.btn-whatsapp:hover {
+  background: rgba(37,211,102,0.06);
+  box-shadow: inset 0 0 0 1px rgba(37,211,102,0.5);
+}
+
+/* Chip/filter pill */
+.chip {
+  @apply inline-flex items-center gap-1.5 rounded-full border border-border bg-secondary px-2.5 py-1 text-xs font-medium text-foreground transition-colors;
+}
+.chip:hover { @apply bg-muted; }
+.chip.active, .chip[aria-pressed="true"] {
+  @apply bg-foreground text-background border-foreground;
+}
+.dark .chip.active, .dark .chip[aria-pressed="true"] {
+  @apply bg-[#d97706] text-[#0f0e0a] border-[#d97706];
+}
+
+/* Empty state styling */
+.empty-state-icon {
+  @apply mx-auto flex size-12 items-center justify-center rounded-xl bg-secondary text-muted-foreground;
+}
+
+/* Progress bar */
+.flux-progress {
+  @apply h-1.5 w-full overflow-hidden rounded-full bg-secondary;
+}
+.flux-progress > span {
+  @apply block h-full rounded-full bg-[#d97706] transition-all duration-300;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
