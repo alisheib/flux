@@ -21,7 +21,6 @@ const Toaster = ({ ...props }: ToasterProps) => {
       className="toaster group"
       position="top-right"
       expand={false}
-      richColors
       closeButton
       duration={4000}
       icons={{

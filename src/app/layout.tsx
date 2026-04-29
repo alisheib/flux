@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { ThemeProvider } from "next-themes";
-import { Toaster } from "sonner";
+import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
@@ -114,17 +114,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           {children}
-          <Toaster
-            position="top-right"
-            richColors
-            toastOptions={{
-              style: {
-                borderRadius: "10px",
-                fontSize: "14px",
-                borderLeft: "3px solid var(--ring)",
-              },
-            }}
-          />
+          <Toaster />
         </ThemeProvider>
       </body>
     </html>
