@@ -1,0 +1,17 @@
+{
+  "name": "FLUX — Business Management Platform",
+  "short_name": "FLUX",
+  "description": "All-in-one business management for import & distribution. POS, inventory, invoicing, accounting.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f0e0a",
+  "theme_color": "#d97706",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
