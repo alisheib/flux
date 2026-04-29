@@ -604,6 +604,10 @@ export default function InventoryPage() {
   // ── Export ─────────────────────────────────────────────────────────────
 
   const handleExport = async () => {
+    if (filteredProducts.length === 0) {
+      toast.error("No data to export");
+      return;
+    }
     const { exportToExcel } = await import("@/lib/excel-export");
 
     const totalStockValue = filteredProducts.reduce(
@@ -795,7 +799,8 @@ export default function InventoryPage() {
         </DropdownMenu>
         <button
           onClick={handleExport}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-sm font-medium text-foreground shadow-sm hover:bg-muted/60 transition-colors"
+          disabled={filteredProducts.length === 0}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-sm font-medium text-foreground shadow-sm hover:bg-muted/60 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Download className="size-4 text-muted-foreground" />
           Export Excel

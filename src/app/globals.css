@@ -331,11 +331,15 @@ a:focus-visible {
   outline: none !important;
 }
 
-/* Toast left-border accent */
+/* Toast left-border accent — override Sonner defaults */
 [data-sonner-toast] {
+  background: var(--card) !important;
+  color: var(--foreground) !important;
+  border: 1px solid var(--border) !important;
   border-left: 3px solid var(--ring) !important;
   border-radius: 10px !important;
   font-size: 14px !important;
+  box-shadow: 0 10px 15px -3px rgba(15,14,10,0.08), 0 4px 6px -4px rgba(15,14,10,0.04) !important;
 }
 [data-sonner-toast][data-type="success"] {
   border-left-color: #10b981 !important;
@@ -348,6 +352,13 @@ a:focus-visible {
 }
 [data-sonner-toast][data-type="info"] {
   border-left-color: #3b82f6 !important;
+}
+/* Toast title and description colors */
+[data-sonner-toast] [data-title] {
+  color: var(--foreground) !important;
+}
+[data-sonner-toast] [data-description] {
+  color: var(--muted-foreground) !important;
 }
 
 /* KPI card icon tones */
