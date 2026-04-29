@@ -163,7 +163,7 @@
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border;
   }
   body {
     @apply bg-background text-foreground;
@@ -309,10 +309,18 @@
    FLUX Component Styles (from Claude Design)
    ================================================================ */
 
-/* Focus rings — accent amber */
-:focus-visible {
+/* Focus rings — let shadcn components handle their own focus,
+   only add outline to elements that don't have shadcn focus styles */
+button:not([data-slot]):focus-visible,
+a:focus-visible {
   outline: 2px solid var(--ring);
   outline-offset: 2px;
+}
+/* Remove double-ring from shadcn inputs/selects (they use ring-3 already) */
+[data-slot="input"]:focus-visible,
+[data-slot="input-group-control"]:focus-visible,
+[data-slot="select-trigger"]:focus-visible {
+  outline: none !important;
 }
 
 /* Toast left-border accent */
@@ -396,6 +404,11 @@
 }
 .flux-progress > span {
   @apply block h-full rounded-full bg-[#d97706] transition-all duration-300;
+}
+
+/* Smoother, slower loading spinner */
+.animate-spin {
+  animation: spin 1.2s linear infinite !important;
 }
 
 /* Reduced motion */
