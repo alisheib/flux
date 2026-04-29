@@ -7,9 +7,11 @@ import {
   Bell,
   LogOut,
   User,
-  ChevronDown,
+  Settings,
   ChevronRight,
+  ChevronDown,
   Menu,
+  Search,
   AlertTriangle,
 } from "lucide-react";
 import { useAuth } from "@/components/auth-provider";
@@ -93,7 +95,7 @@ function NotificationBell() {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative">
+        <Button variant="ghost" size="icon" className="relative size-9">
           <Bell className="size-4" />
           {count > 0 && (
             <span className="absolute -right-0.5 -top-0.5 flex size-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
@@ -198,43 +200,66 @@ export function AppHeader({ onMenuToggle }: { onMenuToggle?: () => void } = {}) 
   }
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 sm:h-16 shrink-0 items-center justify-between border-b border-border bg-background px-3 sm:px-6">
+    <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between border-b border-border bg-background px-4 sm:px-6">
       {/* ── Left: Menu + Breadcrumb ──────────────────────────── */}
       <div className="flex items-center gap-2">
         {/* Mobile hamburger */}
         <Button
           variant="ghost"
           size="icon"
-          className="md:hidden"
+          className="md:hidden size-9"
           onClick={onMenuToggle}
         >
           <Menu className="size-5" />
           <span className="sr-only">Toggle menu</span>
         </Button>
+
+        {/* Breadcrumb */}
         <nav className="flex items-center gap-1.5 text-sm">
-          <span className="hidden sm:inline font-medium text-muted-foreground">{orgName}</span>
-          <ChevronRight className="hidden sm:block size-3.5 text-muted-foreground/50" />
+          <span className="hidden sm:inline text-muted-foreground">{orgName}</span>
+          <ChevronRight className="hidden sm:block size-3.5 text-muted-foreground/40" />
           <span className="font-semibold text-foreground">{pageTitle}</span>
         </nav>
       </div>
 
-      {/* Spacer */}
-      <div className="hidden md:block" />
-
       {/* ── Right: Actions ───────────────────────────────────── */}
-      <div className="flex items-center gap-1.5">
-        {/* Theme toggle */}
-        <ThemeToggle />
+      <div className="flex items-center gap-1">
+        {/* Search button */}
+        <Button
+          variant="ghost"
+          className="hidden sm:inline-flex h-9 gap-2 rounded-lg border border-border bg-muted/40 px-3 text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
+          onClick={() => {
+            /* placeholder - could open a command palette in the future */
+          }}
+        >
+          <Search className="size-4" />
+          <span className="text-xs">Search...</span>
+          <kbd className="pointer-events-none ml-2 hidden select-none rounded border border-border bg-background px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground sm:inline">
+            Cmd+K
+          </kbd>
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="sm:hidden size-9"
+          onClick={() => {}}
+        >
+          <Search className="size-4" />
+          <span className="sr-only">Search</span>
+        </Button>
 
         {/* Notification bell */}
         <NotificationBell />
+
+        {/* Theme toggle */}
+        <ThemeToggle />
 
         {/* User dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
               type="button"
-              className="flex items-center gap-2 rounded-full border border-border py-1 pl-1 pr-2.5 transition-colors hover:bg-accent"
+              className="flex items-center gap-2 rounded-full border border-border py-1 pl-1 pr-2.5 transition-colors hover:bg-accent ml-1"
             >
               <Avatar size="sm">
                 <AvatarFallback className="bg-[#d97706]/15 text-xs font-semibold text-[#d97706]">
@@ -269,11 +294,15 @@ export function AppHeader({ onMenuToggle }: { onMenuToggle?: () => void } = {}) 
                 <User className="size-4" />
                 My Profile
               </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => router.push("/settings")}>
+                <Settings className="size-4" />
+                Settings
+              </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout} variant="destructive">
               <LogOut className="size-4" />
-              Log out
+              Sign out
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

@@ -121,14 +121,14 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
     <TooltipProvider delayDuration={0}>
       <aside
         className={cn(
-          "relative flex h-screen flex-col bg-[#0f0e0a] transition-all duration-300",
+          "relative flex h-screen flex-col bg-[#0f0e0a] text-[#edeae3] border-r border-[#2a271d] transition-all duration-300",
           collapsed ? "w-[72px]" : "w-[244px]"
         )}
       >
-        {/* ── Logo ─────────────────────────────────────────────── */}
+        {/* -- Logo -------------------------------------------------- */}
         <div
           className={cn(
-            "flex h-16 shrink-0 items-center gap-3 border-b border-white/[0.06] px-5",
+            "flex h-16 shrink-0 items-center gap-3 border-b border-[#2a271d] px-5",
             collapsed && "justify-center px-0"
           )}
         >
@@ -140,10 +140,10 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
           )}
         </div>
 
-        {/* ── Collapse toggle ──────────────────────────────────── */}
+        {/* -- Collapse toggle --------------------------------------- */}
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="absolute -right-3 top-5 z-20 flex size-6 items-center justify-center rounded-full border border-white/10 bg-[#1b1810] text-white/60 shadow-md transition-colors hover:bg-[#2a271d] hover:text-white"
+          className="absolute -right-3 top-5 z-20 flex size-6 items-center justify-center rounded-full border border-[#2a271d] bg-[#1b1810] text-[#aea893] shadow-md transition-colors hover:bg-[#2a271d] hover:text-white"
         >
           {collapsed ? (
             <ChevronRight className="size-3" />
@@ -152,17 +152,17 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
           )}
         </button>
 
-        {/* ── Section label ────────────────────────────────────── */}
+        {/* -- Section label ----------------------------------------- */}
         {!collapsed && (
           <div className="px-5 pt-5 pb-2">
-            <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/30">
+            <span className="text-[11px] font-semibold tracking-[0.08em] uppercase text-[#7e7862]">
               Workspace
             </span>
           </div>
         )}
         {collapsed && <div className="pt-4" />}
 
-        {/* ── Navigation ───────────────────────────────────────── */}
+        {/* -- Navigation -------------------------------------------- */}
         <ScrollArea className="flex-1 px-2">
           <nav className="flex flex-col gap-0.5">
             {filteredNav.map((item) => {
@@ -174,18 +174,20 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
                   href={item.href}
                   onClick={onNavigate}
                   className={cn(
-                    "group relative flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium transition-colors",
+                    "group relative flex items-center gap-3 rounded-[10px] px-3 py-2 text-[13px] font-medium transition-colors",
                     active
-                      ? "text-[#ecb467]"
-                      : "text-white/50 hover:bg-white/[0.05] hover:text-white/80",
+                      ? "bg-[#d97706]/[0.15] text-[#ecb467] before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:w-[3px] before:h-5 before:bg-[#d97706] before:rounded-r"
+                      : "text-[#aea893] hover:bg-white/[0.06]",
                     collapsed && "justify-center px-0"
                   )}
                 >
-                  {/* Left accent bar */}
-                  {active && (
-                    <span className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-[#d97706]" />
-                  )}
-                  <Icon className={cn("size-[18px] shrink-0", active && "text-[#d97706]")} />
+                  <Icon
+                    className={cn(
+                      "size-[18px] shrink-0",
+                      active && "text-[#d97706]"
+                    )}
+                    strokeWidth={1.75}
+                  />
                   {!collapsed && <span>{item.label}</span>}
                 </Link>
               );
@@ -196,7 +198,7 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
                     <TooltipTrigger asChild>{linkContent}</TooltipTrigger>
                     <TooltipContent
                       side="right"
-                      className="border-white/10 bg-[#1b1810] text-white"
+                      className="border-[#2a271d] bg-[#1b1810] text-white"
                     >
                       {item.label}
                     </TooltipContent>
@@ -211,10 +213,10 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
           </nav>
         </ScrollArea>
 
-        {/* ── User footer ──────────────────────────────────────── */}
+        {/* -- User footer ------------------------------------------- */}
         <div
           className={cn(
-            "shrink-0 border-t border-white/[0.06] p-3",
+            "shrink-0 border-t border-[#2a271d] p-3",
             collapsed && "flex flex-col items-center"
           )}
         >
@@ -232,10 +234,10 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
 
             {!collapsed && (
               <div className="flex flex-1 flex-col overflow-hidden">
-                <span className="truncate text-sm font-medium text-white/90">
+                <span className="truncate text-sm font-medium text-[#edeae3]">
                   {user.name}
                 </span>
-                <span className="truncate text-[11px] capitalize text-white/30">
+                <span className="truncate text-[11px] capitalize text-[#7e7862]">
                   {user.role}
                 </span>
               </div>
@@ -248,14 +250,14 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
                     variant="ghost"
                     size="icon-xs"
                     onClick={handleLogout}
-                    className="text-white/30 hover:bg-white/[0.05] hover:text-red-400"
+                    className="text-[#aea893] hover:bg-white/[0.06] hover:text-red-400"
                   >
                     <LogOut className="size-3.5" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent
                   side="right"
-                  className="border-white/10 bg-[#1b1810] text-white"
+                  className="border-[#2a271d] bg-[#1b1810] text-white"
                 >
                   Logout
                 </TooltipContent>
@@ -265,7 +267,7 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
                 variant="ghost"
                 size="icon-xs"
                 onClick={handleLogout}
-                className="text-white/30 hover:bg-white/[0.05] hover:text-red-400"
+                className="text-[#aea893] hover:bg-white/[0.06] hover:text-red-400"
               >
                 <LogOut className="size-3.5" />
               </Button>
@@ -273,7 +275,7 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
           </div>
         </div>
 
-        {/* ── Kente stripe ─────────────────────────────────────── */}
+        {/* -- Kente stripe ------------------------------------------ */}
         <div className="stripe-accent h-[3px] w-full shrink-0" />
       </aside>
     </TooltipProvider>

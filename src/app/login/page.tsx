@@ -24,15 +24,19 @@ import {
 import { toast } from "sonner";
 
 /* ------------------------------------------------------------------ */
-/*  Hero panel (right side) — shared visual                           */
+/*  Hero panel (right side)                                            */
 /* ------------------------------------------------------------------ */
 
 function HeroPanel() {
   return (
     <div className="relative hidden h-screen flex-col justify-between overflow-hidden lg:flex">
-      {/* Background layers */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#0f0e0a] via-[#1a150a] to-[#2a1f0a]" />
+      {/* Background gradient */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[#0f0e0a] via-[#1a1813] to-[#2a1f0a]" />
+
+      {/* Radial amber glow overlays */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_70%_40%,rgba(217,119,6,0.18),transparent_70%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_30%_80%,rgba(217,119,6,0.08),transparent_60%)]" />
+
       {/* Dot pattern */}
       <div
         className="absolute inset-0 opacity-[0.07]"
@@ -55,7 +59,7 @@ function HeroPanel() {
           From Dar to Dakar — import, warehouse, and sell with precision.
         </p>
 
-        {/* Glass card */}
+        {/* Glass card — revenue preview */}
         <div className="w-full max-w-sm rounded-xl border border-white/10 bg-white/[0.06] p-5 backdrop-blur-md">
           <div className="mb-3 flex items-center justify-between">
             <span className="text-xs font-medium text-white/50">
@@ -96,8 +100,20 @@ function HeroPanel() {
           </svg>
         </div>
 
-        {/* Trusted by */}
-        <div className="mt-10 flex items-center gap-3">
+        {/* Social proof avatars */}
+        <div className="mt-10 flex items-center gap-4">
+          <div className="flex -space-x-2">
+            {["bg-amber-500", "bg-emerald-500", "bg-sky-500", "bg-rose-400"].map(
+              (color, i) => (
+                <div
+                  key={i}
+                  className={`size-8 rounded-full border-2 border-[#0f0e0a] ${color} flex items-center justify-center text-[10px] font-bold text-white`}
+                >
+                  {["AK", "JM", "FS", "NR"][i]}
+                </div>
+              )
+            )}
+          </div>
           <span className="text-xs text-white/40">
             Trusted by import &amp; distribution businesses across East Africa
           </span>
@@ -111,7 +127,7 @@ function HeroPanel() {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Login form                                                        */
+/*  Login form                                                         */
 /* ------------------------------------------------------------------ */
 
 function LoginForm() {
@@ -211,7 +227,7 @@ function LoginForm() {
             href="/forgot-password"
             className="text-xs font-medium text-[#d97706] hover:underline underline-offset-4"
           >
-            Forgot password?
+            Forgot?
           </Link>
         </div>
         <InputGroup className="h-10">
@@ -249,7 +265,7 @@ function LoginForm() {
       <Button
         type="submit"
         disabled={loading}
-        className="btn-brand h-10 w-full rounded-lg text-sm font-semibold"
+        className="h-10 w-full rounded-lg bg-[#0f0e0a] text-sm font-semibold text-white hover:bg-[#0f0e0a]/90 dark:bg-[#d97706] dark:text-white dark:hover:bg-[#b45309]"
       >
         {loading ? (
           <>
@@ -263,21 +279,20 @@ function LoginForm() {
           </>
         )}
       </Button>
-
     </form>
   );
 }
 
 /* ------------------------------------------------------------------ */
-/*  Page                                                              */
+/*  Page                                                               */
 /* ------------------------------------------------------------------ */
 
 export default function LoginPage() {
   return (
     <div className="grid min-h-screen lg:grid-cols-2">
-      {/* LEFT — Form side */}
+      {/* LEFT -- Form side */}
       <div className="flex flex-col px-6 py-8 sm:px-12 lg:px-16">
-        {/* Top bar */}
+        {/* Top bar: logo + register link */}
         <div className="flex items-center justify-between">
           <FluxLockup size={36} tone="on-light" className="dark:hidden" />
           <FluxLockup size={36} tone="on-dark" className="hidden dark:inline-flex" />
@@ -292,7 +307,7 @@ export default function LoginPage() {
           </p>
         </div>
 
-        {/* Center — form */}
+        {/* Center -- form card */}
         <div className="mx-auto flex w-full max-w-[400px] flex-1 flex-col justify-center">
           {/* Badge */}
           <div className="mb-6">
@@ -302,8 +317,13 @@ export default function LoginPage() {
             </span>
           </div>
 
-          <h1 className="mb-2 text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-            Sign in to your workspace.
+          <h1
+            className="mb-2 font-semibold tracking-tight text-foreground"
+            style={{ fontSize: 34, lineHeight: 1.15 }}
+          >
+            Sign in to
+            <br />
+            your workspace.
           </h1>
           <p className="mb-8 text-sm leading-relaxed text-muted-foreground">
             Flux powers import, inventory, and sales for distributors across
@@ -328,7 +348,7 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* RIGHT — Hero panel */}
+      {/* RIGHT -- Hero panel (hidden on mobile) */}
       <HeroPanel />
     </div>
   );

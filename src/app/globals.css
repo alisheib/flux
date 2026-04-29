@@ -2,6 +2,23 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+:root {
+  /* FLUX Design Tokens */
+  --flux-accent: #d97706;
+  --flux-accent-hover: #c2410c;
+  --flux-accent-light: #faead0;
+  --flux-ink-900: #0f0e0a;
+  --flux-ink-800: #1a1813;
+  --flux-ink-700: #2a271d;
+  --flux-ink-100: #edeae3;
+  --flux-ink-50: #f6f4ef;
+  --flux-ink-0: #ffffff;
+  --flux-success: #10b981;
+  --flux-danger: #dc2626;
+  --flux-warn: #f59e0b;
+  --flux-info: #3b82f6;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
