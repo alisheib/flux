@@ -53,10 +53,6 @@ export const metadata: Metadata = {
       "All-in-one business management for import & distribution. POS, inventory, invoicing, accounting. Built for Africa.",
     creator: "@alisheib",
   },
-  icons: {
-    icon: "/favicon.svg",
-    apple: "/favicon.svg",
-  },
   manifest: "/manifest.json",
   robots: {
     index: true,
