@@ -6,7 +6,6 @@ const JWT_SECRET = new TextEncoder().encode(
 );
 
 const publicPaths = [
-  "/",
   "/login",
   "/register",
   "/forgot-password",
