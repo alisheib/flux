@@ -265,7 +265,7 @@ function LoginForm() {
       <Button
         type="submit"
         disabled={loading}
-        className="h-10 w-full rounded-lg bg-[#0f0e0a] text-sm font-semibold text-white hover:bg-[#0f0e0a]/90 dark:bg-[#d97706] dark:text-white dark:hover:bg-[#b45309]"
+        className="btn-brand h-10 w-full rounded-lg text-sm font-semibold"
       >
         {loading ? (
           <>

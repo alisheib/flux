@@ -202,12 +202,14 @@ export default function AccountingPage() {
           description="Financial overview and profit analysis"
         />
         <div className="bg-card border border-border rounded-xl p-5 shadow-sm">
-          <div className="flex flex-col items-center justify-center py-16">
-            <BarChart3 className="mb-4 h-12 w-12 text-muted-foreground" />
+          <div className="flex flex-col items-center justify-center gap-3 py-16 text-center text-muted-foreground">
+            <div className="empty-state-icon">
+              <BarChart3 className="size-5" />
+            </div>
             <h3 className="text-lg font-semibold text-foreground">
               No accounting data
             </h3>
-            <p className="mt-1 text-sm text-muted-foreground">
+            <p className="text-sm">
               Start by creating shipments and recording sales
             </p>
           </div>
@@ -240,7 +242,7 @@ export default function AccountingPage() {
         title="Accounting"
         description="Financial overview and profit analysis"
       >
-        <Button variant="outline" onClick={handleExport}>
+        <Button variant="outline" onClick={handleExport} disabled={!data || data.shipments.length === 0}>
           <Download className="mr-1.5 h-4 w-4" />
           Export Report
         </Button>
@@ -249,89 +251,56 @@ export default function AccountingPage() {
       {/* ── KPI Cards ────────────────────────────────────────── */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {/* Total Investment */}
-        <div className="bg-card border border-border rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow">
-          <div className="flex items-start justify-between">
-            <div className="space-y-2">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                Total Investment
-              </p>
-              <p className="text-2xl font-semibold tracking-tight">
-                {formatCurrency(data.totalInvestment)}
-              </p>
-            </div>
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/12 text-blue-600 dark:text-blue-400">
-              <DollarSign className="h-5 w-5" />
+        <div className="bg-card border border-border rounded-xl p-5 shadow-sm hover:shadow-md transition-all flex flex-col gap-2 overflow-hidden relative">
+          <div className="flex items-center justify-between">
+            <div className="kpi-icon-blue flex size-10 items-center justify-center rounded-[10px]">
+              <DollarSign className="size-[18px]" />
             </div>
           </div>
+          <p className="text-[12.5px] font-medium text-muted-foreground">Total Investment</p>
+          <p className="text-[clamp(24px,2.4vw,30px)] font-semibold tracking-tight leading-none">
+            {formatCurrency(data.totalInvestment)}
+          </p>
+          <p className="text-xs text-muted-foreground">FOB + landed costs</p>
         </div>
 
         {/* Total Revenue */}
-        <div className="bg-card border border-border rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow">
-          <div className="flex items-start justify-between">
-            <div className="space-y-2">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                Total Revenue
-              </p>
-              <p className="text-2xl font-semibold tracking-tight">
-                {formatCurrency(data.totalRevenue)}
-              </p>
-            </div>
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/12 text-emerald-600 dark:text-emerald-400">
-              <TrendingUp className="h-5 w-5" />
+        <div className="bg-card border border-border rounded-xl p-5 shadow-sm hover:shadow-md transition-all flex flex-col gap-2 overflow-hidden relative">
+          <div className="flex items-center justify-between">
+            <div className="kpi-icon-green flex size-10 items-center justify-center rounded-[10px]">
+              <TrendingUp className="size-[18px]" />
             </div>
           </div>
+          <p className="text-[12.5px] font-medium text-muted-foreground">Total Revenue</p>
+          <p className="text-[clamp(24px,2.4vw,30px)] font-semibold tracking-tight leading-none">
+            {formatCurrency(data.totalRevenue)}
+          </p>
         </div>
 
         {/* Profit / Loss */}
-        <div className="bg-card border border-border rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow">
-          <div className="flex items-start justify-between">
-            <div className="space-y-2">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                Profit / Loss
-              </p>
-              <p
-                className={`text-2xl font-semibold tracking-tight ${
-                  isProfitable
-                    ? "text-green-600 dark:text-green-400"
-                    : "text-red-600 dark:text-red-400"
-                }`}
-              >
-                {formatCurrency(data.profitLoss)}
-              </p>
-            </div>
-            <div
-              className={`flex h-10 w-10 items-center justify-center rounded-lg ${
-                isProfitable
-                  ? "bg-green-500/12 text-green-600 dark:text-green-400"
-                  : "bg-red-500/12 text-red-600 dark:text-red-400"
-              }`}
-            >
-              <Target className="h-5 w-5" />
+        <div className="bg-card border border-border rounded-xl p-5 shadow-sm hover:shadow-md transition-all flex flex-col gap-2 overflow-hidden relative">
+          <div className="flex items-center justify-between">
+            <div className={`flex size-10 items-center justify-center rounded-[10px] ${isProfitable ? "kpi-icon-accent" : "bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300"}`}>
+              <Target className="size-[18px]" />
             </div>
           </div>
+          <p className="text-[12.5px] font-medium text-muted-foreground">Profit / Loss</p>
+          <p className={`text-[clamp(24px,2.4vw,30px)] font-semibold tracking-tight leading-none ${isProfitable ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
+            {formatCurrency(data.profitLoss)}
+          </p>
         </div>
 
         {/* Average Margin */}
-        <div className="bg-card border border-border rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow">
-          <div className="flex items-start justify-between">
-            <div className="space-y-2">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                Avg Margin
-              </p>
-              <p
-                className={`text-2xl font-semibold tracking-tight ${
-                  data.averageMargin >= 0
-                    ? "text-green-600 dark:text-green-400"
-                    : "text-red-600 dark:text-red-400"
-                }`}
-              >
-                {formatNumber(data.averageMargin, 1)}%
-              </p>
-            </div>
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-500/12 text-purple-600 dark:text-purple-400">
-              <PieChart className="h-5 w-5" />
+        <div className="bg-card border border-border rounded-xl p-5 shadow-sm hover:shadow-md transition-all flex flex-col gap-2 overflow-hidden relative">
+          <div className="flex items-center justify-between">
+            <div className="kpi-icon-purple flex size-10 items-center justify-center rounded-[10px]">
+              <PieChart className="size-[18px]" />
             </div>
           </div>
+          <p className="text-[12.5px] font-medium text-muted-foreground">Avg Margin</p>
+          <p className={`text-[clamp(24px,2.4vw,30px)] font-semibold tracking-tight leading-none ${data.averageMargin >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
+            {formatNumber(data.averageMargin, 1)}%
+          </p>
         </div>
       </div>
 

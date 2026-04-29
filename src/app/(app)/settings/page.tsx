@@ -389,8 +389,10 @@ export default function SettingsPage() {
       {/* ── Organization Info ──────────────────────────────────── */}
       <div className="bg-card border border-border rounded-xl shadow-sm">
         <div className="p-5 pb-0">
-          <div className="flex items-center gap-2">
-            <Building2 className="h-5 w-5 text-muted-foreground" />
+          <div className="flex items-center gap-3">
+            <div className="kpi-icon-accent flex h-9 w-9 items-center justify-center rounded-lg">
+              <Building2 className="h-5 w-5" />
+            </div>
             <h3 className="text-base font-semibold">Organization Info</h3>
           </div>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -476,7 +478,7 @@ export default function SettingsPage() {
               <Button
                 type="submit"
                 disabled={savingOrg}
-                className="bg-[#d97706] text-[#1a1813] hover:bg-[#c2410c]"
+                className="btn-brand"
               >
                 {savingOrg ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -496,8 +498,10 @@ export default function SettingsPage() {
       {/* ── Tax Configuration ─────────────────────────────────── */}
       <div className="bg-card border border-border rounded-xl shadow-sm">
         <div className="p-5 pb-0">
-          <div className="flex items-center gap-2">
-            <Receipt className="h-5 w-5 text-muted-foreground" />
+          <div className="flex items-center gap-3">
+            <div className="kpi-icon-accent flex h-9 w-9 items-center justify-center rounded-lg">
+              <Receipt className="h-5 w-5" />
+            </div>
             <h3 className="text-base font-semibold">Tax Configuration</h3>
           </div>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -536,7 +540,7 @@ export default function SettingsPage() {
               <Button
                 type="submit"
                 disabled={savingTax}
-                className="bg-[#d97706] text-[#1a1813] hover:bg-[#c2410c]"
+                className="btn-brand"
               >
                 {savingTax ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -556,8 +560,10 @@ export default function SettingsPage() {
       {/* ── Invoice Settings ──────────────────────────────────── */}
       <div className="bg-card border border-border rounded-xl shadow-sm">
         <div className="p-5 pb-0">
-          <div className="flex items-center gap-2">
-            <Receipt className="h-5 w-5 text-muted-foreground" />
+          <div className="flex items-center gap-3">
+            <div className="kpi-icon-accent flex h-9 w-9 items-center justify-center rounded-lg">
+              <Receipt className="h-5 w-5" />
+            </div>
             <h3 className="text-base font-semibold">Invoice Settings</h3>
           </div>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -614,7 +620,7 @@ export default function SettingsPage() {
               <Button
                 type="submit"
                 disabled={savingInvoice}
-                className="bg-[#d97706] text-[#1a1813] hover:bg-[#c2410c]"
+                className="btn-brand"
               >
                 {savingInvoice ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -634,8 +640,10 @@ export default function SettingsPage() {
       {/* ── Margin Defaults ───────────────────────────────────── */}
       <div className="bg-card border border-border rounded-xl shadow-sm">
         <div className="p-5 pb-0">
-          <div className="flex items-center gap-2">
-            <Percent className="h-5 w-5 text-muted-foreground" />
+          <div className="flex items-center gap-3">
+            <div className="kpi-icon-accent flex h-9 w-9 items-center justify-center rounded-lg">
+              <Percent className="h-5 w-5" />
+            </div>
             <h3 className="text-base font-semibold">Margin Defaults</h3>
           </div>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -686,7 +694,7 @@ export default function SettingsPage() {
               <Button
                 type="submit"
                 disabled={savingMargin}
-                className="bg-[#d97706] text-[#1a1813] hover:bg-[#c2410c]"
+                className="btn-brand"
               >
                 {savingMargin ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -706,8 +714,10 @@ export default function SettingsPage() {
       {/* ── Role Permissions ─────────────────────────────────── */}
       <div className="bg-card border border-border rounded-xl shadow-sm">
         <div className="p-5 pb-0">
-          <div className="flex items-center gap-2">
-            <Shield className="h-5 w-5 text-muted-foreground" />
+          <div className="flex items-center gap-3">
+            <div className="kpi-icon-accent flex h-9 w-9 items-center justify-center rounded-lg">
+              <Shield className="h-5 w-5" />
+            </div>
             <h3 className="text-base font-semibold">Role Permissions</h3>
           </div>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -771,7 +781,7 @@ export default function SettingsPage() {
             <Button
               onClick={handleSaveRolePerms}
               disabled={savingRoles}
-              className="bg-[#d97706] text-[#1a1813] hover:bg-[#c2410c]"
+              className="btn-brand"
             >
               {savingRoles ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -790,8 +800,10 @@ export default function SettingsPage() {
       {/* ── Tally Integration ──────────────────────────────────── */}
       <div className="bg-card border border-border rounded-xl shadow-sm">
         <div className="p-5 pb-0">
-          <div className="flex items-center gap-2">
-            <Zap className="h-5 w-5 text-muted-foreground" />
+          <div className="flex items-center gap-3">
+            <div className="kpi-icon-accent flex h-9 w-9 items-center justify-center rounded-lg">
+              <Zap className="h-5 w-5" />
+            </div>
             <h3 className="text-base font-semibold">TRA Tally Integration</h3>
           </div>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -834,8 +846,10 @@ export default function SettingsPage() {
       {/* ── Data Management ───────────────────────────────────── */}
       <div className="bg-card border border-border rounded-xl shadow-sm">
         <div className="p-5 pb-0">
-          <div className="flex items-center gap-2">
-            <Database className="h-5 w-5 text-muted-foreground" />
+          <div className="flex items-center gap-3">
+            <div className="kpi-icon-accent flex h-9 w-9 items-center justify-center rounded-lg">
+              <Database className="h-5 w-5" />
+            </div>
             <h3 className="text-base font-semibold">Data Management</h3>
           </div>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -910,10 +924,12 @@ export default function SettingsPage() {
       <div className="border-t border-border" />
 
       {/* ── Reset Database (Danger Zone) ────────────────────── */}
-      <div className="bg-card border border-red-200 dark:border-red-900/50 rounded-xl shadow-sm">
+      <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 border-l-4 border-l-red-500 rounded-xl shadow-sm">
         <div className="p-5 pb-0">
-          <div className="flex items-center gap-2">
-            <Trash2 className="h-5 w-5 text-red-500" />
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-red-100 text-red-600 dark:bg-red-500/20 dark:text-red-400">
+              <Trash2 className="h-5 w-5" />
+            </div>
             <h3 className="text-base font-semibold text-red-600 dark:text-red-400">Danger Zone</h3>
           </div>
           <p className="mt-1 text-sm text-muted-foreground">

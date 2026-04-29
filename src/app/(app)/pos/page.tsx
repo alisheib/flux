@@ -652,19 +652,19 @@ export default function POSPage() {
                         }
                       }}
                       disabled={outOfStock}
-                      className={`group relative flex flex-col rounded-xl border bg-card p-4 text-left transition-all ${
+                      className={`group relative flex flex-col rounded-xl border bg-card p-4 text-left transition-all duration-150 ${
                         outOfStock
                           ? "cursor-not-allowed opacity-50"
-                          : "cursor-pointer hover:shadow-md hover:border-[var(--flux-brand)]/40"
+                          : "cursor-pointer hover:shadow-md hover:border-[var(--flux-accent)] hover:-translate-y-0.5"
                       } ${
                         inCart
-                          ? "ring-2 ring-[var(--flux-brand)]"
+                          ? "ring-2 ring-[var(--flux-accent)]"
                           : "border-border"
                       }`}
                     >
                       {/* In-cart indicator */}
                       {inCart && (
-                        <span className="absolute -right-1.5 -top-1.5 flex size-6 items-center justify-center rounded-full bg-[var(--flux-brand)] text-[11px] font-bold text-white shadow-sm">
+                        <span className="absolute -right-1.5 -top-1.5 flex size-6 items-center justify-center rounded-full bg-foreground text-[11px] font-bold text-background shadow-sm">
                           {inCart.quantity}
                         </span>
                       )}
@@ -690,7 +690,7 @@ export default function POSPage() {
                           )}
                         </p>
                         <span
-                          className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${stockPillClass(product)}`}
+                          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-medium ${stockPillClass(product)}`}
                         >
                           {outOfStock
                             ? "Out"
@@ -716,7 +716,9 @@ export default function POSPage() {
           {/* Cart Header */}
           <div className="flex items-center justify-between border-b border-border px-4 py-3">
             <div className="flex items-center gap-2.5">
-              <ShoppingCart className="size-5 text-foreground" />
+              <div className="flex size-8 items-center justify-center rounded-lg bg-[var(--flux-accent)]/12">
+                <ShoppingCart className="size-4 text-[var(--flux-accent)]" />
+              </div>
               <h2 className="text-lg font-bold text-foreground">
                 Current Sale
               </h2>
@@ -731,8 +733,10 @@ export default function POSPage() {
           {/* Cart Items (scrollable) */}
           <ScrollArea className="flex-1">
             {cart.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
-                <ShoppingCart className="mb-3 size-12 opacity-30" />
+              <div className="flex flex-col items-center justify-center gap-3 py-20 text-muted-foreground">
+                <div className="empty-state-icon">
+                  <ShoppingCart className="size-5" />
+                </div>
                 <p className="text-sm font-medium">Cart is empty</p>
                 <p className="text-xs">Click on products to add them</p>
               </div>
@@ -987,7 +991,7 @@ export default function POSPage() {
                       onClick={() => setPaymentMethod(method.value)}
                       className={`flex flex-col items-center gap-0.5 rounded-lg border py-2 text-center transition-colors ${
                         isActive
-                          ? "border-[var(--flux-brand)] bg-[var(--flux-brand)] text-white"
+                          ? "border-[var(--flux-accent)] bg-[var(--flux-accent)]/10 text-[var(--flux-accent)] font-semibold"
                           : "border-border bg-background text-muted-foreground hover:bg-accent hover:text-foreground"
                       }`}
                     >
@@ -1015,7 +1019,7 @@ export default function POSPage() {
             {/* Complete Sale Button */}
             <div className="space-y-2 p-4 pt-2">
               <Button
-                className="h-12 w-full bg-emerald-600 text-base font-bold text-white hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-700"
+                className="btn-accent h-12 w-full text-base font-bold"
                 onClick={openConfirmSale}
                 disabled={cart.length === 0 || completingSale}
               >
@@ -1150,7 +1154,7 @@ export default function POSPage() {
             <Button
               onClick={completeSale}
               disabled={completingSale}
-              className="bg-emerald-600 text-white hover:bg-emerald-700"
+              className="btn-accent"
             >
               {completingSale ? (
                 <>

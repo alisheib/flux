@@ -672,7 +672,7 @@ function CustomerDetailDialog({
           </Button>
           <Button
             size="sm"
-            className="gap-1.5 bg-[#d97706] text-white hover:bg-[#b45309] dark:bg-[#d97706] dark:hover:bg-[#b45309]"
+            className="btn-brand gap-1.5"
             onClick={onRecordPayment}
           >
             <Plus className="size-3.5" />
@@ -935,7 +935,7 @@ function RecordPaymentDialog({
           <Button
             size="sm"
             disabled={!customerId || amountNum <= 0 || saving}
-            className="gap-1.5 bg-[#d97706] text-white hover:bg-[#b45309] dark:bg-[#d97706] dark:hover:bg-[#b45309]"
+            className="btn-brand gap-1.5"
             onClick={handleSave}
           >
             {saving ? (
@@ -1162,7 +1162,12 @@ export default function ReceivablesPage() {
           variant="outline"
           size="sm"
           className="gap-1.5"
+          disabled={filteredCustomers.length === 0}
           onClick={async () => {
+            if (filteredCustomers.length === 0) {
+              toast.error("No data to export");
+              return;
+            }
             const { exportToExcel } = await import("@/lib/excel-export");
 
             const totalOutstanding = filteredCustomers.reduce((s, c) => s + c.outstanding, 0);
@@ -1206,7 +1211,7 @@ export default function ReceivablesPage() {
         </Button>
         <Button
           size="sm"
-          className="gap-1.5 bg-[#d97706] text-white hover:bg-[#b45309] dark:bg-[#d97706] dark:hover:bg-[#b45309]"
+          className="btn-brand gap-1.5"
           onClick={() => {
             setPaymentFor(null);
             setPaymentOpen(true);
@@ -1448,7 +1453,7 @@ export default function ReceivablesPage() {
                                 </Button>
                                 <Button
                                   size="sm"
-                                  className="h-7 gap-1 bg-[#d97706] px-2 text-xs text-white hover:bg-[#b45309] dark:bg-[#d97706] dark:hover:bg-[#b45309]"
+                                  className="btn-brand h-7 gap-1 px-2 text-xs"
                                   onClick={() => {
                                     setPaymentFor(c);
                                     setPaymentOpen(true);

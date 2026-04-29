@@ -299,7 +299,7 @@ export default function StockMovementsPage() {
       >
         <button
           onClick={() => setShowAdjustDialog(true)}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-[#d97706] px-3 py-1.5 text-sm font-medium text-[#1a1813] shadow-sm hover:bg-[#c2410c] transition-colors"
+          className="inline-flex items-center gap-1.5 rounded-lg btn-brand px-3 py-1.5 text-sm shadow-sm transition-colors"
         >
           <Plus className="size-4" />
           Adjust Stock
@@ -566,7 +566,7 @@ export default function StockMovementsPage() {
             <button
               onClick={handleAdjustStock}
               disabled={adjusting || !adjustProductId || !adjustQuantity}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-[#d97706] px-4 py-2 text-sm font-medium text-[#1a1813] shadow-sm hover:bg-[#c2410c] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="inline-flex items-center gap-1.5 rounded-lg btn-brand px-4 py-2 text-sm shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {adjusting && <Loader2 className="size-4 animate-spin" />}
               Confirm Adjustment

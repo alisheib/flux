@@ -57,26 +57,22 @@ interface UserRecord {
 const ROLE_CONFIG: Record<string, { label: string; className: string; avatarBg: string }> = {
   admin: {
     label: "Admin",
-    className:
-      "bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-300",
+    className: "badge-violet",
     avatarBg: "bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-300",
   },
   manager: {
     label: "Manager",
-    className:
-      "bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300",
+    className: "badge-info",
     avatarBg: "bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300",
   },
   accountant: {
     label: "Accountant",
-    className:
-      "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300",
+    className: "badge-success",
     avatarBg: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300",
   },
   salesman: {
     label: "Salesman",
-    className:
-      "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300",
+    className: "badge-warn",
     avatarBg: "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300",
   },
 };
@@ -301,8 +297,8 @@ export default function UsersPage() {
         />
         <div className="bg-card border border-border rounded-xl shadow-sm">
           <div className="flex flex-col items-center justify-center py-20">
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-muted">
-              <ShieldAlert className="h-7 w-7 text-muted-foreground" />
+            <div className="empty-state-icon">
+              <ShieldAlert className="h-6 w-6" />
             </div>
             <h3 className="mt-4 text-lg font-semibold text-foreground">
               Admin Only
@@ -325,7 +321,7 @@ export default function UsersPage() {
         description="Manage team access and roles"
       >
         <Button
-          className="bg-[#d97706] text-[#1a1813] hover:bg-[#c2410c]"
+          className="btn-brand"
           onClick={() => setShowAddUser(true)}
         >
           <Plus className="mr-1.5 h-4 w-4" />
@@ -341,8 +337,8 @@ export default function UsersPage() {
       ) : users.length === 0 ? (
         <div className="bg-card border border-border rounded-xl shadow-sm">
           <div className="flex flex-col items-center justify-center py-16">
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-muted">
-              <Users className="h-7 w-7 text-muted-foreground" />
+            <div className="empty-state-icon">
+              <Users className="h-6 w-6" />
             </div>
             <h3 className="mt-4 text-lg font-semibold text-foreground">
               No users found
@@ -351,7 +347,7 @@ export default function UsersPage() {
               Add your first team member to get started
             </p>
             <Button
-              className="mt-5 bg-[#d97706] text-[#1a1813] hover:bg-[#c2410c]"
+              className="btn-brand mt-5"
               onClick={() => setShowAddUser(true)}
             >
               <Plus className="mr-1.5 h-4 w-4" />
@@ -522,7 +518,7 @@ export default function UsersPage() {
               <Button
                 type="submit"
                 disabled={saving}
-                className="bg-[#d97706] text-[#1a1813] hover:bg-[#c2410c]"
+                className="btn-brand"
               >
                 {saving && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -614,7 +610,7 @@ export default function UsersPage() {
                 <Button
                   type="submit"
                   disabled={saving}
-                  className="bg-[#d97706] text-[#1a1813] hover:bg-[#c2410c]"
+                  className="btn-brand"
                 >
                   {saving && (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />

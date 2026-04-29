@@ -735,7 +735,7 @@ export default function ShipmentsPage() {
                 </div>
                 <button
                   onClick={() => setShowAddItem(true)}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-[#d97706] px-3 py-1.5 text-sm font-medium text-[#1a1813] shadow-sm hover:bg-[#c2410c] transition-colors"
+                  className="btn-brand inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm shadow-sm transition-colors"
                 >
                   <Plus className="size-4" />
                   Add Item
@@ -860,7 +860,7 @@ export default function ShipmentsPage() {
                 </div>
                 <button
                   onClick={() => setShowAddExpense(true)}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-[#d97706] px-3 py-1.5 text-sm font-medium text-[#1a1813] shadow-sm hover:bg-[#c2410c] transition-colors"
+                  className="btn-brand inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm shadow-sm transition-colors"
                 >
                   <Plus className="size-4" />
                   Add Expense
@@ -1481,7 +1481,7 @@ export default function ShipmentsPage() {
       >
         <button
           onClick={() => setShowNewShipment(true)}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-[#d97706] px-3 py-1.5 text-sm font-medium text-[#1a1813] shadow-sm hover:bg-[#c2410c] transition-colors"
+          className="btn-brand inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm shadow-sm transition-colors"
         >
           <Plus className="size-4" />
           New Shipment

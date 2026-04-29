@@ -123,7 +123,7 @@ export default function InvoiceViewPage() {
         </Button>
         <Button
           size="sm"
-          className="bg-[#d97706] text-white hover:bg-[#b45309]"
+          className="btn-brand"
           onClick={handleDownloadPDF}
           disabled={downloading}
         >

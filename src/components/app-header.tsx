@@ -98,7 +98,7 @@ function NotificationBell() {
         <Button variant="ghost" size="icon" className="relative size-9">
           <Bell className="size-4" />
           {count > 0 && (
-            <span className="absolute -right-0.5 -top-0.5 flex size-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+            <span className="absolute -right-0.5 -top-0.5 flex size-4 items-center justify-center rounded-full bg-[#d97706] text-[10px] font-bold text-[#1a1813]">
               {count > 9 ? "9+" : count}
             </span>
           )}
@@ -215,10 +215,10 @@ export function AppHeader({ onMenuToggle }: { onMenuToggle?: () => void } = {}) 
         </Button>
 
         {/* Breadcrumb */}
-        <nav className="flex items-center gap-1.5 text-sm">
-          <span className="hidden sm:inline text-muted-foreground">{orgName}</span>
+        <nav className="flex items-center gap-2 text-sm">
+          <span className="hidden sm:inline text-[13px] text-muted-foreground">{orgName}</span>
           <ChevronRight className="hidden sm:block size-3.5 text-muted-foreground/40" />
-          <span className="font-semibold text-foreground">{pageTitle}</span>
+          <span className="text-[16px] font-semibold tracking-tight text-foreground">{pageTitle}</span>
         </nav>
       </div>
 

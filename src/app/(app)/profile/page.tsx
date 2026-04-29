@@ -117,10 +117,10 @@ export default function ProfilePage() {
       <PageHeader title="Profile" description="Manage your account settings" />
 
       {/* User Card */}
-      <div className="bg-card border border-border rounded-xl shadow-sm p-6">
+      <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm p-6">
         <div className="flex items-center gap-4">
-          <Avatar className="size-16">
-            <AvatarFallback className="bg-[#d97706]/15 text-lg font-bold text-[#d97706]">
+          <Avatar className="size-16 ring-2 ring-[var(--flux-accent)]/20">
+            <AvatarFallback className="kpi-icon-accent text-lg font-bold">
               {initials}
             </AvatarFallback>
           </Avatar>
@@ -129,7 +129,7 @@ export default function ProfilePage() {
             <div className="flex items-center gap-2 mt-1">
               <Badge variant="secondary" className="capitalize text-xs">{profile?.role}</Badge>
               {profile?.emailVerified && (
-                <Badge className="bg-emerald-500/12 text-emerald-600 dark:text-emerald-400 text-xs">Verified</Badge>
+                <Badge className="badge-success text-xs border-0">Verified</Badge>
               )}
             </div>
           </div>
@@ -160,10 +160,12 @@ export default function ProfilePage() {
       </div>
 
       {/* Update Name */}
-      <div className="bg-card border border-border rounded-xl shadow-sm">
+      <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
         <div className="p-5 pb-0">
-          <div className="flex items-center gap-2">
-            <User className="size-5 text-muted-foreground" />
+          <div className="flex items-center gap-3">
+            <div className="flex size-9 items-center justify-center rounded-lg kpi-icon-accent">
+              <User className="size-4" />
+            </div>
             <h3 className="text-base font-semibold">Display Name</h3>
           </div>
         </div>
@@ -173,7 +175,7 @@ export default function ProfilePage() {
               <Label htmlFor="profile-name">Full Name</Label>
               <Input id="profile-name" value={name} onChange={e => setName(e.target.value)} placeholder="Enter your name" />
             </div>
-            <Button type="submit" disabled={savingName} className="bg-[#d97706] text-[#1a1813] hover:bg-[#c2410c]">
+            <Button type="submit" disabled={savingName} className="btn-brand">
               {savingName ? <Loader2 className="size-4 animate-spin mr-1.5" /> : <Save className="size-4 mr-1.5" />}
               Save
             </Button>
@@ -182,10 +184,12 @@ export default function ProfilePage() {
       </div>
 
       {/* Change Password */}
-      <div className="bg-card border border-border rounded-xl shadow-sm">
+      <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
         <div className="p-5 pb-0">
-          <div className="flex items-center gap-2">
-            <Lock className="size-5 text-muted-foreground" />
+          <div className="flex items-center gap-3">
+            <div className="flex size-9 items-center justify-center rounded-lg kpi-icon-amber">
+              <Lock className="size-4" />
+            </div>
             <h3 className="text-base font-semibold">Change Password</h3>
           </div>
         </div>
@@ -209,7 +213,7 @@ export default function ProfilePage() {
               <p className="text-xs text-red-500">Passwords do not match</p>
             )}
             <div className="flex justify-end">
-              <Button type="submit" disabled={savingPassword} className="bg-[#d97706] text-[#1a1813] hover:bg-[#c2410c]">
+              <Button type="submit" disabled={savingPassword} className="btn-brand">
                 {savingPassword ? <Loader2 className="size-4 animate-spin mr-1.5" /> : <Lock className="size-4 mr-1.5" />}
                 Change Password
               </Button>

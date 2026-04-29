@@ -80,8 +80,7 @@ const kpiConfig = [
     label: "Total Products",
     subtitle: "Active inventory items",
     icon: Package,
-    bgClass: "bg-blue-100 dark:bg-blue-500/20",
-    iconClass: "text-blue-600 dark:text-blue-400",
+    toneClass: "kpi-icon-blue",
     format: (v: number) => formatNumber(v, 0),
   },
   {
@@ -89,8 +88,7 @@ const kpiConfig = [
     label: "Total Sales",
     subtitle: "Completed transactions",
     icon: ShoppingCart,
-    bgClass: "bg-emerald-100 dark:bg-emerald-500/20",
-    iconClass: "text-emerald-600 dark:text-emerald-400",
+    toneClass: "kpi-icon-green",
     format: (v: number) => formatNumber(v, 0),
   },
   {
@@ -98,8 +96,7 @@ const kpiConfig = [
     label: "Revenue",
     subtitle: "All-time total",
     icon: DollarSign,
-    bgClass: "bg-amber-100 dark:bg-amber-500/20",
-    iconClass: "text-amber-600 dark:text-amber-400",
+    toneClass: "kpi-icon-accent",
     format: (v: number, currency?: string) => formatCurrency(v, currency),
   },
   {
@@ -107,8 +104,7 @@ const kpiConfig = [
     label: "Shipments",
     subtitle: "Import shipments",
     icon: Ship,
-    bgClass: "bg-purple-100 dark:bg-purple-500/20",
-    iconClass: "text-purple-600 dark:text-purple-400",
+    toneClass: "kpi-icon-purple",
     format: (v: number) => formatNumber(v, 0),
   },
 ];
@@ -255,39 +251,44 @@ export default function DashboardPage() {
           return (
             <div
               key={kpi.key}
-              className="group flex items-center gap-4 rounded-xl border border-border bg-card p-4 shadow-sm transition-shadow hover:shadow-md"
+              className="group flex flex-col gap-2 rounded-xl border border-border bg-card p-5 shadow-sm transition-all hover:shadow-md relative overflow-hidden"
             >
-              {/* Icon */}
-              <div
-                className={`flex size-10 shrink-0 items-center justify-center rounded-lg ${kpi.bgClass}`}
-              >
-                <Icon className={`size-5 ${kpi.iconClass}`} />
+              {/* Top row: icon + delta */}
+              <div className="flex items-center justify-between">
+                <div
+                  className={`flex size-10 shrink-0 items-center justify-center rounded-[10px] ${kpi.toneClass}`}
+                >
+                  <Icon className="size-[18px]" />
+                </div>
               </div>
 
-              {/* Content */}
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-medium text-muted-foreground">
-                  {kpi.label}
-                </p>
-                <p className="text-2xl font-semibold tracking-tight text-foreground">
-                  {formatted}
-                </p>
-                <p className="text-[11px] text-muted-foreground">
-                  {kpi.subtitle}
-                </p>
-              </div>
+              {/* Label */}
+              <p className="text-[12.5px] font-medium text-muted-foreground">
+                {kpi.label}
+              </p>
+
+              {/* Value — display font */}
+              <p className="text-[clamp(24px,2.4vw,30px)] font-semibold tracking-tight leading-none text-foreground">
+                {formatted}
+              </p>
+
+              {/* Subtitle */}
+              <p className="text-xs text-muted-foreground">
+                {kpi.subtitle}
+              </p>
             </div>
           );
         })}
       </div>
 
       {/* ── Revenue Chart ──────────────────────────────────────────────── */}
-      <Card className="border border-border bg-card shadow-sm">
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
+      <Card className="border border-border bg-card shadow-sm rounded-xl overflow-hidden">
+        <CardHeader className="flex flex-row items-center justify-between pb-2 border-b border-border/50">
           <div className="space-y-1">
-            <CardTitle className="text-base font-semibold">
-              Revenue Overview
+            <CardTitle className="text-[15px] font-semibold tracking-tight">
+              Revenue vs Costs
             </CardTitle>
+            <p className="text-xs text-muted-foreground">Last 6 months</p>
           </div>
           <Badge
             variant="secondary"
@@ -298,8 +299,10 @@ export default function DashboardPage() {
         </CardHeader>
         <CardContent>
           {chartData.length === 0 || chartData.every((d) => d.revenue === 0) ? (
-            <div className="flex min-h-[280px] flex-col items-center justify-center text-muted-foreground">
-              <BarChart3 className="mb-3 size-12 opacity-40" />
+            <div className="flex min-h-[280px] flex-col items-center justify-center gap-3 text-muted-foreground text-center p-10">
+              <div className="empty-state-icon">
+                <BarChart3 className="size-5" />
+              </div>
               <p className="text-sm font-medium">No revenue data yet</p>
               <p className="text-xs">
                 Complete some sales to see your revenue chart
@@ -358,14 +361,14 @@ export default function DashboardPage() {
                   <Bar
                     dataKey="costs"
                     name="Costs"
-                    fill="var(--chart-3)"
+                    fill="var(--border)"
                     radius={[4, 4, 0, 0]}
                     maxBarSize={40}
                   />
                   <Bar
                     dataKey="revenue"
                     name="Revenue"
-                    fill="var(--chart-2)"
+                    fill="var(--ring)"
                     radius={[4, 4, 0, 0]}
                     maxBarSize={40}
                   />
@@ -379,16 +382,18 @@ export default function DashboardPage() {
       {/* ── Two-column: Recent Sales + Low Stock ───────────────────────── */}
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Recent Sales (2/3) */}
-        <Card className="border border-border bg-card shadow-sm lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="text-base font-semibold">
+        <Card className="border border-border bg-card shadow-sm lg:col-span-2 rounded-xl overflow-hidden">
+          <CardHeader className="border-b border-border/50">
+            <CardTitle className="text-[15px] font-semibold tracking-tight">
               Recent Sales
             </CardTitle>
           </CardHeader>
           <CardContent>
             {!data?.recentSales || data.recentSales.length === 0 ? (
-              <div className="flex min-h-[200px] flex-col items-center justify-center text-muted-foreground">
-                <ShoppingCart className="mb-3 size-10 opacity-40" />
+              <div className="flex min-h-[200px] flex-col items-center justify-center gap-3 text-muted-foreground text-center p-10">
+                <div className="empty-state-icon">
+                  <ShoppingCart className="size-5" />
+                </div>
                 <p className="text-sm font-medium">No sales yet</p>
                 <p className="text-xs">
                   Sales will appear here once completed
@@ -437,17 +442,19 @@ export default function DashboardPage() {
         </Card>
 
         {/* Low Stock Alerts (1/3) */}
-        <Card className="border border-border bg-card shadow-sm">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base font-semibold">
+        <Card className="border border-border bg-card shadow-sm rounded-xl overflow-hidden">
+          <CardHeader className="border-b border-border/50">
+            <CardTitle className="flex items-center gap-2 text-[15px] font-semibold tracking-tight">
               <AlertTriangle className="size-4 text-amber-500" />
               Low Stock Alerts
             </CardTitle>
           </CardHeader>
           <CardContent>
             {!data?.lowStockProducts || data.lowStockProducts.length === 0 ? (
-              <div className="flex min-h-[200px] flex-col items-center justify-center text-muted-foreground">
-                <Package className="mb-3 size-10 opacity-40" />
+              <div className="flex min-h-[200px] flex-col items-center justify-center gap-3 text-muted-foreground text-center p-10">
+                <div className="empty-state-icon">
+                  <Package className="size-5" />
+                </div>
                 <p className="text-sm font-medium">Stock levels healthy</p>
                 <p className="text-xs">No items below minimum stock</p>
               </div>

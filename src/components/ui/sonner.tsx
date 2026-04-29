@@ -33,14 +33,14 @@ const Toaster = ({ ...props }: ToasterProps) => {
       }}
       toastOptions={{
         classNames: {
-          toast: "!rounded-xl !border !shadow-lg !font-[inherit] !text-sm",
+          toast: "!rounded-[10px] !border !shadow-lg !font-[inherit] !text-sm !border-l-[3px]",
           title: "!font-semibold !text-[13px]",
           description: "!text-xs !opacity-70",
           closeButton: "!rounded-full !border-0 !bg-transparent hover:!bg-black/5 dark:hover:!bg-white/10",
-          success: "!bg-emerald-50 !border-emerald-200 !text-emerald-900 dark:!bg-emerald-950/80 dark:!border-emerald-800 dark:!text-emerald-100",
-          error: "!bg-red-50 !border-red-200 !text-red-900 dark:!bg-red-950/80 dark:!border-red-800 dark:!text-red-100",
-          warning: "!bg-amber-50 !border-amber-200 !text-amber-900 dark:!bg-amber-950/80 dark:!border-amber-800 dark:!text-amber-100",
-          info: "!bg-sky-50 !border-sky-200 !text-sky-900 dark:!bg-sky-950/80 dark:!border-sky-800 dark:!text-sky-100",
+          success: "!bg-card !border-border !text-foreground !border-l-emerald-500",
+          error: "!bg-card !border-border !text-foreground !border-l-red-500",
+          warning: "!bg-card !border-border !text-foreground !border-l-amber-500",
+          info: "!bg-card !border-border !text-foreground !border-l-blue-500",
         },
       }}
       style={
@@ -48,7 +48,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
           "--normal-bg": "var(--popover)",
           "--normal-text": "var(--popover-foreground)",
           "--normal-border": "var(--border)",
-          "--border-radius": "0.75rem",
+          "--border-radius": "10px",
         } as React.CSSProperties
       }
       {...props}

@@ -226,7 +226,7 @@ export default function TallyPage() {
               Test Connection
             </Button>
             <Button size="sm" onClick={handleSync} disabled={syncing}
-              className="bg-[#1e3a5f] text-white hover:bg-[#162d4a]">
+              className="btn-brand">
               {syncing ? <Loader2 className="size-4 animate-spin mr-1.5" /> : <RefreshCw className="size-4 mr-1.5" />}
               Sync to TRA
             </Button>
@@ -265,7 +265,11 @@ export default function TallyPage() {
         </div>
 
         {/* Info bar */}
-        <div className="bg-[#f0f4f8] dark:bg-[#0f1a2e] px-6 py-3 flex flex-wrap items-center gap-x-6 gap-y-1 text-xs">
+        <div className={`px-6 py-3 flex flex-wrap items-center gap-x-6 gap-y-1 text-xs ${
+          config.enabled
+            ? "bg-emerald-50 dark:bg-emerald-950/30 border-t border-emerald-200 dark:border-emerald-800/40"
+            : "bg-amber-50 dark:bg-amber-950/30 border-t border-amber-200 dark:border-amber-800/40"
+        }`}>
           {config.tin && (
             <span className="text-muted-foreground">
               <strong className="text-foreground">TIN:</strong> {config.tin}
@@ -338,8 +342,10 @@ export default function TallyPage() {
                   {receipts.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={7} className="py-16 text-center text-muted-foreground">
-                        <TRALogo size={48} />
-                        <p className="mt-3 text-sm font-medium">No fiscal receipts yet</p>
+                        <div className="empty-state-icon mb-3">
+                          <FileText className="size-5" />
+                        </div>
+                        <p className="text-sm font-medium">No fiscal receipts yet</p>
                         <p className="text-xs mt-1">Sales will appear here for TRA submission</p>
                       </TableCell>
                     </TableRow>
@@ -375,10 +381,10 @@ export default function TallyPage() {
           <TabsContent value="config">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Credentials */}
-              <div className="bg-card border border-border rounded-xl shadow-sm">
+              <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
                 <div className="p-5 pb-0 flex items-center gap-3">
-                  <div className="flex size-10 items-center justify-center rounded-lg bg-[#1e3a5f]/10">
-                    <Lock className="size-5 text-[#1e3a5f] dark:text-blue-400" />
+                  <div className="flex size-10 items-center justify-center rounded-lg kpi-icon-blue">
+                    <Lock className="size-5" />
                   </div>
                   <div>
                     <h3 className="text-base font-semibold">TRA Credentials</h3>
@@ -422,10 +428,10 @@ export default function TallyPage() {
               </div>
 
               {/* Connection */}
-              <div className="bg-card border border-border rounded-xl shadow-sm">
+              <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
                 <div className="p-5 pb-0 flex items-center gap-3">
-                  <div className="flex size-10 items-center justify-center rounded-lg bg-[#1e3a5f]/10">
-                    <ArrowUpRight className="size-5 text-[#1e3a5f] dark:text-blue-400" />
+                  <div className="flex size-10 items-center justify-center rounded-lg kpi-icon-accent">
+                    <ArrowUpRight className="size-5" />
                   </div>
                   <div>
                     <h3 className="text-base font-semibold">Connection Settings</h3>
@@ -448,7 +454,7 @@ export default function TallyPage() {
 
                   <div className="flex items-center gap-2">
                     <Button onClick={handleSaveConfig} disabled={saving}
-                      className="flex-1 bg-[#1e3a5f] text-white hover:bg-[#162d4a]">
+                      className="flex-1 btn-brand">
                       {saving ? <Loader2 className="size-4 animate-spin mr-1.5" /> : <Save className="size-4 mr-1.5" />}
                       Save Configuration
                     </Button>
@@ -465,7 +471,7 @@ export default function TallyPage() {
 
         {/* ── Compliance Info Tab ──────────────────────────────────── */}
         <TabsContent value="compliance">
-          <div className="bg-card border border-border rounded-xl shadow-sm p-6">
+          <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm p-6">
             <div className="flex items-center gap-3 mb-6">
               <TRALogo size={40} />
               <div>
@@ -508,7 +514,7 @@ export default function TallyPage() {
 
             <Separator className="my-6" />
 
-            <div className="rounded-lg bg-[#1e3a5f]/5 dark:bg-[#1e3a5f]/20 border border-[#1e3a5f]/10 p-4">
+            <div className="rounded-xl bg-secondary border border-border p-4">
               <p className="text-xs text-muted-foreground">
                 <strong className="text-foreground">Disclaimer:</strong> This integration is provided as-is.
                 Ensure your TRA credentials are valid and your certificate is up to date.
@@ -562,20 +568,20 @@ export default function TallyPage() {
 function EFDStatusBadge({ status, receiptNo }: { status: string; receiptNo: string | null }) {
   if (status === "synced") {
     return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/12 px-2.5 py-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+      <span className="badge-success inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold">
         <CheckCircle className="size-3" /> {receiptNo || "Verified"}
       </span>
     );
   }
   if (status === "failed") {
     return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-red-500/12 px-2.5 py-1 text-xs font-semibold text-red-600 dark:text-red-400">
+      <span className="badge-danger inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold">
         <XCircle className="size-3" /> Failed
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center gap-1 rounded-full bg-[#1e3a5f]/10 px-2.5 py-1 text-xs font-semibold text-[#1e3a5f] dark:text-blue-300">
+    <span className="badge-warn inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold">
       <Clock className="size-3" /> Pending
     </span>
   );
@@ -585,18 +591,18 @@ function GovStatCard({ icon: Icon, label, value, variant = "default" }: {
   icon: React.ElementType; label: string; value: number;
   variant?: "default" | "success" | "warning" | "danger";
 }) {
-  const styles = {
-    default: "bg-[#1e3a5f]/8 text-[#1e3a5f] dark:text-blue-300",
-    success: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
-    warning: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
-    danger: "bg-red-500/10 text-red-600 dark:text-red-400",
+  const kpiClass: Record<string, string> = {
+    default: "kpi-icon-blue",
+    success: "kpi-icon-green",
+    warning: "kpi-icon-amber",
+    danger: "kpi-icon-accent",
   };
 
   return (
-    <div className="bg-card border border-border rounded-xl p-4 shadow-sm">
+    <div className="bg-card border border-border rounded-xl overflow-hidden p-4 shadow-sm">
       <div className="flex items-center gap-3">
-        <div className={`flex size-9 items-center justify-center rounded-lg ${styles[variant].split(" ")[0]}`}>
-          <Icon className={`size-4 ${styles[variant].split(" ").slice(1).join(" ")}`} />
+        <div className={`flex size-9 items-center justify-center rounded-lg ${kpiClass[variant]}`}>
+          <Icon className="size-4" />
         </div>
         <div>
           <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">{label}</p>
@@ -609,9 +615,11 @@ function GovStatCard({ icon: Icon, label, value, variant = "default" }: {
 
 function ComplianceSection({ title, content }: { title: string; content: string }) {
   return (
-    <div className="rounded-lg border border-border p-4">
+    <div className="rounded-xl border border-border p-4">
       <h4 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
-        <Shield className="size-4 text-[#1e3a5f] dark:text-blue-400" />
+        <div className="flex size-6 items-center justify-center rounded-md kpi-icon-blue">
+          <Shield className="size-3.5" />
+        </div>
         {title}
       </h4>
       <p className="text-xs text-muted-foreground leading-relaxed">{content}</p>

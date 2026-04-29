@@ -126,8 +126,13 @@ export default function ReportsPage() {
 
   // ── Export ─────────────────────────────────────────────────────────────
 
+  const noExportData = !data || data.topProducts.length === 0;
+
   const handleExport = async () => {
-    if (!data) return;
+    if (!data || data.topProducts.length === 0) {
+      toast.error("No data to export");
+      return;
+    }
     const { exportToExcel } = await import("@/lib/excel-export");
 
     await exportToExcel({
@@ -173,24 +178,20 @@ export default function ReportsPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader title="Reports" description="Business analytics & insights">
-        <Button variant="outline" size="sm" onClick={handleExport} disabled={!data}>
+        <Button variant="outline" size="sm" onClick={handleExport} disabled={noExportData}>
           <Download className="size-4 mr-1.5" />
           Export Excel
         </Button>
       </PageHeader>
 
       {/* ── Date Range Selector ────────────────────────────────────── */}
-      <div className="bg-card border border-border rounded-xl p-4 shadow-sm">
+      <div className="bg-card border border-border rounded-xl overflow-hidden p-4 shadow-sm">
         <div className="flex flex-wrap items-center gap-2 mb-3">
           {presets.map((p) => (
             <button
               key={p.label}
               onClick={() => applyPreset(p)}
-              className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-                activePreset === p.label
-                  ? "bg-[#d97706] text-white"
-                  : "bg-secondary text-secondary-foreground hover:bg-accent"
-              }`}
+              className={`chip${activePreset === p.label ? " active" : ""}`}
             >
               {p.label}
             </button>
@@ -229,12 +230,12 @@ export default function ReportsPage() {
 
       {/* ── Revenue Chart ──────────────────────────────────────────── */}
       {data && data.dailyRevenue.length > 0 && (
-        <div className="bg-card border border-border rounded-xl shadow-sm p-5">
-          <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
+        <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
+          <div className="flex items-center gap-2 px-5 py-3 border-b border-border/50">
             <BarChart3 className="size-4 text-muted-foreground" />
-            Revenue Over Time
-          </h3>
-          <div className="h-72">
+            <h3 className="text-sm font-semibold text-foreground">Revenue Over Time</h3>
+          </div>
+          <div className="p-5 h-72">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={data.dailyRevenue}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
@@ -264,12 +265,12 @@ export default function ReportsPage() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* ── Top Products ────────────────────────────────────────── */}
         {data && data.topProducts.length > 0 && (
-          <div className="bg-card border border-border rounded-xl shadow-sm p-5">
-            <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
+          <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
+            <div className="flex items-center gap-2 px-5 py-3 border-b border-border/50">
               <Package className="size-4 text-muted-foreground" />
-              Top Products by Revenue
-            </h3>
-            <div className="h-64">
+              <h3 className="text-sm font-semibold text-foreground">Top Products by Revenue</h3>
+            </div>
+            <div className="p-5 h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={data.topProducts.slice(0, 8)} layout="vertical">
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
@@ -289,12 +290,12 @@ export default function ReportsPage() {
 
         {/* ── Sales by Category ───────────────────────────────────── */}
         {data && data.byCategory.length > 0 && (
-          <div className="bg-card border border-border rounded-xl shadow-sm p-5">
-            <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
+          <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
+            <div className="flex items-center gap-2 px-5 py-3 border-b border-border/50">
               <PieChart className="size-4 text-muted-foreground" />
-              Revenue by Category
-            </h3>
-            <div className="h-64">
+              <h3 className="text-sm font-semibold text-foreground">Revenue by Category</h3>
+            </div>
+            <div className="p-5 h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
@@ -324,12 +325,12 @@ export default function ReportsPage() {
 
         {/* ── Payment Methods ─────────────────────────────────────── */}
         {data && data.byPaymentMethod.length > 0 && (
-          <div className="bg-card border border-border rounded-xl shadow-sm p-5">
-            <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
+          <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
+            <div className="flex items-center gap-2 px-5 py-3 border-b border-border/50">
               <CreditCard className="size-4 text-muted-foreground" />
-              Payment Methods
-            </h3>
-            <div className="space-y-3">
+              <h3 className="text-sm font-semibold text-foreground">Payment Methods</h3>
+            </div>
+            <div className="p-5 space-y-3">
               {data.byPaymentMethod.map((pm, i) => {
                 const pct = s?.totalRevenue ? (pm.total / s.totalRevenue) * 100 : 0;
                 return (
@@ -353,12 +354,12 @@ export default function ReportsPage() {
 
         {/* ── Salesperson Performance ─────────────────────────────── */}
         {data && data.bySalesperson.length > 0 && (
-          <div className="bg-card border border-border rounded-xl shadow-sm p-5">
-            <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
+          <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
+            <div className="flex items-center gap-2 px-5 py-3 border-b border-border/50">
               <Users className="size-4 text-muted-foreground" />
-              Salesperson Performance
-            </h3>
-            <div className="space-y-3">
+              <h3 className="text-sm font-semibold text-foreground">Salesperson Performance</h3>
+            </div>
+            <div className="p-5 space-y-3">
               {data.bySalesperson.map((sp, i) => {
                 const pct = s?.totalRevenue ? (sp.total / s.totalRevenue) * 100 : 0;
                 return (
@@ -383,12 +384,12 @@ export default function ReportsPage() {
 
       {/* ── Low Stock Alert ──────────────────────────────────────── */}
       {data && data.lowStockProducts.length > 0 && (
-        <div className="bg-card border border-border rounded-xl shadow-sm p-5">
-          <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
+        <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
+          <div className="flex items-center gap-2 px-5 py-3 border-b border-border/50">
             <AlertTriangle className="size-4 text-red-500" />
-            Low Stock Alert
-          </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <h3 className="text-sm font-semibold text-foreground">Low Stock Alert</h3>
+          </div>
+          <div className="p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {data.lowStockProducts.map((p) => (
               <div key={p.name} className="flex items-center justify-between rounded-lg border border-border p-3">
                 <div>
@@ -442,7 +443,7 @@ function KPICard({
   };
 
   return (
-    <div className="bg-card border border-border rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow">
+    <div className="bg-card border border-border rounded-xl overflow-hidden p-5 shadow-sm hover:shadow-md transition-shadow">
       <div className="flex items-center gap-3">
         <div className={`flex size-10 items-center justify-center rounded-lg ${colorMap[color].split(" ")[0]}`}>
           <Icon className={`size-5 ${colorMap[color].split(" ").slice(1).join(" ")}`} />

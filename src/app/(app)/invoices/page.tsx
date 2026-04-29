@@ -111,34 +111,26 @@ interface OrgSettings {
 
 const statusConfig: Record<
   string,
-  { label: string; dotColor: string; badgeBg: string; badgeText: string; icon: React.ElementType }
+  { label: string; badgeClass: string; icon: React.ElementType }
 > = {
   issued: {
     label: "Issued",
-    dotColor: "bg-blue-500",
-    badgeBg: "bg-blue-500/12",
-    badgeText: "text-blue-600 dark:text-blue-400",
+    badgeClass: "badge-info",
     icon: Clock,
   },
   paid: {
     label: "Paid",
-    dotColor: "bg-emerald-500",
-    badgeBg: "bg-emerald-500/12",
-    badgeText: "text-emerald-600 dark:text-emerald-400",
+    badgeClass: "badge-success",
     icon: CheckCircle,
   },
   overdue: {
     label: "Overdue",
-    dotColor: "bg-red-500",
-    badgeBg: "bg-red-500/12",
-    badgeText: "text-red-600 dark:text-red-400",
+    badgeClass: "badge-danger",
     icon: AlertCircle,
   },
   cancelled: {
     label: "Cancelled",
-    dotColor: "bg-gray-400",
-    badgeBg: "bg-gray-500/12",
-    badgeText: "text-gray-600 dark:text-gray-400",
+    badgeClass: "badge-neutral",
     icon: XCircle,
   },
 };
@@ -147,7 +139,7 @@ function StatusBadge({ status }: { status: string }) {
   const config = statusConfig[status] || statusConfig.issued;
   const Icon = config.icon;
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${config.badgeBg} ${config.badgeText}`}>
+    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${config.badgeClass}`}>
       <Icon className="size-3" />
       {config.label}
     </span>
@@ -413,6 +405,10 @@ export default function InvoicesPage() {
   // ── Export ─────────────────────────────────────────────────────────────
 
   const handleExport = async () => {
+    if (filteredInvoices.length === 0) {
+      toast.error("No data to export");
+      return;
+    }
     const { exportToExcel } = await import("@/lib/excel-export");
 
     const totalSubtotal = filteredInvoices.reduce((s, i) => s + i.subtotal, 0);
@@ -482,6 +478,7 @@ export default function InvoicesPage() {
           variant="outline"
           size="sm"
           onClick={handleExport}
+          disabled={filteredInvoices.length === 0}
           className="gap-1.5"
         >
           <Download className="size-4 text-muted-foreground" />
@@ -492,7 +489,7 @@ export default function InvoicesPage() {
       {/* KPI Cards */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {/* Total Invoices */}
-        <div className="bg-card border border-border rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow">
+        <div className="bg-card border border-border rounded-xl overflow-hidden p-5 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center gap-3">
             <div className="flex size-10 items-center justify-center rounded-lg bg-blue-500/12">
               <FileText className="size-5 text-blue-600 dark:text-blue-400" />
@@ -509,7 +506,7 @@ export default function InvoicesPage() {
         </div>
 
         {/* Paid */}
-        <div className="bg-card border border-border rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow">
+        <div className="bg-card border border-border rounded-xl overflow-hidden p-5 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center gap-3">
             <div className="flex size-10 items-center justify-center rounded-lg bg-emerald-500/12">
               <CheckCircle className="size-5 text-emerald-600 dark:text-emerald-400" />
@@ -526,7 +523,7 @@ export default function InvoicesPage() {
         </div>
 
         {/* Pending */}
-        <div className="bg-card border border-border rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow">
+        <div className="bg-card border border-border rounded-xl overflow-hidden p-5 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center gap-3">
             <div className="flex size-10 items-center justify-center rounded-lg bg-amber-500/12">
               <Clock className="size-5 text-amber-600 dark:text-amber-400" />
@@ -543,7 +540,7 @@ export default function InvoicesPage() {
         </div>
 
         {/* Total Revenue */}
-        <div className="bg-card border border-border rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow">
+        <div className="bg-card border border-border rounded-xl overflow-hidden p-5 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center gap-3">
             <div className="flex size-10 items-center justify-center rounded-lg bg-emerald-500/12">
               <DollarSign className="size-5 text-emerald-600 dark:text-emerald-400" />
@@ -655,8 +652,10 @@ export default function InvoicesPage() {
                 {filteredInvoices.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={9} className="py-16 text-center">
-                      <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                        <ReceiptText className="size-10 opacity-30" />
+                      <div className="flex flex-col items-center gap-3 text-muted-foreground">
+                        <div className="empty-state-icon">
+                          <ReceiptText className="size-5" />
+                        </div>
                         <p className="text-sm font-medium">
                           No invoices found
                         </p>
@@ -1048,7 +1047,7 @@ export default function InvoicesPage() {
                     <Button
                       size="sm"
                       onClick={() => markAsPaid(selectedInvoice)}
-                      className="gap-1.5 bg-[#d97706] text-[#1a1813] hover:bg-[#c2410c] sm:ml-auto"
+                      className="btn-brand gap-1.5 sm:ml-auto"
                     >
                       <CheckCircle className="size-4" />
                       Mark as Paid

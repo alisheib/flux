@@ -208,19 +208,27 @@
     linear-gradient(45deg, rgba(246,244,239,0.06) 1px, transparent 1px);
 }
 
-/* Brand button styles */
+/* Primary button — dark ink in light, amber in dark */
 .btn-brand {
-  @apply bg-[#d97706] text-[#1a1813] font-medium shadow-sm;
-  box-shadow: 0 1px 2px rgba(15,14,10,0.06), inset 0 -1px 0 rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.2);
+  @apply bg-[#0f0e0a] text-[#fbfaf7] font-medium;
+  box-shadow: 0 1px 2px rgba(15,14,10,0.04), inset 0 0 0 1px rgba(255,255,255,0.04);
 }
 .btn-brand:hover {
-  @apply bg-[#c2410c];
+  @apply bg-[#1a1813];
 }
 .dark .btn-brand {
   @apply bg-[#e39340] text-[#0f0e0a];
 }
 .dark .btn-brand:hover {
   @apply bg-[#ecb467];
+}
+/* Accent button — amber always */
+.btn-accent {
+  @apply bg-[#d97706] text-[#1a1813] font-medium;
+  box-shadow: 0 1px 2px rgba(15,14,10,0.06), inset 0 -1px 0 rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.2);
+}
+.btn-accent:hover {
+  @apply bg-[#c2410c];
 }
 
 /* Stock status pills */
@@ -309,6 +317,20 @@
    FLUX Component Styles (from Claude Design)
    ================================================================ */
 
+/* Dialog body padding — applies to content between header and footer */
+[data-slot="dialog-content"] > :not([data-slot="dialog-header"]):not([data-slot="dialog-footer"]):not([data-slot="dialog-close"]) {
+  padding-left: 1.25rem;
+  padding-right: 1.25rem;
+  padding-top: 1.25rem;
+  padding-bottom: 1.25rem;
+}
+@media (min-width: 640px) {
+  [data-slot="dialog-content"] > :not([data-slot="dialog-header"]):not([data-slot="dialog-footer"]):not([data-slot="dialog-close"]) {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
 /* Focus rings — let shadcn components handle their own focus,
    only add outline to elements that don't have shadcn focus styles */
 button:not([data-slot]):focus-visible,
@@ -361,6 +383,7 @@ a:focus-visible {
 .badge-danger { @apply bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300; }
 .badge-info { @apply bg-blue-100 text-blue-700 dark:bg-blue-500/22 dark:text-blue-300; }
 .badge-violet { @apply bg-purple-100 text-purple-800 dark:bg-purple-500/20 dark:text-purple-300; }
+.badge-neutral { @apply bg-gray-100 text-gray-600 dark:bg-gray-500/20 dark:text-gray-400; }
 
 /* Feature icon box (landing page, can be reused) */
 .feature-icon-box {

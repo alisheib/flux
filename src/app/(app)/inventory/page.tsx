@@ -691,7 +691,7 @@ export default function InventoryPage() {
         </TableCell>
         <TableCell>
           {product.category ? (
-            <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-foreground">
+            <span className="chip">
               {product.category.name}
             </span>
           ) : (
@@ -802,7 +802,7 @@ export default function InventoryPage() {
         </button>
         <button
           onClick={openAddProduct}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-[#d97706] px-3 py-1.5 text-sm font-medium text-[#1a1813] shadow-sm hover:bg-[#c2410c] transition-colors"
+          className="btn-brand inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm shadow-sm transition-colors"
         >
           <Plus className="size-4" />
           Add Product
@@ -812,7 +812,7 @@ export default function InventoryPage() {
       {/* KPI Cards */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {/* Total Products */}
-        <div className="bg-card border border-border rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow">
+        <div className="bg-card border border-border rounded-xl overflow-hidden p-5 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center gap-3">
             <div className="flex size-10 items-center justify-center rounded-lg bg-blue-500/12">
               <Package className="size-5 text-blue-600 dark:text-blue-400" />
@@ -829,7 +829,7 @@ export default function InventoryPage() {
         </div>
 
         {/* Total Stock Value */}
-        <div className="bg-card border border-border rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow">
+        <div className="bg-card border border-border rounded-xl overflow-hidden p-5 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center gap-3">
             <div className="flex size-10 items-center justify-center rounded-lg bg-amber-500/12">
               <DollarSign className="size-5 text-amber-600 dark:text-amber-400" />
@@ -846,7 +846,7 @@ export default function InventoryPage() {
         </div>
 
         {/* Low Stock Alerts */}
-        <div className="bg-card border border-border rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow">
+        <div className="bg-card border border-border rounded-xl overflow-hidden p-5 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center gap-3">
             <div className="flex size-10 items-center justify-center rounded-lg bg-red-500/12">
               <AlertTriangle className="size-5 text-red-600 dark:text-red-400" />
@@ -863,7 +863,7 @@ export default function InventoryPage() {
         </div>
 
         {/* Categories */}
-        <div className="bg-card border border-border rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow">
+        <div className="bg-card border border-border rounded-xl overflow-hidden p-5 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center gap-3">
             <div className="flex size-10 items-center justify-center rounded-lg bg-purple-500/12">
               <Layers className="size-5 text-purple-600 dark:text-purple-400" />
@@ -984,8 +984,10 @@ export default function InventoryPage() {
                   {filteredProducts.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={10} className="py-16 text-center">
-                        <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                          <Package className="size-10 opacity-30" />
+                        <div className="flex flex-col items-center gap-3 text-muted-foreground">
+                          <div className="empty-state-icon">
+                            <Package className="size-5" />
+                          </div>
                           <p className="text-sm font-medium">
                             No products found
                           </p>
@@ -1028,8 +1030,10 @@ export default function InventoryPage() {
                   {lowStockProducts.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={7} className="py-16 text-center">
-                        <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                          <AlertTriangle className="size-10 opacity-30" />
+                        <div className="flex flex-col items-center gap-3 text-muted-foreground">
+                          <div className="empty-state-icon">
+                            <AlertTriangle className="size-5" />
+                          </div>
                           <p className="text-sm font-medium">
                             No low stock items
                           </p>
@@ -1050,7 +1054,7 @@ export default function InventoryPage() {
                         </TableCell>
                         <TableCell>
                           {product.category ? (
-                            <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-foreground">
+                            <span className="chip">
                               {product.category.name}
                             </span>
                           ) : (
@@ -1095,7 +1099,7 @@ export default function InventoryPage() {
           <div className="flex justify-end">
             <button
               onClick={openAddCategory}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-[#d97706] px-3 py-1.5 text-sm font-medium text-[#1a1813] shadow-sm hover:bg-[#c2410c] transition-colors"
+              className="btn-brand inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm shadow-sm transition-colors"
             >
               <Plus className="size-4" />
               Add Category
@@ -1104,10 +1108,12 @@ export default function InventoryPage() {
 
           <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
             {categories.length === 0 ? (
-              <div className="col-span-full flex flex-col items-center justify-center py-16 text-muted-foreground">
-                <FolderOpen className="mb-3 size-12 opacity-30" />
+              <div className="col-span-full flex flex-col items-center justify-center gap-3 py-16 text-muted-foreground">
+                <div className="empty-state-icon">
+                  <FolderOpen className="size-5" />
+                </div>
                 <p className="text-sm font-medium">No categories yet</p>
-                <p className="text-xs mt-1">Create your first category</p>
+                <p className="text-xs">Create your first category</p>
               </div>
             ) : (
               categories.map((cat, idx) => (
