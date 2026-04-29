@@ -48,7 +48,7 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { label: "Dashboard", icon: LayoutDashboard, href: "/", module: "dashboard" },
+  { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard", module: "dashboard" },
   { label: "POS", icon: ShoppingCart, href: "/pos", module: "pos" },
   { label: "Inventory", icon: Package, href: "/inventory", module: "inventory" },
   { label: "Shipments", icon: Ship, href: "/shipments", module: "shipments" },
