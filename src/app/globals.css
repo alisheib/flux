@@ -317,20 +317,6 @@
    FLUX Component Styles (from Claude Design)
    ================================================================ */
 
-/* Dialog body padding — applies to content between header and footer */
-[data-slot="dialog-content"] > :not([data-slot="dialog-header"]):not([data-slot="dialog-footer"]):not([data-slot="dialog-close"]) {
-  padding-left: 1.25rem;
-  padding-right: 1.25rem;
-  padding-top: 1.25rem;
-  padding-bottom: 1.25rem;
-}
-@media (min-width: 640px) {
-  [data-slot="dialog-content"] > :not([data-slot="dialog-header"]):not([data-slot="dialog-footer"]):not([data-slot="dialog-close"]) {
-    padding-left: 1.5rem;
-    padding-right: 1.5rem;
-  }
-}
-
 /* Focus rings — let shadcn components handle their own focus,
    only add outline to elements that don't have shadcn focus styles */
 button:not([data-slot]):focus-visible,
