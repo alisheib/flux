@@ -37,15 +37,20 @@ import { toast } from "sonner";
 
 const pageTitles: Record<string, string> = {
   "/": "Dashboard",
+  "/dashboard": "Dashboard",
   "/pos": "Point of Sale",
   "/inventory": "Inventory",
   "/shipments": "Shipments",
   "/invoices": "Invoices",
   "/accounting": "Accounting",
+  "/receivables": "Receivables",
   "/reports": "Reports",
   "/tally": "TRA Tally",
   "/users": "Users",
   "/settings": "Settings",
+  "/profile": "Profile",
+  "/activity": "Activity",
+  "/stock-movements": "Stock Movements",
 };
 
 function getPageTitle(pathname: string): string {
