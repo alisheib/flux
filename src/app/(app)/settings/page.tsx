@@ -13,7 +13,7 @@ import {
   Shield,
   Trash2,
   Lock,
-  Zap,
+  ShieldCheck,
 } from "lucide-react";
 import { ALL_ROLES, ALL_MODULES, DEFAULT_PERMISSIONS, type RolePermissions } from "@/lib/auth-client";
 
@@ -307,6 +307,8 @@ export default function SettingsPage() {
       });
       if (!res.ok) throw new Error("Failed to save");
       toast.success(enabled ? "TRA Tally integration enabled" : "TRA Tally integration disabled");
+      // Notify sidebar to update immediately
+      window.dispatchEvent(new CustomEvent("flux-tally-toggle", { detail: { enabled } }));
     } catch {
       setTallyEnabled(!enabled);
       toast.error("Failed to update Tally integration setting", { description: "Please try again or contact support." });
@@ -802,7 +804,7 @@ export default function SettingsPage() {
         <div className="p-5 pb-0">
           <div className="flex items-center gap-3">
             <div className="kpi-icon-accent flex h-9 w-9 items-center justify-center rounded-lg">
-              <Zap className="h-5 w-5" />
+              <ShieldCheck className="h-5 w-5" />
             </div>
             <h3 className="text-base font-semibold">TRA Tally Integration</h3>
           </div>

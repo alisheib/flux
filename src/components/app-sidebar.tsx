@@ -89,6 +89,14 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
         if (data.tallyEnabled !== undefined) setTallyEnabled(data.tallyEnabled);
       })
       .catch(() => { /* use default (false) */ });
+
+    // Listen for tally toggle from settings page
+    const onTallyToggle = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail?.enabled !== undefined) setTallyEnabled(detail.enabled);
+    };
+    window.addEventListener("flux-tally-toggle", onTallyToggle);
+    return () => window.removeEventListener("flux-tally-toggle", onTallyToggle);
   }, []);
 
   const filteredNav = navItems.filter((item) => {
