@@ -1351,26 +1351,18 @@ export default function POSPage() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={handlePrint}
-                className="gap-1.5"
-              >
-                <Printer className="size-4" />
-                Invoice
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
                 onClick={handleDownloadReceipt}
                 disabled={downloadingReceipt}
                 className="gap-1.5"
               >
                 {downloadingReceipt ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4" />}
-                Receipt
+                Download Invoice
               </Button>
               <Button
+                variant="outline"
                 size="sm"
                 onClick={() => shareWhatsApp(lastSale)}
-                className="gap-1.5 bg-emerald-600 text-white hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-700"
+                className="gap-1.5"
               >
                 <MessageCircle className="size-4" />
                 WhatsApp
@@ -1378,7 +1370,7 @@ export default function POSPage() {
               <Button
                 size="sm"
                 onClick={() => setReceiptDialogOpen(false)}
-                className="gap-1.5 sm:ml-auto"
+                className="btn-brand gap-1.5 sm:ml-auto"
               >
                 <Plus className="size-4" />
                 New Sale

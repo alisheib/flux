@@ -1639,7 +1639,7 @@ export default function ShipmentsPage() {
                 <Input
                   id="new-origin"
                   name="origin"
-                  defaultValue="China"
+                  placeholder="e.g. China, India, UAE"
                 />
               </div>
               <div className="space-y-1.5">

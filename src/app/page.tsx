@@ -15,7 +15,7 @@ const JWT_SECRET = new TextEncoder().encode(
 const features = [
   { icon: ShoppingCart, title: "Point of Sale", desc: "Fast checkout for retail, hospitality and trade counters. Works offline." },
   { icon: Package, title: "Inventory", desc: "Real-time stock across locations with low-stock alerts and barcode lookup." },
-  { icon: Ship, title: "Shipments", desc: "Track imports from China to Dar with full landed cost — including duty." },
+  { icon: Ship, title: "Shipments", desc: "Track imports end-to-end with full landed cost — freight, duty, and clearing." },
   { icon: FileText, title: "Invoicing", desc: "TRA-fiscalized invoices, sent via WhatsApp, email or SMS in one tap." },
   { icon: Wallet, title: "Receivables", desc: "Customer credit, aging buckets and one-tap WhatsApp payment reminders." },
   { icon: BarChart3, title: "Accounting", desc: "P&L, balance sheet, cash flow — auto-generated from every transaction." },
