@@ -374,28 +374,23 @@ export default function InvoicesPage() {
   const downloadPdf = async (invoice: Invoice) => {
     try {
       toast.info("Generating PDF...");
-      const res = await fetch(`/api/invoices/${invoice.id}/download`);
+      // Fetch invoice data as JSON for client-side PDF generation
+      const res = await fetch(`/api/invoices/${invoice.id}/pdf`);
       if (!res.ok) throw new Error("Failed to fetch invoice data");
       const data = await res.json();
 
       const { generateInvoicePDF } = await import("@/lib/invoice-pdf");
       const blob = await generateInvoicePDF(data);
 
-      // Create a proper blob with explicit PDF MIME type
       const pdfBlob = new Blob([blob], { type: "application/pdf" });
       const url = URL.createObjectURL(pdfBlob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `invoice-${invoice.number}.pdf`;
-      // Append to DOM for cross-browser compatibility (Safari requires this)
+      a.download = `${invoice.number}.pdf`;
       document.body.appendChild(a);
       a.click();
-      // Delay cleanup to ensure the download has started
-      setTimeout(() => {
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      }, 100);
-      toast.success("PDF downloaded");
+      setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 200);
+      toast.success("PDF downloaded", { description: `${invoice.number}.pdf` });
     } catch (err) {
       console.error("PDF generation error:", err);
       toast.error("Failed to generate PDF");

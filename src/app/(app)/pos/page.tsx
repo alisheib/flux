@@ -475,31 +475,43 @@ export default function POSPage() {
   const handleDownloadReceipt = async () => {
     if (!lastSale) return;
     setDownloadingReceipt(true);
-    toast.info("Generating receipt...");
+    toast.info("Generating PDF...");
     try {
+      // If invoice exists, generate proper invoice PDF
+      if (lastSale.invoice?.id) {
+        const res = await fetch(`/api/invoices/${lastSale.invoice.id}/pdf`);
+        if (res.ok) {
+          const data = await res.json();
+          const { generateInvoicePDF } = await import("@/lib/invoice-pdf");
+          const blob = await generateInvoicePDF(data);
+          const pdfBlob = new Blob([blob], { type: "application/pdf" });
+          const url = URL.createObjectURL(pdfBlob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `${lastSale.saleNumber}.pdf`;
+          document.body.appendChild(a);
+          a.click();
+          setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 200);
+          toast.success("Invoice PDF downloaded");
+          return;
+        }
+      }
+      // Fallback: fetch receipt from API
       const res = await fetch(`/api/sales/${lastSale.id}/receipt`);
       if (!res.ok) throw new Error("Server error");
       const contentType = res.headers.get("content-type") || "";
       const blob = await res.blob();
 
       if (contentType.includes("text/html")) {
-        // Render HTML in hidden iframe then convert to PDF client-side
-        const html = await blob.text();
-        const iframe = document.createElement("iframe");
-        iframe.style.cssText = "position:fixed;left:-9999px;top:0;width:794px;height:1123px;border:none;";
-        document.body.appendChild(iframe);
-        iframe.contentDocument?.open();
-        iframe.contentDocument?.write(html);
-        iframe.contentDocument?.close();
-        await new Promise((r) => setTimeout(r, 800));
-        const html2pdf = (await import("html2pdf.js")).default;
-        const filename = `receipt-${lastSale.saleNumber}.pdf`;
-        await html2pdf()
-          .set({ margin: 0, filename, image: { type: "jpeg", quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: "mm", format: "a4", orientation: "portrait" } })
-          .from(iframe.contentDocument?.body)
-          .save();
-        document.body.removeChild(iframe);
-        toast.success("Receipt PDF downloaded");
+        // Download as HTML if no PDF available
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `receipt-${lastSale.saleNumber}.html`;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 200);
+        toast.success("Receipt downloaded");
       } else {
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
