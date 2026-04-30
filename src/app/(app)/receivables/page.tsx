@@ -123,6 +123,7 @@ interface ReceivablesData {
 interface OrgSettings {
   currency: string;
   name: string;
+  phone: string | null;
 }
 
 // ── Status helpers ────────────────────────────────────────────────────────────
@@ -961,6 +962,7 @@ export default function ReceivablesPage() {
   const [orgSettings, setOrgSettings] = useState<OrgSettings>({
     currency: "USD",
     name: "",
+    phone: null,
   });
   const [loading, setLoading] = useState(true);
 
@@ -1027,6 +1029,7 @@ export default function ReceivablesPage() {
         setOrgSettings({
           currency: sData.currency || "USD",
           name: sData.name || "",
+          phone: sData.phone || null,
         });
       }
     } catch {
@@ -1122,16 +1125,26 @@ export default function ReceivablesPage() {
   // ── WhatsApp Reminder ───────────────────────────────────────────────────────
 
   const sendWhatsAppReminder = (customer: CustomerDebt) => {
+    const orgName = orgSettings.name || "Our Company";
     const text = [
-      `Hi ${customer.name.split(" ")[0]},`,
-      "",
-      `This is a friendly reminder that you have an outstanding balance of ${formatCurrency(customer.outstanding, currency)}.`,
-      "",
-      "Please arrange payment at your earliest convenience.",
-      "",
+      `*${orgName}*`,
+      `━━━━━━━━━━━━━━━━`,
+      `*PAYMENT REMINDER*`,
+      ``,
+      `Dear ${customer.name},`,
+      ``,
+      `This is a friendly reminder regarding your outstanding balance:`,
+      ``,
+      `*Amount due: ${formatCurrency(customer.outstanding, currency)}*`,
+      `Open invoices: ${customer.invoiceCount}`,
+      customer.oldestDebtDays > 0 ? `Oldest: ${customer.oldestDebtDays} days` : "",
+      ``,
+      `Please arrange payment at your earliest convenience.`,
+      ``,
       `Thank you,`,
-      orgSettings.name || "Flux Business",
-    ].join("\n");
+      orgName,
+      orgSettings.phone ? `Tel: ${orgSettings.phone}` : "",
+    ].filter(Boolean).join("\n");
 
     const phone = customer.phone
       ? customer.phone.replace(/[^0-9+]/g, "").replace(/^\+/, "")

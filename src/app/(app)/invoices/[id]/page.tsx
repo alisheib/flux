@@ -71,15 +71,23 @@ export default function InvoiceViewPage() {
       const blob = await res.blob();
 
       if (contentType.includes("text/html")) {
-        // Fallback: download as HTML file
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `${data?.invoice.number || "invoice"}.html`;
-        document.body.appendChild(a);
-        a.click();
-        setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 200);
-        toast.success("Download complete", { description: `${data?.invoice.number}.html saved — open in browser to print` });
+        // Fallback: render HTML in hidden iframe then convert to PDF client-side
+        const html = await blob.text();
+        const iframe = document.createElement("iframe");
+        iframe.style.cssText = "position:fixed;left:-9999px;top:0;width:794px;height:1123px;border:none;";
+        document.body.appendChild(iframe);
+        iframe.contentDocument?.open();
+        iframe.contentDocument?.write(html);
+        iframe.contentDocument?.close();
+        await new Promise((r) => setTimeout(r, 800)); // let fonts/styles load
+        const html2pdf = (await import("html2pdf.js")).default;
+        const filename = `${data?.invoice.number || "invoice"}.pdf`;
+        await html2pdf()
+          .set({ margin: 0, filename, image: { type: "jpeg", quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: "mm", format: "a4", orientation: "portrait" } })
+          .from(iframe.contentDocument?.body)
+          .save();
+        document.body.removeChild(iframe);
+        toast.success("PDF downloaded", { description: filename });
       } else {
         // Direct PDF download
         const url = URL.createObjectURL(blob);

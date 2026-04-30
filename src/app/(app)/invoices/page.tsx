@@ -320,17 +320,23 @@ export default function InvoicesPage() {
 
   const generateInvoiceText = (invoice: Invoice): string => {
     const items = invoice.sale?.items || [];
+    const orgName = orgSettings.name || "Our Company";
     const lines = [
-      `Invoice #${invoice.number}`,
-      `Date: ${new Date(invoice.issuedAt).toLocaleDateString()}`,
-      `Customer: ${invoice.customer}`,
-      "",
-      "Items:",
+      `*${orgName}*`,
+      `━━━━━━━━━━━━━━━━`,
+      `*INVOICE ${invoice.number}*`,
+      ``,
+      `Date: ${new Date(invoice.issuedAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}`,
+      invoice.dueAt ? `Due: ${new Date(invoice.dueAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}` : "",
+      `Bill to: ${invoice.customer}`,
+      ``,
+      `*Items:*`,
       ...items.map(
         (item) =>
-          `- ${item.name} x${item.quantity} = ${formatCurrency(item.total, invoice.currency)}`
+          `  ${item.quantity}x ${item.name} — ${formatCurrency(item.total, invoice.currency)}`
       ),
-      "",
+      ``,
+      `━━━━━━━━━━━━━━━━`,
       `Subtotal: ${formatCurrency(invoice.subtotal, invoice.currency)}`,
       invoice.taxRate > 0
         ? `${orgSettings.taxLabel} (${invoice.taxRate}%): ${formatCurrency(invoice.taxAmount, invoice.currency)}`
@@ -338,10 +344,12 @@ export default function InvoicesPage() {
       invoice.discount > 0
         ? `Discount: -${formatCurrency(invoice.discount, invoice.currency)}`
         : "",
-      `Total: ${formatCurrency(invoice.total, invoice.currency)}`,
-      "",
-      "Thank you for your business!",
-      orgSettings.name || "Flux Business Platform",
+      `*TOTAL: ${formatCurrency(invoice.total, invoice.currency)}*`,
+      `Status: ${invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}`,
+      ``,
+      `Thank you for your business.`,
+      orgSettings.phone ? `Tel: ${orgSettings.phone}` : "",
+      orgSettings.email ? `Email: ${orgSettings.email}` : "",
     ].filter(Boolean);
     return lines.join("\n");
   };

@@ -411,17 +411,26 @@ export default function POSPage() {
 
   const generateReceiptText = (sale: SaleResult): string => {
     const cur = orgSettings.currency;
+    const orgName = orgSettings.name || "Our Company";
+    const paymentLabels: Record<string, string> = {
+      cash: "Cash", card: "Card", bank_transfer: "Bank Transfer",
+      mobile_money: "Mobile Money", credit: "Credit",
+    };
     const lines = [
-      `Receipt #${sale.saleNumber}`,
-      `Date: ${new Date(sale.createdAt).toLocaleDateString()}`,
+      `*${orgName}*`,
+      `━━━━━━━━━━━━━━━━`,
+      `*RECEIPT ${sale.saleNumber}*`,
+      ``,
+      `Date: ${new Date(sale.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}`,
       sale.customer ? `Customer: ${sale.customer}` : "",
-      "",
-      "Items:",
+      ``,
+      `*Items:*`,
       ...sale.items.map(
         (item) =>
-          `- ${item.name} x${item.quantity} = ${formatCurrency(item.total, cur)}`
+          `  ${item.quantity}x ${item.name} — ${formatCurrency(item.total, cur)}`
       ),
-      "",
+      ``,
+      `━━━━━━━━━━━━━━━━`,
       `Subtotal: ${formatCurrency(sale.subtotal, cur)}`,
       sale.taxRate > 0
         ? `${orgSettings.taxLabel} (${sale.taxRate}%): ${formatCurrency(sale.taxAmount, cur)}`
@@ -429,11 +438,11 @@ export default function POSPage() {
       sale.discount > 0
         ? `Discount: -${formatCurrency(sale.discount, cur)}`
         : "",
-      `Total: ${formatCurrency(sale.total, cur)}`,
-      `Payment: ${sale.paymentMethod}`,
-      "",
-      "Thank you for your business!",
-      orgSettings.name || "Flux Business Platform",
+      `*TOTAL: ${formatCurrency(sale.total, cur)}*`,
+      `Paid via: ${paymentLabels[sale.paymentMethod] || sale.paymentMethod}`,
+      ``,
+      `Thank you for your business.`,
+      orgSettings.phone ? `Tel: ${orgSettings.phone}` : "",
     ].filter(Boolean);
     return lines.join("\n");
   };
@@ -474,14 +483,23 @@ export default function POSPage() {
       const blob = await res.blob();
 
       if (contentType.includes("text/html")) {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `receipt-${lastSale.saleNumber}.html`;
-        document.body.appendChild(a);
-        a.click();
-        setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 200);
-        toast.success("Receipt downloaded");
+        // Render HTML in hidden iframe then convert to PDF client-side
+        const html = await blob.text();
+        const iframe = document.createElement("iframe");
+        iframe.style.cssText = "position:fixed;left:-9999px;top:0;width:794px;height:1123px;border:none;";
+        document.body.appendChild(iframe);
+        iframe.contentDocument?.open();
+        iframe.contentDocument?.write(html);
+        iframe.contentDocument?.close();
+        await new Promise((r) => setTimeout(r, 800));
+        const html2pdf = (await import("html2pdf.js")).default;
+        const filename = `receipt-${lastSale.saleNumber}.pdf`;
+        await html2pdf()
+          .set({ margin: 0, filename, image: { type: "jpeg", quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: "mm", format: "a4", orientation: "portrait" } })
+          .from(iframe.contentDocument?.body)
+          .save();
+        document.body.removeChild(iframe);
+        toast.success("Receipt PDF downloaded");
       } else {
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
@@ -801,7 +819,7 @@ export default function POSPage() {
                               parseInt(e.target.value) || 1
                             )
                           }
-                          className="h-7 w-12 text-center text-sm font-medium"
+                          className="h-7 w-14 text-center text-sm font-medium [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         />
                         <Button
                           variant="outline"
@@ -833,7 +851,7 @@ export default function POSPage() {
                               parseFloat(e.target.value) || 0
                             )
                           }
-                          className="h-7 w-20 text-right text-sm font-medium"
+                          className="h-7 w-20 text-right text-sm font-medium [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         />
                       </div>
 
@@ -888,7 +906,7 @@ export default function POSPage() {
                     placeholder="0"
                     value={discountValue}
                     onChange={(e) => setDiscountValue(e.target.value)}
-                    className="h-7 w-20 text-right text-xs"
+                    className="h-7 w-20 text-right text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
                   <button
                     type="button"
