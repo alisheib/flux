@@ -55,7 +55,7 @@ export default async function Home() {
               Sign in
             </Link>
             <Link href="/register" className="inline-flex h-[38px] items-center gap-2 rounded-[10px] px-4 text-[13.5px] font-semibold" style={{ background: "linear-gradient(135deg, #f59e0b, #d97706)", color: "#0f0e0a", boxShadow: "0 6px 24px -6px rgba(245,158,11,0.5), inset 0 1px 0 rgba(255,255,255,0.2)" }}>
-              Get started free
+              Get started
             </Link>
           </div>
         </div>
@@ -92,7 +92,7 @@ export default async function Home() {
 
           <div className="flex flex-wrap justify-center gap-3 mb-3">
             <Link href="/register" className="inline-flex h-[52px] items-center gap-2 rounded-xl px-6 text-base font-semibold" style={{ background: "linear-gradient(135deg, #f59e0b, #d97706)", color: "#0f0e0a", boxShadow: "0 6px 24px -6px rgba(245,158,11,0.5), inset 0 1px 0 rgba(255,255,255,0.2)" }}>
-              Start free today
+              Get started
               <ArrowRight className="size-4" />
             </Link>
             <Link href="/login" className="inline-flex h-[52px] items-center rounded-xl px-6 text-base font-medium" style={{ background: "transparent", color: "#f5f1e8", border: "1px solid #2a2520" }}>
@@ -102,13 +102,13 @@ export default async function Home() {
 
           <div className="mt-7 inline-flex items-center gap-1.5 text-[13px]" style={{ color: "#6f685d" }}>
             <Check className="size-3.5 text-green-500" />
-            Free 14-day trial
-            <span className="mx-2">·</span>
-            <Check className="size-3.5 text-green-500" />
-            No credit card
+            Setup in minutes
             <span className="mx-2">·</span>
             <Check className="size-3.5 text-green-500" />
             TRA compliant
+            <span className="mx-2">·</span>
+            <Check className="size-3.5 text-green-500" />
+            Built for Africa
           </div>
         </div>
       </section>
@@ -179,10 +179,10 @@ export default async function Home() {
           <div className="rounded-2xl p-10 text-center sm:p-16" style={{ background: "radial-gradient(60% 60% at 50% 0%, rgba(217,119,6,0.12) 0%, transparent 60%), #1a1612", border: "1px solid rgba(217,119,6,0.25)" }}>
             <div className="mx-auto mb-6 h-1 w-[60px] rounded-sm" style={{ background: "linear-gradient(90deg, #d97706 0% 33%, #15803d 33% 66%, #1e40af 66% 100%)" }} />
             <h2 className="mb-4 text-2xl font-bold sm:text-3xl" style={{ letterSpacing: "-0.025em" }}>Ready to take the current?</h2>
-            <p className="mb-8" style={{ color: "#a8a092" }}>Set up your business in 4 minutes. Free for 14 days, no card required.</p>
+            <p className="mb-8" style={{ color: "#a8a092" }}>Set up your business in minutes. One platform for imports, sales, and accounting.</p>
             <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Link href="/register" className="inline-flex h-[52px] items-center gap-2 rounded-xl px-6 text-base font-semibold" style={{ background: "linear-gradient(135deg, #f59e0b, #d97706)", color: "#0f0e0a", boxShadow: "0 6px 24px -6px rgba(245,158,11,0.5)" }}>
-                Start free today <ArrowRight className="size-4" />
+                Get started <ArrowRight className="size-4" />
               </Link>
               <Link href="/login" className="inline-flex h-[52px] items-center rounded-xl px-6 text-base font-medium" style={{ color: "#f5f1e8", border: "1px solid #2a2520" }}>
                 Sign in

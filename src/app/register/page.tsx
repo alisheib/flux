@@ -177,8 +177,8 @@ export default function RegisterPage() {
         return;
       }
 
-      toast.success("Welcome to FLUX!", { description: `${orgName} workspace is ready. Check your email to verify your account.` });
-      router.push("/");
+      toast.success("Welcome to FLUX!", { description: `${orgName} workspace is ready.` });
+      router.push("/dashboard");
     } catch {
       toast.error("Connection error", { description: "Could not reach the server. Please check your internet connection." });
     } finally {

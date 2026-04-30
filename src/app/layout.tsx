@@ -91,7 +91,7 @@ export default function RootLayout({
                 "@type": "Offer",
                 price: "0",
                 priceCurrency: "USD",
-                description: "Free plan available",
+                description: "Business management platform",
               },
               author: {
                 "@type": "Person",

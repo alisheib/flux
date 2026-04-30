@@ -100,7 +100,7 @@ export default async function InvoicePrintPage({
         <div className="page">
           {/* Actions bar — hidden on print */}
           <div className="actions">
-            <button id="print-btn">Download as PDF</button>
+            <button id="print-btn">Print / Save as PDF</button>
             <a href="/invoices">Back to Invoices</a>
           </div>
           <script dangerouslySetInnerHTML={{ __html: `document.getElementById('print-btn').addEventListener('click',function(){window.print()})` }} />

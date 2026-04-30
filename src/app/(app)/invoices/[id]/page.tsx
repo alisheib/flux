@@ -71,15 +71,15 @@ export default function InvoiceViewPage() {
       const blob = await res.blob();
 
       if (contentType.includes("text/html")) {
-        // Fallback: open HTML in new tab for browser Save as PDF
-        const html = await blob.text();
-        const win = window.open("", "_blank");
-        if (win) {
-          win.document.write(html);
-          win.document.close();
-          setTimeout(() => win.print(), 500);
-        }
-        toast.info("Use 'Save as PDF' in the print dialog", { description: "Server PDF unavailable — using browser print" });
+        // Fallback: download as HTML file
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${data?.invoice.number || "invoice"}.html`;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 200);
+        toast.success("Download complete", { description: `${data?.invoice.number}.html saved — open in browser to print` });
       } else {
         // Direct PDF download
         const url = URL.createObjectURL(blob);

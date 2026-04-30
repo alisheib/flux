@@ -474,10 +474,14 @@ export default function POSPage() {
       const blob = await res.blob();
 
       if (contentType.includes("text/html")) {
-        const html = await blob.text();
-        const win = window.open("", "_blank");
-        if (win) { win.document.write(html); win.document.close(); setTimeout(() => win.print(), 500); }
-        toast.info("Use 'Save as PDF' in the print dialog");
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `receipt-${lastSale.saleNumber}.html`;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 200);
+        toast.success("Receipt downloaded");
       } else {
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
