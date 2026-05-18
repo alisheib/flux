@@ -22,6 +22,8 @@ interface ReceiptItem {
   quantity: number;
   unitPrice: number;
   total: number;
+  sellingUnit?: string;
+  area?: number | null;
 }
 
 interface ReceiptSale {
@@ -257,11 +259,13 @@ export function ReceiptSheet({
                     {item.name}
                   </div>
                   <div className="mt-0.5 font-mono text-[11.5px] text-muted-foreground">
-                    {item.quantity} x {formatCurrency(item.unitPrice, cur)}
+                    {item.sellingUnit === "sqm"
+                      ? `${item.area ?? item.quantity} m² x ${formatCurrency(item.unitPrice, cur)}/m²`
+                      : `${item.quantity} x ${formatCurrency(item.unitPrice, cur)}`}
                   </div>
                 </div>
                 <div className="shrink-0 font-mono text-sm font-semibold tabular-nums text-foreground">
-                  {formatCurrency(item.quantity * item.unitPrice, cur)}
+                  {formatCurrency(item.total, cur)}
                 </div>
               </div>
             ))}

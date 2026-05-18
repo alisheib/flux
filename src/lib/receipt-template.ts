@@ -17,7 +17,7 @@ interface ReceiptTemplateData {
     total: number;
     currency: string;
     paymentMethod: string;
-    items: { name: string; quantity: number; unitPrice: number; total: number }[];
+    items: { name: string; quantity: number; unitPrice: number; total: number; sellingUnit?: string; area?: number | null }[];
     createdAt: string;
     salesperson: string;
   };
@@ -50,14 +50,18 @@ export function buildReceiptHTML(data: ReceiptTemplateData): string {
   const dateStr = date.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
   const timeStr = date.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 
-  const itemRows = r.items.map((item) => `
+  const itemRows = r.items.map((item) => {
+    const isSqm = item.sellingUnit === "sqm";
+    const qtyLabel = isSqm ? `${item.area ?? item.quantity} m²` : String(item.quantity);
+    const priceLabel = isSqm ? `${formatAmount(item.unitPrice, cur)}/m²` : formatAmount(item.unitPrice, cur);
+    return `
     <tr>
       <td style="padding:8px 0;font-size:12px;color:#1a1813;border-bottom:1px solid #f0f0f0">${escapeHtml(item.name)}</td>
-      <td style="padding:8px 0;font-size:12px;color:#6b7280;text-align:center;border-bottom:1px solid #f0f0f0">${item.quantity}</td>
-      <td style="padding:8px 0;font-size:12px;color:#6b7280;text-align:right;border-bottom:1px solid #f0f0f0">${formatAmount(item.unitPrice, cur)}</td>
+      <td style="padding:8px 0;font-size:12px;color:#6b7280;text-align:center;border-bottom:1px solid #f0f0f0">${qtyLabel}</td>
+      <td style="padding:8px 0;font-size:12px;color:#6b7280;text-align:right;border-bottom:1px solid #f0f0f0">${priceLabel}</td>
       <td style="padding:8px 0;font-size:12px;color:#1a1813;font-weight:600;text-align:right;border-bottom:1px solid #f0f0f0">${formatAmount(item.total, cur)}</td>
-    </tr>
-  `).join("");
+    </tr>`;
+  }).join("");
 
   return `<!DOCTYPE html>
 <html lang="en">

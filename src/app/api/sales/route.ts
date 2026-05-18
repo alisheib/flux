@@ -95,6 +95,19 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         );
       }
+      // Validate sqm items have area
+      if (item.sellingUnit === "sqm") {
+        if (typeof item.area !== "number" || item.area <= 0) {
+          return NextResponse.json(
+            { error: "Area-sold items must have a positive area value" },
+            { status: 400 }
+          );
+        }
+      }
+      // Sanitize: if sellingUnit is not "sqm", force it to "unit"
+      if (item.sellingUnit && item.sellingUnit !== "sqm") {
+        item.sellingUnit = "unit";
+      }
     }
 
     const VALID_PAYMENT_METHODS = ["cash", "card", "bank_transfer", "mobile_money", "credit"];
@@ -118,14 +131,34 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check stock availability
+    // Check stock availability (convert sqm to sheet-equivalent for area sales)
     const productMap = new Map(products.map((p) => [p.id, p]));
     for (const item of items) {
       const product = productMap.get(item.productId);
       if (!product) continue;
-      if (product.stockQty < item.quantity) {
+
+      // Reject sqm sales on products without sqmPerUnit configured
+      if (item.sellingUnit === "sqm" && (!product.sqmPerUnit || product.sqmPerUnit <= 0)) {
         return NextResponse.json(
-          { error: `Insufficient stock for ${product.name}. Available: ${product.stockQty}` },
+          { error: `Product "${product.name}" is not configured for area selling (missing m²/unit).` },
+          { status: 400 }
+        );
+      }
+
+      let stockNeeded: number;
+      if (item.sellingUnit === "sqm" && product.sqmPerUnit && product.sqmPerUnit > 0) {
+        // Convert area (m²) to sheet-equivalent
+        stockNeeded = item.area / product.sqmPerUnit;
+      } else {
+        stockNeeded = item.quantity;
+      }
+
+      if (product.stockQty < stockNeeded) {
+        const stockLabel = item.sellingUnit === "sqm"
+          ? `Need ${stockNeeded.toFixed(2)} sheets (${item.area} m²) but only ${product.stockQty} available`
+          : `Available: ${product.stockQty}`;
+        return NextResponse.json(
+          { error: `Insufficient stock for ${product.name}. ${stockLabel}` },
           { status: 400 }
         );
       }
@@ -185,7 +218,7 @@ export async function POST(request: NextRequest) {
           notes: notes || null,
           items: {
             create: items.map(
-              (item: { productId: string; quantity: number; unitPrice: number }) => {
+              (item: { productId: string; quantity: number; unitPrice: number; sellingUnit?: string; area?: number }) => {
                 const product = productMap.get(item.productId)!;
                 return {
                   productId: item.productId,
@@ -193,6 +226,8 @@ export async function POST(request: NextRequest) {
                   quantity: item.quantity,
                   unitPrice: item.unitPrice,
                   total: Math.round(item.quantity * item.unitPrice * 100) / 100,
+                  sellingUnit: item.sellingUnit || "unit",
+                  area: item.sellingUnit === "sqm" ? item.area : null,
                 };
               }
             ),
@@ -225,14 +260,28 @@ export async function POST(request: NextRequest) {
       });
 
       // Decrement stock for each product (with stock movement tracking)
+      // For sqm sales, convert area to sheet-equivalent for stock deduction
       for (const item of items) {
+        const product = productMap.get(item.productId)!;
+        let stockDecrement: number;
+        let movementNotes: string | undefined;
+
+        if (item.sellingUnit === "sqm" && product.sqmPerUnit && product.sqmPerUnit > 0) {
+          // Convert m² to sheets: area / sqmPerUnit
+          stockDecrement = Math.round((item.area / product.sqmPerUnit) * 10000) / 10000;
+          movementNotes = `Sold ${item.area} m² (${stockDecrement} sheet equiv.)`;
+        } else {
+          stockDecrement = item.quantity;
+        }
+
         await recordStockMovement(tx, {
           orgId: auth.orgId,
           productId: item.productId,
           userId: auth.userId,
           type: "sale",
-          quantity: -item.quantity,
+          quantity: -stockDecrement,
           reference: saleNumber,
+          notes: movementNotes,
         });
       }
 

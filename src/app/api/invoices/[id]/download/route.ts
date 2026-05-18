@@ -54,6 +54,8 @@ export async function GET(
           quantity: item.quantity,
           unitPrice: item.unitPrice,
           total: item.total,
+          sellingUnit: item.sellingUnit,
+          area: item.area,
         })) || [],
       },
       org: {

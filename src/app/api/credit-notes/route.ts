@@ -63,6 +63,8 @@ interface CreditNoteItem {
   quantity: number;
   unitPrice: number;
   total: number;
+  sellingUnit?: string;
+  area?: number | null;
 }
 
 export async function POST(request: NextRequest) {
@@ -157,15 +159,40 @@ export async function POST(request: NextRequest) {
 
       // Restock items if requested
       if (restockItems) {
+        // Fetch products to check sqmPerUnit for area-sold items
+        const productIds = items.map((i) => i.productId);
+        const refundProducts = await tx.product.findMany({
+          where: { id: { in: productIds } },
+          select: { id: true, sqmPerUnit: true },
+        });
+        const refundProductMap = new Map(refundProducts.map((p) => [p.id, p]));
+
         for (const item of items) {
+          let restockQty: number;
+          let movementNotes: string;
+
+          if (item.sellingUnit === "sqm") {
+            // Convert area back to sheet-equivalent for restocking
+            const product = refundProductMap.get(item.productId);
+            const sqmPerUnit = product?.sqmPerUnit || 0;
+            const area = item.area ?? item.quantity;
+            restockQty = sqmPerUnit > 0
+              ? Math.round((area / sqmPerUnit) * 10000) / 10000
+              : item.quantity;
+            movementNotes = `Credit note refund ${area} m² (${restockQty} sheet equiv.) for sale ${sale.saleNumber}`;
+          } else {
+            restockQty = item.quantity;
+            movementNotes = `Credit note refund for sale ${sale.saleNumber}`;
+          }
+
           await recordStockMovement(tx, {
             orgId: auth.orgId,
             productId: item.productId,
             userId: auth.userId,
             type: "refund",
-            quantity: +item.quantity,
+            quantity: +restockQty,
             reference: creditNoteNumber,
-            notes: `Credit note refund for sale ${sale.saleNumber}`,
+            notes: movementNotes,
           });
         }
       }

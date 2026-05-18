@@ -24,7 +24,7 @@ interface InvoiceData {
     dueAt: string | null;
     paidAt: string | null;
     notes: string | null;
-    items: { name: string; quantity: number; unitPrice: number; total: number }[];
+    items: { name: string; quantity: number; unitPrice: number; total: number; sellingUnit?: string; area?: number | null }[];
   };
   org: {
     name: string;
@@ -183,14 +183,17 @@ export default function InvoiceViewPage() {
               </tr>
             </thead>
             <tbody>
-              {inv.items.map((item, i) => (
-                <tr key={i} style={{ background: i % 2 === 0 ? "#fafafa" : "#fff" }}>
-                  <td className="px-4 py-3 text-[13px] text-gray-900 border-b border-gray-100">{item.name}</td>
-                  <td className="px-4 py-3 text-[13px] text-gray-500 text-center border-b border-gray-100">{item.quantity}</td>
-                  <td className="px-4 py-3 text-[13px] text-gray-500 text-right border-b border-gray-100">{fmt(item.unitPrice, cur)}</td>
-                  <td className="px-4 py-3 text-[13px] text-gray-900 text-right font-semibold border-b border-gray-100">{fmt(item.total, cur)}</td>
-                </tr>
-              ))}
+              {inv.items.map((item, i) => {
+                const isSqm = item.sellingUnit === "sqm";
+                return (
+                  <tr key={i} style={{ background: i % 2 === 0 ? "#fafafa" : "#fff" }}>
+                    <td className="px-4 py-3 text-[13px] text-gray-900 border-b border-gray-100">{item.name}</td>
+                    <td className="px-4 py-3 text-[13px] text-gray-500 text-center border-b border-gray-100">{isSqm ? `${item.area ?? item.quantity} m²` : item.quantity}</td>
+                    <td className="px-4 py-3 text-[13px] text-gray-500 text-right border-b border-gray-100">{fmt(item.unitPrice, cur)}{isSqm ? "/m²" : ""}</td>
+                    <td className="px-4 py-3 text-[13px] text-gray-900 text-right font-semibold border-b border-gray-100">{fmt(item.total, cur)}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
 

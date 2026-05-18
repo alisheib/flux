@@ -22,7 +22,7 @@ interface InvoiceTemplateData {
     dueAt: string | null;
     paidAt: string | null;
     notes: string | null;
-    items: { name: string; quantity: number; unitPrice: number; total: number }[];
+    items: { name: string; quantity: number; unitPrice: number; total: number; sellingUnit?: string; area?: number | null }[];
   };
   org: {
     name: string;
@@ -67,13 +67,19 @@ export function buildInvoiceHTML(data: InvoiceTemplateData): string {
   // Build item rows
   const itemRows = inv.items
     .map(
-      (item, i) => `
+      (item, i) => {
+        const isSqm = item.sellingUnit === "sqm";
+        const qtyLabel = isSqm ? `${item.area ?? item.quantity} m²` : String(item.quantity);
+        const priceLabel = isSqm ? `${formatAmount(item.unitPrice, cur)}/m²` : formatAmount(item.unitPrice, cur);
+        const bg = i % 2 === 0 ? "#fafafa" : "#ffffff";
+        return `
     <tr>
-      <td style="padding: 12px 16px; font-size: 13px; color: #111827; border-bottom: 1px solid #f3f4f6; background: ${i % 2 === 0 ? "#fafafa" : "#ffffff"}">${escapeHtml(item.name)}</td>
-      <td style="padding: 12px 16px; font-size: 13px; color: #6b7280; border-bottom: 1px solid #f3f4f6; text-align: center; background: ${i % 2 === 0 ? "#fafafa" : "#ffffff"}">${item.quantity}</td>
-      <td style="padding: 12px 16px; font-size: 13px; color: #6b7280; border-bottom: 1px solid #f3f4f6; text-align: right; background: ${i % 2 === 0 ? "#fafafa" : "#ffffff"}">${formatAmount(item.unitPrice, cur)}</td>
-      <td style="padding: 12px 16px; font-size: 13px; color: #111827; font-weight: 600; border-bottom: 1px solid #f3f4f6; text-align: right; background: ${i % 2 === 0 ? "#fafafa" : "#ffffff"}">${formatAmount(item.total, cur)}</td>
-    </tr>`
+      <td style="padding: 12px 16px; font-size: 13px; color: #111827; border-bottom: 1px solid #f3f4f6; background: ${bg}">${escapeHtml(item.name)}</td>
+      <td style="padding: 12px 16px; font-size: 13px; color: #6b7280; border-bottom: 1px solid #f3f4f6; text-align: center; background: ${bg}">${qtyLabel}</td>
+      <td style="padding: 12px 16px; font-size: 13px; color: #6b7280; border-bottom: 1px solid #f3f4f6; text-align: right; background: ${bg}">${priceLabel}</td>
+      <td style="padding: 12px 16px; font-size: 13px; color: #111827; font-weight: 600; border-bottom: 1px solid #f3f4f6; text-align: right; background: ${bg}">${formatAmount(item.total, cur)}</td>
+    </tr>`;
+      }
     )
     .join("");
 

@@ -55,6 +55,8 @@ interface Product {
   stockQty: number;
   minStockQty: number;
   active: boolean;
+  sqmPerUnit: number | null;
+  pricePerSqm: number | null;
   category?: { id: string; name: string } | null;
 }
 
@@ -63,6 +65,7 @@ interface Category {
   name: string;
   icon: string | null;
   color: string | null;
+  fields: string | null;
 }
 
 interface CartItem {
@@ -73,6 +76,15 @@ interface CartItem {
   quantity: number;
   maxStock: number;
   unit: string;
+  // Area-selling fields
+  sellingUnit: "unit" | "sqm";
+  sqmPerUnit: number | null;
+  pricePerSqm: number | null;
+  pricePerSheet: number;
+  areaW: string; // mm input (string for controlled input)
+  areaH: string; // mm input
+  areaDirect: string; // direct m² input
+  areaMode: "dimensions" | "direct";
 }
 
 interface OrgSettings {
@@ -96,7 +108,7 @@ interface SaleResult {
   discount: number;
   total: number;
   paymentMethod: string;
-  items: { name: string; quantity: number; unitPrice: number; total: number }[];
+  items: { name: string; quantity: number; unitPrice: number; total: number; sellingUnit?: string; area?: number | null }[];
   createdAt: string;
   invoice?: { id: string; number: string };
 }
@@ -248,14 +260,15 @@ export default function POSPage() {
     setCart((prev) => {
       const existing = prev.find((item) => item.productId === product.id);
       if (existing) {
-        return prev.map((item) =>
-          item.productId === product.id
-            ? {
-                ...item,
-                quantity: Math.min(item.quantity + 1, item.maxStock),
-              }
-            : item
-        );
+        // Only increment if in "unit" mode (sheet/piece)
+        if (existing.sellingUnit === "unit") {
+          return prev.map((item) =>
+            item.productId === product.id
+              ? { ...item, quantity: Math.min(item.quantity + 1, item.maxStock) }
+              : item
+          );
+        }
+        return prev; // In sqm mode, don't auto-increment
       }
       return [
         ...prev,
@@ -267,6 +280,14 @@ export default function POSPage() {
           quantity: 1,
           maxStock: product.stockQty,
           unit: product.unit,
+          sellingUnit: "unit" as const,
+          sqmPerUnit: product.sqmPerUnit,
+          pricePerSqm: product.pricePerSqm,
+          pricePerSheet: product.sellingPrice,
+          areaW: "",
+          areaH: "",
+          areaDirect: "",
+          areaMode: "dimensions" as const,
         },
       ];
     });
@@ -319,11 +340,91 @@ export default function POSPage() {
     }
   }, []);
 
+  // Check if a cart item can be sold by area (has sqmPerUnit + pricePerSqm)
+  const canSellByArea = useCallback((item: CartItem) => {
+    return item.sqmPerUnit != null && item.sqmPerUnit > 0 && item.pricePerSqm != null && item.pricePerSqm > 0;
+  }, []);
+
+  // Compute area in m² from a cart item's dimension/direct inputs
+  const getCartItemArea = useCallback((item: CartItem): number => {
+    if (item.sellingUnit !== "sqm") return 0;
+    if (item.areaMode === "direct") {
+      return Math.max(0, parseFloat(item.areaDirect) || 0);
+    }
+    const w = parseFloat(item.areaW) || 0;
+    const h = parseFloat(item.areaH) || 0;
+    if (w <= 0 || h <= 0) return 0;
+    return Math.round((w / 1000) * (h / 1000) * 10000) / 10000;
+  }, []);
+
+  // Get line total for a cart item (handles both unit and sqm modes)
+  const getCartItemTotal = useCallback((item: CartItem): number => {
+    if (item.sellingUnit === "sqm") {
+      const area = getCartItemArea(item);
+      return Math.round(area * item.unitPrice * 100) / 100;
+    }
+    return Math.round(item.unitPrice * item.quantity * 100) / 100;
+  }, [getCartItemArea]);
+
+  // Toggle selling unit for a cart item
+  const toggleSellingUnit = useCallback((productId: string) => {
+    setCart((prev) =>
+      prev.map((item) => {
+        if (item.productId !== productId) return item;
+        if (item.sellingUnit === "unit") {
+          return {
+            ...item,
+            sellingUnit: "sqm" as const,
+            unitPrice: item.pricePerSqm || 0,
+            quantity: 1, // quantity becomes 1 for sqm line items
+          };
+        }
+        return {
+          ...item,
+          sellingUnit: "unit" as const,
+          unitPrice: item.pricePerSheet,
+          quantity: 1,
+          areaW: "",
+          areaH: "",
+          areaDirect: "",
+        };
+      })
+    );
+  }, []);
+
+  // Update area dimension input for a cart item
+  const updateCartAreaField = useCallback(
+    (productId: string, field: "areaW" | "areaH" | "areaDirect", value: string) => {
+      setCart((prev) =>
+        prev.map((item) =>
+          item.productId === productId ? { ...item, [field]: value } : item
+        )
+      );
+    },
+    []
+  );
+
+  // Toggle area input mode (dimensions vs direct)
+  const toggleAreaMode = useCallback((productId: string) => {
+    setCart((prev) =>
+      prev.map((item) => {
+        if (item.productId !== productId) return item;
+        return {
+          ...item,
+          areaMode: item.areaMode === "dimensions" ? "direct" as const : "dimensions" as const,
+          areaW: "",
+          areaH: "",
+          areaDirect: "",
+        };
+      })
+    );
+  }, []);
+
   // ── Totals Calculation ─────────────────────────────────────────────────
 
   const subtotal = useMemo(
-    () => cart.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0),
-    [cart]
+    () => cart.reduce((sum, item) => sum + getCartItemTotal(item), 0),
+    [cart, getCartItemTotal]
   );
 
   const discountAmount = useMemo(() => {
@@ -345,6 +446,26 @@ export default function POSPage() {
       toast.error("Cart is empty");
       return;
     }
+    // Validate sqm items have area entered
+    for (const item of cart) {
+      if (item.sellingUnit === "sqm") {
+        const area = getCartItemArea(item);
+        if (area <= 0) {
+          toast.error(`Enter area for ${item.name}`, { description: "Provide dimensions or m² value for area-sold items." });
+          return;
+        }
+        // Check stock: area / sqmPerUnit must not exceed available stock
+        if (item.sqmPerUnit && item.sqmPerUnit > 0) {
+          const sheetsNeeded = area / item.sqmPerUnit;
+          if (sheetsNeeded > item.maxStock) {
+            toast.error(`Insufficient stock for ${item.name}`, {
+              description: `Need ${sheetsNeeded.toFixed(2)} sheets (${area} m²) but only ${item.maxStock} available.`,
+            });
+            return;
+          }
+        }
+      }
+    }
     setConfirmDialogOpen(true);
   };
 
@@ -358,13 +479,20 @@ export default function POSPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          items: cart.map((item) => ({
-            productId: item.productId,
-            name: item.name,
-            quantity: item.quantity,
-            unitPrice: item.unitPrice,
-            total: item.unitPrice * item.quantity,
-          })),
+          items: cart.map((item) => {
+            const isSqm = item.sellingUnit === "sqm";
+            const area = isSqm ? getCartItemArea(item) : null;
+            const lineTotal = getCartItemTotal(item);
+            return {
+              productId: item.productId,
+              name: item.name,
+              quantity: isSqm ? area! : item.quantity,
+              unitPrice: item.unitPrice,
+              total: lineTotal,
+              sellingUnit: item.sellingUnit,
+              area: area,
+            };
+          }),
           customer: customerName || null,
           customerPhone: customerPhone || null,
           customerEmail: customerEmail || null,
@@ -387,12 +515,18 @@ export default function POSPage() {
       const saleData = await response.json();
       setLastSale({
         ...saleData,
-        items: cart.map((item) => ({
-          name: item.name,
-          quantity: item.quantity,
-          unitPrice: item.unitPrice,
-          total: item.unitPrice * item.quantity,
-        })),
+        items: cart.map((item) => {
+          const isSqm = item.sellingUnit === "sqm";
+          const area = isSqm ? getCartItemArea(item) : null;
+          return {
+            name: item.name,
+            quantity: isSqm ? area! : item.quantity,
+            unitPrice: item.unitPrice,
+            total: getCartItemTotal(item),
+            sellingUnit: item.sellingUnit,
+            area: area,
+          };
+        }),
       });
       setReceiptDialogOpen(true);
       clearCart(true);
@@ -426,8 +560,12 @@ export default function POSPage() {
       ``,
       `*Items:*`,
       ...sale.items.map(
-        (item) =>
-          `  ${item.quantity}x ${item.name} — ${formatCurrency(item.total, cur)}`
+        (item) => {
+          const qtyLabel = item.sellingUnit === "sqm"
+            ? `${item.area ?? item.quantity} m²`
+            : `${item.quantity}x`;
+          return `  ${qtyLabel} ${item.name} — ${formatCurrency(item.total, cur)}`;
+        }
       ),
       ``,
       `━━━━━━━━━━━━━━━━`,
@@ -776,107 +914,201 @@ export default function POSPage() {
               </div>
             ) : (
               <div className="space-y-2 p-3">
-                {cart.map((item) => (
-                  <div
-                    key={item.productId}
-                    className="rounded-lg border border-border bg-background p-3"
-                  >
-                    {/* Top row: name + remove */}
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium text-foreground">
-                          {item.name}
-                        </p>
-                        {item.sku && (
-                          <p className="text-xs text-muted-foreground">
-                            {item.sku}
+                {cart.map((item) => {
+                  const areaCapable = canSellByArea(item);
+                  const isSqm = item.sellingUnit === "sqm";
+                  const area = getCartItemArea(item);
+                  const lineTotal = getCartItemTotal(item);
+
+                  return (
+                    <div
+                      key={item.productId}
+                      className="rounded-lg border border-border bg-background p-3"
+                    >
+                      {/* Top row: name + unit toggle + remove */}
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium text-foreground">
+                            {item.name}
                           </p>
+                          {item.sku && (
+                            <p className="text-xs text-muted-foreground">
+                              {item.sku}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          {/* Unit toggle for area-capable products */}
+                          {areaCapable && (
+                            <div className="flex rounded-md border border-border overflow-hidden text-[10px] font-medium">
+                              <button
+                                type="button"
+                                onClick={() => !isSqm || toggleSellingUnit(item.productId)}
+                                className={`px-2 py-1 transition-colors ${
+                                  !isSqm
+                                    ? "bg-[#d97706]/15 text-[#d97706]"
+                                    : "text-muted-foreground hover:text-foreground"
+                                }`}
+                              >
+                                Sheet
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => isSqm || toggleSellingUnit(item.productId)}
+                                className={`px-2 py-1 transition-colors ${
+                                  isSqm
+                                    ? "bg-[#d97706]/15 text-[#d97706]"
+                                    : "text-muted-foreground hover:text-foreground"
+                                }`}
+                              >
+                                m²
+                              </button>
+                            </div>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="icon-xs"
+                            onClick={() => removeFromCart(item.productId)}
+                            className="shrink-0 text-muted-foreground hover:text-destructive"
+                          >
+                            <X className="size-3.5" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Area inputs (when selling by sqm) */}
+                      {isSqm && (
+                        <div className="mt-2 rounded-md border border-dashed border-[#d97706]/30 bg-[#d97706]/5 p-2">
+                          <div className="flex items-center justify-between mb-1.5">
+                            <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
+                              {item.areaMode === "dimensions" ? "Cut dimensions" : "Direct m²"}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => toggleAreaMode(item.productId)}
+                              className="text-[10px] text-[#d97706] hover:underline"
+                            >
+                              {item.areaMode === "dimensions" ? "Enter m² directly" : "Enter dimensions"}
+                            </button>
+                          </div>
+                          {item.areaMode === "dimensions" ? (
+                            <div className="flex items-center gap-1.5">
+                              <Input
+                                type="number"
+                                min={0}
+                                step={1}
+                                value={item.areaW}
+                                onChange={(e) => updateCartAreaField(item.productId, "areaW", e.target.value)}
+                                placeholder="W mm"
+                                className="h-7 w-20 text-center text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                              />
+                              <span className="text-xs text-muted-foreground">x</span>
+                              <Input
+                                type="number"
+                                min={0}
+                                step={1}
+                                value={item.areaH}
+                                onChange={(e) => updateCartAreaField(item.productId, "areaH", e.target.value)}
+                                placeholder="H mm"
+                                className="h-7 w-20 text-center text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                              />
+                              {area > 0 && (
+                                <span className="text-xs font-medium text-foreground tabular-nums ml-1">
+                                  = {area} m²
+                                </span>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1.5">
+                              <Input
+                                type="number"
+                                min={0}
+                                step={0.01}
+                                value={item.areaDirect}
+                                onChange={(e) => updateCartAreaField(item.productId, "areaDirect", e.target.value)}
+                                placeholder="0.00"
+                                className="h-7 w-24 text-center text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                              />
+                              <span className="text-xs text-muted-foreground">m²</span>
+                            </div>
+                          )}
+                          {area > 0 && item.sqmPerUnit && item.sqmPerUnit > 0 && (
+                            <p className="text-[10px] text-muted-foreground mt-1">
+                              Uses {(area / item.sqmPerUnit).toFixed(2)} of {item.maxStock} sheets
+                            </p>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Bottom row: qty/area controls, price, line total */}
+                      <div className="mt-2.5 flex items-center justify-between gap-2">
+                        {!isSqm ? (
+                          /* Standard quantity controls */
+                          <div className="flex items-center gap-1">
+                            <Button
+                              variant="outline"
+                              size="icon-xs"
+                              className="size-7"
+                              onClick={() =>
+                                updateCartQuantity(item.productId, item.quantity - 1)
+                              }
+                            >
+                              <Minus className="size-3" />
+                            </Button>
+                            <Input
+                              type="number"
+                              min={1}
+                              max={item.maxStock}
+                              value={item.quantity}
+                              onChange={(e) =>
+                                updateCartQuantity(item.productId, parseInt(e.target.value) || 1)
+                              }
+                              className="h-7 w-14 text-center text-sm font-medium [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            />
+                            <Button
+                              variant="outline"
+                              size="icon-xs"
+                              className="size-7"
+                              onClick={() =>
+                                updateCartQuantity(item.productId, item.quantity + 1)
+                              }
+                              disabled={item.quantity >= item.maxStock}
+                            >
+                              <Plus className="size-3" />
+                            </Button>
+                          </div>
+                        ) : (
+                          /* Area display */
+                          <span className="text-xs text-muted-foreground tabular-nums">
+                            {area > 0 ? `${area} m²` : "—"}
+                          </span>
                         )}
+
+                        {/* Unit price (editable) */}
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs text-muted-foreground">
+                            @{isSqm ? "/m²" : ""}
+                          </span>
+                          <Input
+                            type="number"
+                            min={0}
+                            step={0.01}
+                            value={item.unitPrice}
+                            onChange={(e) =>
+                              updateCartPrice(item.productId, parseFloat(e.target.value) || 0)
+                            }
+                            className="h-7 w-20 text-right text-sm font-medium [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          />
+                        </div>
+
+                        {/* Line total */}
+                        <p className="shrink-0 text-sm font-bold text-foreground tabular-nums">
+                          {formatCurrency(lineTotal, orgSettings.currency)}
+                        </p>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="icon-xs"
-                        onClick={() => removeFromCart(item.productId)}
-                        className="shrink-0 text-muted-foreground hover:text-destructive"
-                      >
-                        <X className="size-3.5" />
-                      </Button>
                     </div>
-
-                    {/* Bottom row: qty controls, price, line total */}
-                    <div className="mt-2.5 flex items-center justify-between gap-2">
-                      {/* Quantity controls */}
-                      <div className="flex items-center gap-1">
-                        <Button
-                          variant="outline"
-                          size="icon-xs"
-                          className="size-7"
-                          onClick={() =>
-                            updateCartQuantity(
-                              item.productId,
-                              item.quantity - 1
-                            )
-                          }
-                        >
-                          <Minus className="size-3" />
-                        </Button>
-                        <Input
-                          type="number"
-                          min={1}
-                          max={item.maxStock}
-                          value={item.quantity}
-                          onChange={(e) =>
-                            updateCartQuantity(
-                              item.productId,
-                              parseInt(e.target.value) || 1
-                            )
-                          }
-                          className="h-7 w-14 text-center text-sm font-medium [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                        />
-                        <Button
-                          variant="outline"
-                          size="icon-xs"
-                          className="size-7"
-                          onClick={() =>
-                            updateCartQuantity(
-                              item.productId,
-                              item.quantity + 1
-                            )
-                          }
-                          disabled={item.quantity >= item.maxStock}
-                        >
-                          <Plus className="size-3" />
-                        </Button>
-                      </div>
-
-                      {/* Unit price (editable) */}
-                      <div className="flex items-center gap-1">
-                        <span className="text-xs text-muted-foreground">@</span>
-                        <Input
-                          type="number"
-                          min={0}
-                          step={0.01}
-                          value={item.unitPrice}
-                          onChange={(e) =>
-                            updateCartPrice(
-                              item.productId,
-                              parseFloat(e.target.value) || 0
-                            )
-                          }
-                          className="h-7 w-20 text-right text-sm font-medium [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                        />
-                      </div>
-
-                      {/* Line total */}
-                      <p className="shrink-0 text-sm font-bold text-foreground tabular-nums">
-                        {formatCurrency(
-                          item.unitPrice * item.quantity,
-                          orgSettings.currency
-                        )}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </ScrollArea>
@@ -1119,22 +1351,29 @@ export default function POSPage() {
                 <span>Item</span>
                 <span>Total</span>
               </div>
-              {cart.map((item) => (
-                <div
-                  key={item.productId}
-                  className="flex justify-between gap-3 px-3 py-2 border-t border-border text-sm"
-                >
-                  <div className="min-w-0">
-                    <p className="font-medium text-foreground truncate">{item.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {item.quantity} x {formatCurrency(item.unitPrice, orgSettings.currency)}
-                    </p>
+              {cart.map((item) => {
+                const isSqm = item.sellingUnit === "sqm";
+                const area = getCartItemArea(item);
+                const lineTotal = getCartItemTotal(item);
+                return (
+                  <div
+                    key={item.productId}
+                    className="flex justify-between gap-3 px-3 py-2 border-t border-border text-sm"
+                  >
+                    <div className="min-w-0">
+                      <p className="font-medium text-foreground truncate">{item.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {isSqm
+                          ? `${area} m² x ${formatCurrency(item.unitPrice, orgSettings.currency)}/m²`
+                          : `${item.quantity} x ${formatCurrency(item.unitPrice, orgSettings.currency)}`}
+                      </p>
+                    </div>
+                    <span className="font-semibold text-foreground shrink-0">
+                      {formatCurrency(lineTotal, orgSettings.currency)}
+                    </span>
                   </div>
-                  <span className="font-semibold text-foreground shrink-0">
-                    {formatCurrency(item.unitPrice * item.quantity, orgSettings.currency)}
-                  </span>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* Totals */}
@@ -1297,7 +1536,11 @@ export default function POSPage() {
                     <div key={i} className="flex justify-between gap-3 text-sm">
                       <span className="text-foreground truncate">
                         {item.name}{" "}
-                        <span className="text-muted-foreground">x{item.quantity}</span>
+                        <span className="text-muted-foreground">
+                          {item.sellingUnit === "sqm"
+                            ? `${item.area ?? item.quantity} m²`
+                            : `x${item.quantity}`}
+                        </span>
                       </span>
                       <span className="font-medium text-foreground shrink-0">
                         {formatCurrency(item.total, orgSettings.currency)}

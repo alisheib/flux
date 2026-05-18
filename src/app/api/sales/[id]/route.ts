@@ -67,16 +67,41 @@ export async function DELETE(
 
     // Restore stock and delete sale in a transaction
     await prisma.$transaction(async (tx) => {
+      // Fetch products to check sqmPerUnit for area-sold items
+      const productIds = sale.items.map((i) => i.productId);
+      const saleProducts = await tx.product.findMany({
+        where: { id: { in: productIds } },
+        select: { id: true, sqmPerUnit: true },
+      });
+      const saleProductMap = new Map(saleProducts.map((p) => [p.id, p]));
+
       // Restore stock for each item (with stock movement tracking)
       for (const item of sale.items) {
+        let restoreQty: number;
+        let movementNotes: string;
+
+        if (item.sellingUnit === "sqm") {
+          // Convert area back to sheet-equivalent
+          const product = saleProductMap.get(item.productId);
+          const sqmPerUnit = product?.sqmPerUnit || 0;
+          const area = item.area ?? item.quantity;
+          restoreQty = sqmPerUnit > 0
+            ? Math.round((area / sqmPerUnit) * 10000) / 10000
+            : item.quantity;
+          movementNotes = `Stock restored ${area} m² (${restoreQty} sheet equiv.) from deleted sale ${sale.saleNumber}`;
+        } else {
+          restoreQty = item.quantity;
+          movementNotes = `Stock restored from deleted sale ${sale.saleNumber}`;
+        }
+
         await recordStockMovement(tx, {
           orgId: auth.orgId,
           productId: item.productId,
           userId: auth.userId,
           type: "refund",
-          quantity: +item.quantity,
+          quantity: +restoreQty,
           reference: sale.saleNumber,
-          notes: `Stock restored from deleted sale ${sale.saleNumber}`,
+          notes: movementNotes,
         });
       }
 

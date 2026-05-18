@@ -71,6 +71,8 @@ interface InvoiceItem {
   quantity: number;
   unitPrice: number;
   total: number;
+  sellingUnit?: string;
+  area?: number | null;
 }
 
 interface Invoice {
@@ -332,8 +334,12 @@ export default function InvoicesPage() {
       ``,
       `*Items:*`,
       ...items.map(
-        (item) =>
-          `  ${item.quantity}x ${item.name} — ${formatCurrency(item.total, invoice.currency)}`
+        (item) => {
+          const qtyLabel = item.sellingUnit === "sqm"
+            ? `${item.area ?? item.quantity} m²`
+            : `${item.quantity}x`;
+          return `  ${qtyLabel} ${item.name} — ${formatCurrency(item.total, invoice.currency)}`;
+        }
       ),
       ``,
       `━━━━━━━━━━━━━━━━`,
@@ -927,13 +933,15 @@ export default function InvoicesPage() {
                                     {item.name}
                                   </TableCell>
                                   <TableCell className="text-right text-muted-foreground">
-                                    {item.quantity}
+                                    {item.sellingUnit === "sqm"
+                                      ? `${item.area ?? item.quantity} m²`
+                                      : item.quantity}
                                   </TableCell>
                                   <TableCell className="text-right text-muted-foreground">
                                     {formatCurrency(
                                       item.unitPrice,
                                       selectedInvoice.currency
-                                    )}
+                                    )}{item.sellingUnit === "sqm" ? "/m²" : ""}
                                   </TableCell>
                                   <TableCell className="text-right font-medium text-foreground">
                                     {formatCurrency(

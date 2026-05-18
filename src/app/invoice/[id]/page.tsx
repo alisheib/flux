@@ -165,14 +165,17 @@ export default async function InvoicePrintPage({
               </tr>
             </thead>
             <tbody>
-              {items.map((item, i) => (
-                <tr key={i}>
-                  <td>{item.name}</td>
-                  <td className="td-muted">{item.quantity}</td>
-                  <td className="td-muted">{fmt(item.unitPrice, cur)}</td>
-                  <td className="td-bold">{fmt(item.total, cur)}</td>
-                </tr>
-              ))}
+              {items.map((item, i) => {
+                const isSqm = item.sellingUnit === "sqm";
+                return (
+                  <tr key={i}>
+                    <td>{item.name}</td>
+                    <td className="td-muted">{isSqm ? `${item.area ?? item.quantity} m²` : item.quantity}</td>
+                    <td className="td-muted">{fmt(item.unitPrice, cur)}{isSqm ? "/m²" : ""}</td>
+                    <td className="td-bold">{fmt(item.total, cur)}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
 

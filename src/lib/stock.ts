@@ -4,7 +4,7 @@ interface StockMovementParams {
   orgId: string;
   productId: string;
   userId?: string;
-  type: "sale" | "refund" | "adjustment" | "shipment_received" | "manual";
+  type: "sale" | "refund" | "adjustment" | "shipment_received" | "manual" | "po_received";
   quantity: number; // positive = stock in, negative = stock out
   reference?: string;
   notes?: string;

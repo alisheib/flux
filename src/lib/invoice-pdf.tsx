@@ -77,7 +77,7 @@ interface InvoicePDFData {
     dueAt: string | null;
     paidAt: string | null;
     notes: string | null;
-    items: { name: string; quantity: number; unitPrice: number; total: number }[];
+    items: { name: string; quantity: number; unitPrice: number; total: number; sellingUnit?: string; area?: number | null }[];
   };
   org: {
     name: string;
@@ -161,14 +161,18 @@ function InvoiceDocument({ invoice, org }: InvoicePDFData) {
             <Text style={[styles.tableHeaderCell, { width: "20%", textAlign: "right" }]}>Unit Price</Text>
             <Text style={[styles.tableHeaderCell, { width: "20%", textAlign: "right" }]}>Total</Text>
           </View>
-          {invoice.items.map((item, i) => (
-            <View key={i} style={[styles.tableRow, i % 2 === 0 ? styles.tableRowAlt : {}]}>
-              <Text style={[styles.tableCell, { width: "45%" }]}>{item.name}</Text>
-              <Text style={[styles.tableCellMuted, { width: "15%", textAlign: "right" }]}>{item.quantity}</Text>
-              <Text style={[styles.tableCellMuted, { width: "20%", textAlign: "right" }]}>{fmt(item.unitPrice, cur)}</Text>
-              <Text style={[styles.tableCell, { width: "20%", textAlign: "right", fontFamily: "Helvetica-Bold" }]}>{fmt(item.total, cur)}</Text>
-            </View>
-          ))}
+          {invoice.items.map((item, i) => {
+            const isSqm = item.sellingUnit === "sqm";
+            const qtyLabel = isSqm ? `${item.area ?? item.quantity} m²` : String(item.quantity);
+            return (
+              <View key={i} style={[styles.tableRow, i % 2 === 0 ? styles.tableRowAlt : {}]}>
+                <Text style={[styles.tableCell, { width: "45%" }]}>{item.name}</Text>
+                <Text style={[styles.tableCellMuted, { width: "15%", textAlign: "right" }]}>{qtyLabel}</Text>
+                <Text style={[styles.tableCellMuted, { width: "20%", textAlign: "right" }]}>{fmt(item.unitPrice, cur)}{isSqm ? "/m²" : ""}</Text>
+                <Text style={[styles.tableCell, { width: "20%", textAlign: "right", fontFamily: "Helvetica-Bold" }]}>{fmt(item.total, cur)}</Text>
+              </View>
+            );
+          })}
         </View>
 
         {/* Totals */}

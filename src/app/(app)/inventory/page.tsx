@@ -90,8 +90,10 @@ interface Product {
   width: number | null;
   height: number | null;
   color: string | null;
+  sqmPerUnit: number | null;
   costPrice: number;
   sellingPrice: number;
+  pricePerSqm: number | null;
   stockQty: number;
   minStockQty: number;
   active: boolean;
@@ -114,6 +116,7 @@ const OPTIONAL_PRODUCT_FIELDS = [
   { key: "width", label: "Width" },
   { key: "height", label: "Height" },
   { key: "color", label: "Color" },
+  { key: "sellByArea", label: "Sell by m²" },
 ] as const;
 
 type OptionalFieldKey = (typeof OPTIONAL_PRODUCT_FIELDS)[number]["key"];
@@ -151,8 +154,10 @@ const emptyProductForm = {
   color: "",
   costPrice: "",
   sellingPrice: "",
+  pricePerSqm: "",
   stockQty: "",
   minStockQty: "",
+  stockInputUnit: "sheets" as "sheets" | "sqm",
 };
 
 const unitOptions = [
@@ -413,8 +418,10 @@ export default function InventoryPage() {
       color: product.color || "",
       costPrice: product.costPrice.toString(),
       sellingPrice: product.sellingPrice.toString(),
+      pricePerSqm: product.pricePerSqm?.toString() || "",
       stockQty: product.stockQty.toString(),
       minStockQty: product.minStockQty.toString(),
+      stockInputUnit: "sheets",
     });
     setProductDialogOpen(true);
   };
@@ -425,6 +432,36 @@ export default function InventoryPage() {
     if ((parseFloat(productForm.costPrice) || 0) < 0) { toast.error("Invalid cost price", { description: "Cost price cannot be negative." }); return; }
     if ((parseFloat(productForm.sellingPrice) || 0) < 0) { toast.error("Invalid selling price", { description: "Selling price cannot be negative." }); return; }
     if ((parseFloat(productForm.stockQty) || 0) < 0) { toast.error("Invalid stock", { description: "Stock quantity cannot be negative." }); return; }
+
+    // Determine if this category has sellByArea enabled
+    const selectedCat = categories.find((c) => c.id === productForm.categoryId);
+    const catFields = selectedCat ? parseCategoryFields(selectedCat.fields) : [];
+    const hasSellByArea = catFields.includes("sellByArea");
+
+    // Compute sqmPerUnit from width × height (mm → m²)
+    const widthMm = parseFloat(productForm.width) || 0;
+    const heightMm = parseFloat(productForm.height) || 0;
+    const computedSqm = widthMm > 0 && heightMm > 0
+      ? Math.round((widthMm / 1000) * (heightMm / 1000) * 10000) / 10000
+      : null;
+
+    // Validate sellByArea requirements
+    if (hasSellByArea) {
+      if (!computedSqm || computedSqm <= 0) {
+        toast.error("Sheet dimensions required", { description: "Width and Height are required to compute m² per sheet." });
+        return;
+      }
+      if ((parseFloat(productForm.pricePerSqm) || 0) < 0) {
+        toast.error("Invalid price per m²", { description: "Price per m² cannot be negative." });
+        return;
+      }
+    }
+
+    // Convert stock from sqm to sheets if needed
+    let stockQty = parseFloat(productForm.stockQty) || 0;
+    if (hasSellByArea && productForm.stockInputUnit === "sqm" && computedSqm && computedSqm > 0) {
+      stockQty = Math.round((stockQty / computedSqm) * 10000) / 10000;
+    }
 
     setSavingProduct(true);
     try {
@@ -438,9 +475,11 @@ export default function InventoryPage() {
         width: productForm.width ? parseFloat(productForm.width) : null,
         height: productForm.height ? parseFloat(productForm.height) : null,
         color: productForm.color.trim() || null,
+        sqmPerUnit: hasSellByArea ? computedSqm : null,
         costPrice: parseFloat(productForm.costPrice) || 0,
         sellingPrice: parseFloat(productForm.sellingPrice) || 0,
-        stockQty: parseFloat(productForm.stockQty) || 0,
+        pricePerSqm: hasSellByArea && productForm.pricePerSqm ? parseFloat(productForm.pricePerSqm) : null,
+        stockQty,
         minStockQty: parseFloat(productForm.minStockQty) || 0,
       };
 
@@ -1309,78 +1348,185 @@ export default function InventoryPage() {
               );
             })()}
 
+            {/* Sell by Area computed display */}
+            {(() => {
+              const selectedCat = categories.find((c) => c.id === productForm.categoryId);
+              const catFields = selectedCat ? parseCategoryFields(selectedCat.fields) : [];
+              if (!catFields.includes("sellByArea")) return null;
+              const w = parseFloat(productForm.width) || 0;
+              const h = parseFloat(productForm.height) || 0;
+              const sqm = w > 0 && h > 0 ? Math.round((w / 1000) * (h / 1000) * 10000) / 10000 : 0;
+              return (
+                <>
+                  <Separator />
+                  <div>
+                    <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">Area Selling</h4>
+                    <div className="rounded-lg border border-border bg-muted/30 p-3 mb-3">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">m² per sheet</span>
+                        <span className="font-semibold text-foreground tabular-nums">
+                          {sqm > 0 ? `${sqm} m²` : "Enter width & height above"}
+                        </span>
+                      </div>
+                      {sqm > 0 && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {w} mm x {h} mm = {sqm} m² per unit
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </>
+              );
+            })()}
+
             <Separator />
 
             {/* Section: Pricing & Stock */}
-            <div>
-              <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">Pricing & Stock</h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label>Cost Price</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={productForm.costPrice}
-                    onChange={(e) =>
-                      setProductForm((f) => ({
-                        ...f,
-                        costPrice: e.target.value,
-                      }))
-                    }
-                    onKeyDown={numbersOnly}
-                    placeholder="0.00"
-                  />
+            {(() => {
+              const selectedCat = categories.find((c) => c.id === productForm.categoryId);
+              const catFields = selectedCat ? parseCategoryFields(selectedCat.fields) : [];
+              const hasSellByArea = catFields.includes("sellByArea");
+              const w = parseFloat(productForm.width) || 0;
+              const h = parseFloat(productForm.height) || 0;
+              const sqm = w > 0 && h > 0 ? Math.round((w / 1000) * (h / 1000) * 10000) / 10000 : 0;
+              return (
+                <div>
+                  <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">Pricing & Stock</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label>Cost Price</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={productForm.costPrice}
+                        onChange={(e) =>
+                          setProductForm((f) => ({
+                            ...f,
+                            costPrice: e.target.value,
+                          }))
+                        }
+                        onKeyDown={numbersOnly}
+                        placeholder="0.00"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Selling Price {hasSellByArea ? "(per sheet)" : ""}</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={productForm.sellingPrice}
+                        onChange={(e) =>
+                          setProductForm((f) => ({
+                            ...f,
+                            sellingPrice: e.target.value,
+                          }))
+                        }
+                        onKeyDown={numbersOnly}
+                        placeholder="0.00"
+                      />
+                    </div>
+                    {hasSellByArea && (
+                      <div className="space-y-1.5">
+                        <Label>Price per m²</Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={productForm.pricePerSqm}
+                          onChange={(e) =>
+                            setProductForm((f) => ({
+                              ...f,
+                              pricePerSqm: e.target.value,
+                            }))
+                          }
+                          onKeyDown={numbersOnly}
+                          placeholder="0.00"
+                        />
+                        {sqm > 0 && parseFloat(productForm.sellingPrice) > 0 && (
+                          <p className="text-xs text-muted-foreground">
+                            Sheet equiv: {(parseFloat(productForm.pricePerSqm) || 0) > 0
+                              ? `${((parseFloat(productForm.pricePerSqm) || 0) * sqm).toFixed(2)}/sheet at m² price`
+                              : `Suggested: ${(parseFloat(productForm.sellingPrice) / sqm).toFixed(2)}/m² from sheet price`}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                    <div className="space-y-1.5">
+                      <Label className="flex items-center justify-between">
+                        <span>Stock Quantity</span>
+                        {hasSellByArea && sqm > 0 && (
+                          <span className="flex gap-1">
+                            {(["sheets", "sqm"] as const).map((u) => (
+                              <button
+                                key={u}
+                                type="button"
+                                onClick={() => {
+                                  setProductForm((f) => {
+                                    if (f.stockInputUnit === u) return f;
+                                    const val = parseFloat(f.stockQty) || 0;
+                                    let converted: string;
+                                    if (u === "sqm") {
+                                      // sheets -> sqm
+                                      converted = val > 0 ? (val * sqm).toFixed(2) : "";
+                                    } else {
+                                      // sqm -> sheets
+                                      converted = val > 0 && sqm > 0 ? (val / sqm).toFixed(4) : "";
+                                    }
+                                    return { ...f, stockInputUnit: u, stockQty: converted };
+                                  });
+                                }}
+                                className={`rounded px-1.5 py-0.5 text-[10px] font-medium transition-colors ${
+                                  productForm.stockInputUnit === u
+                                    ? "bg-[#d97706]/15 text-[#d97706]"
+                                    : "text-muted-foreground hover:text-foreground"
+                                }`}
+                              >
+                                {u === "sheets" ? "Sheets" : "m²"}
+                              </button>
+                            ))}
+                          </span>
+                        )}
+                      </Label>
+                      <Input
+                        type="number"
+                        step={hasSellByArea && productForm.stockInputUnit === "sqm" ? "0.01" : "1"}
+                        value={productForm.stockQty}
+                        onChange={(e) =>
+                          setProductForm((f) => ({
+                            ...f,
+                            stockQty: e.target.value,
+                          }))
+                        }
+                        onKeyDown={numbersOnly}
+                        placeholder="0"
+                      />
+                      {hasSellByArea && sqm > 0 && parseFloat(productForm.stockQty) > 0 && (
+                        <p className="text-xs text-muted-foreground">
+                          {productForm.stockInputUnit === "sheets"
+                            ? `= ${(parseFloat(productForm.stockQty) * sqm).toFixed(2)} m²`
+                            : `= ${(parseFloat(productForm.stockQty) / sqm).toFixed(4)} sheets`}
+                        </p>
+                      )}
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Min Stock Qty</Label>
+                      <Input
+                        type="number"
+                        step="1"
+                        value={productForm.minStockQty}
+                        onChange={(e) =>
+                          setProductForm((f) => ({
+                            ...f,
+                            minStockQty: e.target.value,
+                          }))
+                        }
+                        onKeyDown={numbersOnly}
+                        placeholder="0"
+                      />
+                    </div>
+                  </div>
                 </div>
-                <div className="space-y-1.5">
-                  <Label>Selling Price</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={productForm.sellingPrice}
-                    onChange={(e) =>
-                      setProductForm((f) => ({
-                        ...f,
-                        sellingPrice: e.target.value,
-                      }))
-                    }
-                    onKeyDown={numbersOnly}
-                    placeholder="0.00"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Stock Quantity</Label>
-                  <Input
-                    type="number"
-                    step="1"
-                    value={productForm.stockQty}
-                    onChange={(e) =>
-                      setProductForm((f) => ({
-                        ...f,
-                        stockQty: e.target.value,
-                      }))
-                    }
-                    onKeyDown={numbersOnly}
-                    placeholder="0"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Min Stock Qty</Label>
-                  <Input
-                    type="number"
-                    step="1"
-                    value={productForm.minStockQty}
-                    onChange={(e) =>
-                      setProductForm((f) => ({
-                        ...f,
-                        minStockQty: e.target.value,
-                      }))
-                    }
-                    onKeyDown={numbersOnly}
-                    placeholder="0"
-                  />
-                </div>
-              </div>
-            </div>
+              );
+            })()}
           </div>
 
           <DialogFooter className="mt-4">

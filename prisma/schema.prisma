@@ -37,6 +37,8 @@ model Organization {
   stockMovements StockMovement[]
   creditNotes    CreditNote[]
   payments       Payment[]
+  suppliers      Supplier[]
+  purchaseOrders PurchaseOrder[]
 }
 
 // ─── Users & Auth ──────────────────────────────────────────────────────────
@@ -163,6 +165,7 @@ model Product {
   sqmPerUnit   Float?
   costPrice    Float    @default(0)
   sellingPrice Float    @default(0)
+  pricePerSqm  Float?
   stockQty     Float    @default(0)
   minStockQty  Float    @default(0)
   active       Boolean  @default(true)
@@ -171,9 +174,10 @@ model Product {
 
   org            Organization    @relation(fields: [orgId], references: [id], onDelete: Cascade)
   category       Category?       @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  shipmentItems  ShipmentItem[]
-  saleItems      SaleItem[]
-  stockMovements StockMovement[]
+  shipmentItems      ShipmentItem[]
+  saleItems          SaleItem[]
+  stockMovements     StockMovement[]
+  purchaseOrderItems PurchaseOrderItem[]
 
   @@unique([orgId, sku])
   @@index([orgId])
@@ -214,13 +218,15 @@ model Sale {
 }
 
 model SaleItem {
-  id        String @id @default(cuid())
-  saleId    String
-  productId String
-  name      String
-  quantity  Float
-  unitPrice Float
-  total     Float
+  id          String  @id @default(cuid())
+  saleId      String
+  productId   String
+  name        String
+  quantity    Float
+  unitPrice   Float
+  total       Float
+  sellingUnit String  @default("unit")  // "unit" (piece/sheet/etc) or "sqm"
+  area        Float?                     // actual m² sold (when sellingUnit="sqm")
 
   sale    Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
   product Product @relation(fields: [productId], references: [id])
@@ -367,6 +373,74 @@ model CreditNote {
 
   @@index([orgId])
   @@index([saleId])
+}
+
+// ─── Suppliers ────────────────────────────────────────────────────────────
+
+model Supplier {
+  id            String   @id @default(cuid())
+  orgId         String
+  name          String
+  country       String?
+  city          String?
+  contact       String?  // Contact person name
+  phone         String?
+  email         String?
+  address       String?
+  paymentTerms  String?  // e.g. "Net 30", "COD"
+  notes         String?
+  status        String   @default("active") // active, inactive
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  org            Organization    @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  purchaseOrders PurchaseOrder[]
+
+  @@index([orgId])
+}
+
+// ─── Purchase Orders ──────────────────────────────────────────────────────
+
+model PurchaseOrder {
+  id           String    @id @default(cuid())
+  orgId        String
+  supplierId   String
+  poNumber     String
+  status       String    @default("draft") // draft, sent, partial, received, cancelled
+  expectedAt   DateTime?
+  receivedAt   DateTime?
+  notes        String?
+  currency     String    @default("USD")
+  subtotal     Float     @default(0)
+  total        Float     @default(0)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  org      Organization      @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  supplier Supplier          @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  items    PurchaseOrderItem[]
+
+  @@index([orgId])
+  @@index([supplierId])
+}
+
+model PurchaseOrderItem {
+  id              String @id @default(cuid())
+  purchaseOrderId String
+  productId       String?
+  name            String
+  unit            String @default("piece")
+  quantityOrdered Float
+  quantityReceived Float  @default(0)
+  unitCost        Float
+  totalCost       Float
+  notes           String?
+
+  purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  product       Product?      @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@index([purchaseOrderId])
+  @@index([productId])
 }
 
 // ─── Payments (Accounts Receivable) ──────────────────────────────────────

@@ -74,7 +74,7 @@ export async function POST() {
 
       // Create categories
       const glassCategory = await tx.category.create({
-        data: { orgId: org.id, name: "Glass", icon: "Layers", color: "#3b82f6" },
+        data: { orgId: org.id, name: "Glass", icon: "Layers", color: "#3b82f6", fields: JSON.stringify(["thickness", "width", "height", "color", "sellByArea"]) },
       });
       const toolsCategory = await tx.category.create({
         data: { orgId: org.id, name: "Tools", icon: "Wrench", color: "#f59e0b" },
@@ -103,6 +103,7 @@ export async function POST() {
             sqmPerUnit: 7.062,
             costPrice: 28.50,
             sellingPrice: 45.00,
+            pricePerSqm: 7.50,
             stockQty: 200,
             minStockQty: 20,
           },
@@ -122,6 +123,7 @@ export async function POST() {
             sqmPerUnit: 7.062,
             costPrice: 48.00,
             sellingPrice: 75.00,
+            pricePerSqm: 12.00,
             stockQty: 120,
             minStockQty: 15,
           },
@@ -141,6 +143,7 @@ export async function POST() {
             sqmPerUnit: 7.062,
             costPrice: 32.00,
             sellingPrice: 52.00,
+            pricePerSqm: 8.50,
             stockQty: 80,
             minStockQty: 10,
           },
@@ -160,6 +163,7 @@ export async function POST() {
             sqmPerUnit: 7.062,
             costPrice: 33.00,
             sellingPrice: 55.00,
+            pricePerSqm: 9.00,
             stockQty: 60,
             minStockQty: 10,
           },
@@ -179,6 +183,7 @@ export async function POST() {
             sqmPerUnit: 4.467,
             costPrice: 22.00,
             sellingPrice: 38.00,
+            pricePerSqm: 9.50,
             stockQty: 150,
             minStockQty: 20,
           },
