@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
             select: {
               id: true,
               saleNumber: true,
-              items: { select: { id: true, name: true, quantity: true, unitPrice: true, total: true } },
+              items: { select: { id: true, name: true, quantity: true, unitPrice: true, total: true, sellingUnit: true, area: true } },
               user: { select: { id: true, name: true } },
             },
           },

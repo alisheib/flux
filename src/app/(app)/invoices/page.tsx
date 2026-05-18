@@ -360,13 +360,39 @@ export default function InvoicesPage() {
     return lines.join("\n");
   };
 
-  const shareWhatsApp = (invoice: Invoice) => {
+  const shareWhatsApp = async (invoice: Invoice) => {
+    // Try to share PDF via Web Share API (works on mobile — opens WhatsApp share)
+    if (navigator.canShare) {
+      try {
+        toast.info("Preparing invoice PDF...");
+        const res = await fetch(`/api/invoices/${invoice.id}/pdf`);
+        if (res.ok) {
+          const data = await res.json();
+          const { generateInvoicePDF } = await import("@/lib/invoice-pdf");
+          const blob = await generateInvoicePDF(data);
+          const file = new File([blob], `${invoice.number}.pdf`, { type: "application/pdf" });
+
+          if (navigator.canShare({ files: [file] })) {
+            await navigator.share({
+              title: `Invoice ${invoice.number}`,
+              text: `Invoice from ${orgSettings.name || "FLUX"} — ${formatCurrency(invoice.total, invoice.currency)}`,
+              files: [file],
+            });
+            return;
+          }
+        }
+      } catch (err) {
+        // User cancelled share or share failed — fall back to text
+        if (err instanceof Error && err.name === "AbortError") return;
+      }
+    }
+
+    // Fallback: text-based WhatsApp message
     const text = generateInvoiceText(invoice);
     const phone = invoice.customerPhone
       ? invoice.customerPhone.replace(/[^0-9+]/g, "").replace(/^\+/, "")
       : "";
 
-    // Use api.whatsapp.com for better mobile compatibility
     const baseUrl = "https://api.whatsapp.com/send";
     const params = new URLSearchParams({ text });
     if (phone) params.set("phone", phone);

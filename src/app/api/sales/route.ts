@@ -156,7 +156,7 @@ export async function POST(request: NextRequest) {
       if (product.stockQty < stockNeeded) {
         const stockLabel = item.sellingUnit === "sqm"
           ? `Need ${stockNeeded.toFixed(2)} sheets (${item.area} m²) but only ${product.stockQty} available`
-          : `Available: ${product.stockQty}`;
+          : `Need ${item.quantity} but only ${product.stockQty} available`;
         return NextResponse.json(
           { error: `Insufficient stock for ${product.name}. ${stockLabel}` },
           { status: 400 }
@@ -187,17 +187,16 @@ export async function POST(request: NextRequest) {
     // Generate sale number
     const saleNumber = `SAL-${Date.now()}`;
 
-    // Get org settings for invoice number
-    const settings = await prisma.orgSettings.findUnique({
-      where: { orgId: auth.orgId },
-    });
-
-    const invoicePrefix = settings?.invoicePrefix || "INV";
-    const invoiceNextNum = settings?.invoiceNextNum || 1;
-    const invoiceNumber = `${invoicePrefix}-${String(invoiceNextNum).padStart(4, "0")}`;
-
     // Create sale + items + invoice in a transaction, decrement stock
     const sale = await prisma.$transaction(async (tx) => {
+      // Get org settings INSIDE transaction to prevent invoice number race
+      const settings = await tx.orgSettings.findUnique({
+        where: { orgId: auth.orgId },
+      });
+
+      const invoicePrefix = settings?.invoicePrefix || "INV";
+      const invoiceNextNum = settings?.invoiceNextNum || 1;
+      const invoiceNumber = `${invoicePrefix}-${String(invoiceNextNum).padStart(4, "0")}`;
       // Create the sale
       const newSale = await tx.sale.create({
         data: {
