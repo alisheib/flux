@@ -586,6 +586,8 @@ export default function POSPage() {
   };
 
   const shareWhatsApp = async (sale: SaleResult) => {
+    setSharingWhatsApp(true);
+    try {
     // Try to share PDF via Web Share API (works on mobile — opens WhatsApp share)
     if (sale.invoice?.id && navigator.canShare) {
       try {
@@ -624,11 +626,15 @@ export default function POSPage() {
 
     const url = `${baseUrl}?${params.toString()}`;
     window.open(url, "_blank");
+    } finally {
+      setSharingWhatsApp(false);
+    }
   };
 
   const router = useRouter();
 
   const [downloadingReceipt, setDownloadingReceipt] = useState(false);
+  const [sharingWhatsApp, setSharingWhatsApp] = useState(false);
 
   const handlePrint = () => {
     if (lastSale?.invoice?.id) {
@@ -1483,6 +1489,8 @@ export default function POSPage() {
           onNewSale={() => setReceiptDialogOpen(false)}
           onDownloadReceipt={handleDownloadReceipt}
           onWhatsApp={(sale) => shareWhatsApp(sale)}
+          downloadingReceipt={downloadingReceipt}
+          sharingWhatsApp={sharingWhatsApp}
         />
       ) : (
       <Dialog open={receiptDialogOpen} onOpenChange={setReceiptDialogOpen}>
@@ -1631,9 +1639,10 @@ export default function POSPage() {
                 variant="outline"
                 size="sm"
                 onClick={() => shareWhatsApp(lastSale)}
+                disabled={sharingWhatsApp}
                 className="gap-1.5"
               >
-                <MessageCircle className="size-4" />
+                {sharingWhatsApp ? <Loader2 className="size-4 animate-spin" /> : <MessageCircle className="size-4" />}
                 WhatsApp
               </Button>
               <Button

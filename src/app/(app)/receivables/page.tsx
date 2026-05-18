@@ -965,6 +965,7 @@ export default function ReceivablesPage() {
     phone: null,
   });
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
 
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
@@ -1175,12 +1176,14 @@ export default function ReceivablesPage() {
           variant="outline"
           size="sm"
           className="gap-1.5"
-          disabled={filteredCustomers.length === 0}
+          disabled={filteredCustomers.length === 0 || exporting}
           onClick={async () => {
             if (filteredCustomers.length === 0) {
               toast.error("No data to export");
               return;
             }
+            setExporting(true);
+            try {
             const { exportToExcel } = await import("@/lib/excel-export");
 
             const totalOutstanding = filteredCustomers.reduce((s, c) => s + c.outstanding, 0);
@@ -1217,10 +1220,13 @@ export default function ReceivablesPage() {
             });
 
             toast.success("Excel report downloaded");
+            } finally {
+              setExporting(false);
+            }
           }}
         >
-          <Download className="size-4 text-muted-foreground" />
-          Export
+          {exporting ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4 text-muted-foreground" />}
+          {exporting ? "Exporting..." : "Export"}
         </Button>
         <Button
           size="sm"

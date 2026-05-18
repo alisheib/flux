@@ -13,6 +13,7 @@ import {
   Smartphone,
   Plus,
   Wallet,
+  Loader2,
 } from "lucide-react";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -59,6 +60,8 @@ interface ReceiptSheetProps {
   onNewSale?: () => void;
   onDownloadReceipt?: () => void;
   onWhatsApp?: (sale: ReceiptSale) => void;
+  downloadingReceipt?: boolean;
+  sharingWhatsApp?: boolean;
 }
 
 // ── Totals Row ────────────────────────────────────────────────────────────────
@@ -115,6 +118,8 @@ export function ReceiptSheet({
   onNewSale,
   onDownloadReceipt,
   onWhatsApp,
+  downloadingReceipt,
+  sharingWhatsApp,
 }: ReceiptSheetProps) {
   const [closing, setClosing] = useState(false);
   const sheetRef = useRef<HTMLDivElement>(null);
@@ -322,10 +327,11 @@ export function ReceiptSheet({
           {/* Primary: WhatsApp */}
           <Button
             onClick={() => onWhatsApp?.(sale)}
-            className="h-[52px] w-full gap-2 rounded-xl bg-emerald-600 text-[15px] font-semibold text-white hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-700"
+            disabled={sharingWhatsApp}
+            className="h-[52px] w-full gap-2 rounded-xl bg-emerald-600 text-[15px] font-semibold text-white hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-700 disabled:opacity-70"
           >
-            <MessageCircle className="size-[18px]" />
-            Share via WhatsApp
+            {sharingWhatsApp ? <Loader2 className="size-[18px] animate-spin" /> : <MessageCircle className="size-[18px]" />}
+            {sharingWhatsApp ? "Preparing..." : "Share via WhatsApp"}
           </Button>
 
           {/* Secondary: Download / Print */}
@@ -333,9 +339,10 @@ export function ReceiptSheet({
             <Button
               variant="outline"
               onClick={onDownloadReceipt}
+              disabled={downloadingReceipt}
               className="h-12 gap-1.5 rounded-xl text-sm font-medium"
             >
-              <Download className="size-4" />
+              {downloadingReceipt ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4" />}
               PDF
             </Button>
             <Button

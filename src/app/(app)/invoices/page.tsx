@@ -177,6 +177,12 @@ export default function InvoicesPage() {
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
 
+  // Action loading states
+  const [markingPaidId, setMarkingPaidId] = useState<string | null>(null);
+  const [downloadingPdfId, setDownloadingPdfId] = useState<string | null>(null);
+  const [sharingWhatsAppId, setSharingWhatsAppId] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
+
   // ── Data Fetching ────────────────────────────────────────────────────────
 
   const fetchData = useCallback(async () => {
@@ -288,6 +294,7 @@ export default function InvoicesPage() {
   // ── Mark as Paid ───────────────────────────────────────────────────────
 
   const markAsPaid = async (invoice: Invoice) => {
+    setMarkingPaidId(invoice.id);
     try {
       const response = await fetch(`/api/invoices/${invoice.id}`, {
         method: "PUT",
@@ -315,6 +322,8 @@ export default function InvoicesPage() {
       const message =
         error instanceof Error ? error.message : "Failed to update invoice";
       toast.error(message);
+    } finally {
+      setMarkingPaidId(null);
     }
   };
 
@@ -361,6 +370,8 @@ export default function InvoicesPage() {
   };
 
   const shareWhatsApp = async (invoice: Invoice) => {
+    setSharingWhatsAppId(invoice.id);
+    try {
     // Try to share PDF via Web Share API (works on mobile — opens WhatsApp share)
     if (navigator.canShare) {
       try {
@@ -399,14 +410,17 @@ export default function InvoicesPage() {
 
     const url = `${baseUrl}?${params.toString()}`;
     window.open(url, "_blank");
+    } finally {
+      setSharingWhatsAppId(null);
+    }
   };
 
   // ── Download PDF ──────────────────────────────────────────────────────
 
   const downloadPdf = async (invoice: Invoice) => {
+    setDownloadingPdfId(invoice.id);
     try {
       toast.info("Generating PDF...");
-      // Fetch invoice data as JSON for client-side PDF generation
       const res = await fetch(`/api/invoices/${invoice.id}/pdf`);
       if (!res.ok) throw new Error("Failed to fetch invoice data");
       const data = await res.json();
@@ -426,6 +440,8 @@ export default function InvoicesPage() {
     } catch (err) {
       console.error("PDF generation error:", err);
       toast.error("Failed to generate PDF");
+    } finally {
+      setDownloadingPdfId(null);
     }
   };
 
@@ -444,6 +460,8 @@ export default function InvoicesPage() {
       toast.error("No data to export");
       return;
     }
+    setExporting(true);
+    try {
     const { exportToExcel } = await import("@/lib/excel-export");
 
     const totalSubtotal = filteredInvoices.reduce((s, i) => s + i.subtotal, 0);
@@ -489,6 +507,9 @@ export default function InvoicesPage() {
     });
 
     toast.success("Excel report downloaded");
+    } finally {
+      setExporting(false);
+    }
   };
 
   // ── Loading ────────────────────────────────────────────────────────────
@@ -513,11 +534,11 @@ export default function InvoicesPage() {
           variant="outline"
           size="sm"
           onClick={handleExport}
-          disabled={filteredInvoices.length === 0}
+          disabled={filteredInvoices.length === 0 || exporting}
           className="gap-1.5"
         >
-          <Download className="size-4 text-muted-foreground" />
-          Export Excel
+          {exporting ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4 text-muted-foreground" />}
+          {exporting ? "Exporting..." : "Export Excel"}
         </Button>
       </PageHeader>
 
@@ -1056,18 +1077,20 @@ export default function InvoicesPage() {
                   variant="outline"
                   size="sm"
                   onClick={() => downloadPdf(selectedInvoice)}
+                  disabled={downloadingPdfId === selectedInvoice.id}
                   className="gap-1.5"
                 >
-                  <Download className="size-4" />
-                  <span className="hidden xs:inline">Download</span> PDF
+                  {downloadingPdfId === selectedInvoice.id ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4" />}
+                  PDF
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => shareWhatsApp(selectedInvoice)}
+                  disabled={sharingWhatsAppId === selectedInvoice.id}
                   className="gap-1.5 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10"
                 >
-                  <MessageCircle className="size-4" />
+                  {sharingWhatsAppId === selectedInvoice.id ? <Loader2 className="size-4 animate-spin" /> : <MessageCircle className="size-4" />}
                   WhatsApp
                 </Button>
                 <Button
@@ -1084,10 +1107,11 @@ export default function InvoicesPage() {
                     <Button
                       size="sm"
                       onClick={() => markAsPaid(selectedInvoice)}
+                      disabled={markingPaidId === selectedInvoice.id}
                       className="btn-brand gap-1.5 sm:ml-auto"
                     >
-                      <CheckCircle className="size-4" />
-                      Mark as Paid
+                      {markingPaidId === selectedInvoice.id ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle className="size-4" />}
+                      {markingPaidId === selectedInvoice.id ? "Updating..." : "Mark as Paid"}
                     </Button>
                   )}
               </div>

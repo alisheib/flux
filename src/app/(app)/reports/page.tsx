@@ -89,6 +89,7 @@ export default function ReportsPage() {
   const [dateTo, setDateTo] = useState(() => format(new Date(), "yyyy-MM-dd"));
   const [activePreset, setActivePreset] = useState("This Month");
   const [currency, setCurrency] = useState("USD");
+  const [exporting, setExporting] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -133,6 +134,8 @@ export default function ReportsPage() {
       toast.error("No data to export");
       return;
     }
+    setExporting(true);
+    try {
     const { exportToExcel } = await import("@/lib/excel-export");
 
     await exportToExcel({
@@ -156,6 +159,9 @@ export default function ReportsPage() {
     });
 
     toast.success("Report exported to Excel");
+    } finally {
+      setExporting(false);
+    }
   };
 
   // ── Loading ────────────────────────────────────────────────────────────
@@ -178,9 +184,9 @@ export default function ReportsPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader title="Reports" description="Business analytics & insights">
-        <Button variant="outline" size="sm" onClick={handleExport} disabled={noExportData}>
-          <Download className="size-4 mr-1.5" />
-          Export Excel
+        <Button variant="outline" size="sm" onClick={handleExport} disabled={noExportData || exporting}>
+          {exporting ? <Loader2 className="size-4 mr-1.5 animate-spin" /> : <Download className="size-4 mr-1.5" />}
+          {exporting ? "Exporting..." : "Export Excel"}
         </Button>
       </PageHeader>
 

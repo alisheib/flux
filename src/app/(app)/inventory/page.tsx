@@ -229,6 +229,7 @@ export default function InventoryPage() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [productForm, setProductForm] = useState(emptyProductForm);
   const [savingProduct, setSavingProduct] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   // Delete dialog
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -647,6 +648,8 @@ export default function InventoryPage() {
       toast.error("No data to export");
       return;
     }
+    setExporting(true);
+    try {
     const { exportToExcel } = await import("@/lib/excel-export");
 
     const totalStockValue = filteredProducts.reduce(
@@ -697,6 +700,9 @@ export default function InventoryPage() {
     });
 
     toast.success("Excel report downloaded");
+    } finally {
+      setExporting(false);
+    }
   };
 
   // ── Loading ────────────────────────────────────────────────────────────
@@ -838,11 +844,11 @@ export default function InventoryPage() {
         </DropdownMenu>
         <button
           onClick={handleExport}
-          disabled={filteredProducts.length === 0}
+          disabled={filteredProducts.length === 0 || exporting}
           className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-sm font-medium text-foreground shadow-sm hover:bg-muted/60 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <Download className="size-4 text-muted-foreground" />
-          Export Excel
+          {exporting ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4 text-muted-foreground" />}
+          {exporting ? "Exporting..." : "Export Excel"}
         </button>
         <button
           onClick={openAddProduct}

@@ -71,6 +71,7 @@ export default function AccountingPage() {
   const { user } = useAuth();
   const [data, setData] = useState<AccountingData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -119,7 +120,8 @@ export default function AccountingPage() {
       toast.error("No data to export");
       return;
     }
-
+    setExporting(true);
+    try {
     const { exportToExcel } = await import("@/lib/excel-export");
 
     const totals = data.shipments.reduce(
@@ -173,6 +175,9 @@ export default function AccountingPage() {
     });
 
     toast.success("Excel report downloaded");
+    } finally {
+      setExporting(false);
+    }
   }, [data]);
 
   // ─── Loading ──────────────────────────────────────────────────────
@@ -242,9 +247,9 @@ export default function AccountingPage() {
         title="Accounting"
         description="Financial overview and profit analysis"
       >
-        <Button variant="outline" onClick={handleExport} disabled={!data || data.shipments.length === 0}>
-          <Download className="mr-1.5 h-4 w-4" />
-          Export Report
+        <Button variant="outline" onClick={handleExport} disabled={!data || data.shipments.length === 0 || exporting}>
+          {exporting ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Download className="mr-1.5 h-4 w-4" />}
+          {exporting ? "Exporting..." : "Export Report"}
         </Button>
       </PageHeader>
 
