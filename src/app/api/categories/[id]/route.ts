@@ -33,10 +33,14 @@ export async function PUT(
     const body = await request.json();
     const { name, icon, color, fields } = body;
 
+    if (name !== undefined && !name.trim()) {
+      return NextResponse.json({ error: "Category name cannot be empty" }, { status: 400 });
+    }
+
     const category = await prisma.category.update({
-      where: { id },
+      where: { id, orgId: auth.orgId },
       data: {
-        ...(name !== undefined && { name }),
+        ...(name !== undefined && { name: name.trim() }),
         ...(icon !== undefined && { icon }),
         ...(color !== undefined && { color }),
         ...(fields !== undefined && { fields: fields ? JSON.stringify(fields) : null }),
@@ -75,7 +79,7 @@ export async function DELETE(
     }
 
     // Products will have categoryId set to null via onDelete: SetNull
-    await prisma.category.delete({ where: { id } });
+    await prisma.category.delete({ where: { id, orgId: auth.orgId } });
 
     await logAudit({ orgId: auth.orgId, userId: auth.userId, action: "delete", entity: "category", entityId: id, details: `Deleted category: ${existing.name}` });
 

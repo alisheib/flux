@@ -120,18 +120,19 @@ export async function POST(request: NextRequest) {
 
     // Validate all products exist and belong to org
     const productIds = items.map((item: { productId: string }) => item.productId);
+    const uniqueProductIds = [...new Set(productIds)];
     const products = await prisma.product.findMany({
-      where: { id: { in: productIds }, orgId: auth.orgId },
+      where: { id: { in: uniqueProductIds }, orgId: auth.orgId },
     });
 
-    if (products.length !== productIds.length) {
+    if (products.length !== uniqueProductIds.length) {
       return NextResponse.json(
         { error: "One or more products not found" },
         { status: 400 }
       );
     }
 
-    // Check stock availability (convert sqm to sheet-equivalent for area sales)
+    // Pre-validate sqm configuration (doesn't need transaction)
     const productMap = new Map(products.map((p) => [p.id, p]));
     for (const item of items) {
       const product = productMap.get(item.productId);
@@ -141,24 +142,6 @@ export async function POST(request: NextRequest) {
       if (item.sellingUnit === "sqm" && (!product.sqmPerUnit || product.sqmPerUnit <= 0)) {
         return NextResponse.json(
           { error: `Product "${product.name}" is not configured for area selling (missing m²/unit).` },
-          { status: 400 }
-        );
-      }
-
-      let stockNeeded: number;
-      if (item.sellingUnit === "sqm" && product.sqmPerUnit && product.sqmPerUnit > 0) {
-        // Convert area (m²) to sheet-equivalent
-        stockNeeded = item.area / product.sqmPerUnit;
-      } else {
-        stockNeeded = item.quantity;
-      }
-
-      if (product.stockQty < stockNeeded) {
-        const stockLabel = item.sellingUnit === "sqm"
-          ? `Need ${stockNeeded.toFixed(2)} sheets (${item.area} m²) but only ${product.stockQty} available`
-          : `Need ${item.quantity} but only ${product.stockQty} available`;
-        return NextResponse.json(
-          { error: `Insufficient stock for ${product.name}. ${stockLabel}` },
           { status: 400 }
         );
       }
@@ -189,6 +172,35 @@ export async function POST(request: NextRequest) {
 
     // Create sale + items + invoice in a transaction, decrement stock
     const sale = await prisma.$transaction(async (tx) => {
+      // Re-check stock INSIDE transaction to prevent race conditions
+      const freshProducts = await tx.product.findMany({
+        where: { id: { in: uniqueProductIds }, orgId: auth.orgId },
+      });
+      const freshProductMap = new Map(freshProducts.map((p) => [p.id, p]));
+
+      // Aggregate total stock needed per product (handles duplicate productIds in items)
+      const stockNeededMap = new Map<string, number>();
+      for (const item of items) {
+        const product = freshProductMap.get(item.productId);
+        if (!product) throw new Error(`Product ${item.productId} not found`);
+
+        let stockNeeded: number;
+        if (item.sellingUnit === "sqm" && product.sqmPerUnit && product.sqmPerUnit > 0) {
+          stockNeeded = item.area / product.sqmPerUnit;
+        } else {
+          stockNeeded = item.quantity;
+        }
+        stockNeededMap.set(item.productId, (stockNeededMap.get(item.productId) || 0) + stockNeeded);
+      }
+
+      // Check aggregated stock per product
+      for (const [productId, totalNeeded] of stockNeededMap) {
+        const product = freshProductMap.get(productId)!;
+        if (product.stockQty < totalNeeded) {
+          throw new Error(`Insufficient stock for ${product.name}. Need ${totalNeeded.toFixed(2)} but only ${product.stockQty} available`);
+        }
+      }
+
       // Get org settings INSIDE transaction to prevent invoice number race
       const settings = await tx.orgSettings.findUnique({
         where: { orgId: auth.orgId },
@@ -261,7 +273,7 @@ export async function POST(request: NextRequest) {
       // Decrement stock for each product (with stock movement tracking)
       // For sqm sales, convert area to sheet-equivalent for stock deduction
       for (const item of items) {
-        const product = productMap.get(item.productId)!;
+        const product = freshProductMap.get(item.productId)!;
         let stockDecrement: number;
         let movementNotes: string | undefined;
 
@@ -309,6 +321,10 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(fullSale, { status: 201 });
   } catch (error) {
+    // Handle stock validation errors thrown from inside the transaction
+    if (error instanceof Error && error.message.startsWith("Insufficient stock")) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
     console.error("POST /api/sales error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }

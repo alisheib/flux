@@ -85,8 +85,22 @@ export async function PUT(
       active,
     } = body;
 
+    // Validate fields if provided
+    if (name !== undefined && (!name || !name.trim())) {
+      return NextResponse.json({ error: "Product name cannot be empty" }, { status: 400 });
+    }
+    if (costPrice !== undefined && costPrice !== null && (typeof costPrice !== "number" || costPrice < 0 || !isFinite(costPrice))) {
+      return NextResponse.json({ error: "Cost price must be a non-negative finite number" }, { status: 400 });
+    }
+    if (sellingPrice !== undefined && sellingPrice !== null && (typeof sellingPrice !== "number" || sellingPrice < 0 || !isFinite(sellingPrice))) {
+      return NextResponse.json({ error: "Selling price must be a non-negative finite number" }, { status: 400 });
+    }
+    if (stockQty !== undefined && stockQty !== null && (typeof stockQty !== "number" || stockQty < 0 || !isFinite(stockQty))) {
+      return NextResponse.json({ error: "Stock quantity must be a non-negative finite number" }, { status: 400 });
+    }
+
     const product = await prisma.product.update({
-      where: { id },
+      where: { id, orgId: auth.orgId },
       data: {
         ...(categoryId !== undefined && { categoryId }),
         ...(sku !== undefined && { sku }),
@@ -149,7 +163,7 @@ export async function DELETE(
       );
     }
 
-    await prisma.product.delete({ where: { id } });
+    await prisma.product.delete({ where: { id, orgId: auth.orgId } });
 
     await logAudit({ orgId: auth.orgId, userId: auth.userId, action: "delete", entity: "product", entityId: id, details: `Deleted product: ${existing.name}` });
 

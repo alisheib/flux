@@ -42,8 +42,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
+    // Prevent negative stock
+    if (quantity < 0 && product.stockQty + quantity < 0) {
+      return NextResponse.json(
+        { error: `Adjustment would result in negative stock. Current: ${product.stockQty}, adjustment: ${quantity}` },
+        { status: 400 }
+      );
+    }
+
     // Perform adjustment in a transaction
     const newBalance = await prisma.$transaction(async (tx) => {
+      // Re-check stock inside transaction to prevent race condition
+      const freshProduct = await tx.product.findUnique({ where: { id: productId } });
+      if (freshProduct && quantity < 0 && freshProduct.stockQty + quantity < 0) {
+        throw new Error(`Adjustment would result in negative stock`);
+      }
       return await recordStockMovement(tx, {
         orgId: auth.orgId,
         productId,
@@ -70,6 +83,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(updatedProduct);
   } catch (error) {
+    if (error instanceof Error && error.message.includes("negative stock")) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
     console.error("POST /api/stock-movements/adjust error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }

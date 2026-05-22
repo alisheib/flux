@@ -39,6 +39,10 @@ export async function GET() {
       rolePermissions: null as string | null,
     };
 
+    // Check if currency is locked (has financial data)
+    const saleCount = await prisma.sale.count({ where: { orgId: auth.orgId } });
+    const currencyLocked = saleCount > 0;
+
     return NextResponse.json({
       organization: {
         id: org.id,
@@ -55,6 +59,7 @@ export async function GET() {
       },
       settings: org.settings || defaultSettings,
       tallyEnabled: org.settings?.tallyEnabled ?? false,
+      currencyLocked,
     });
   } catch (error) {
     console.error("GET /api/settings error:", error);
@@ -90,6 +95,23 @@ export async function PUT(request: NextRequest) {
         email,
         website,
       } = organization;
+
+      // Lock currency after first financial transaction
+      if (currency !== undefined) {
+        const currentOrg = await prisma.organization.findUnique({
+          where: { id: auth.orgId },
+          select: { currency: true },
+        });
+        if (currentOrg && currency !== currentOrg.currency) {
+          const saleCount = await prisma.sale.count({ where: { orgId: auth.orgId } });
+          if (saleCount > 0) {
+            return NextResponse.json(
+              { error: "Cannot change currency after sales have been recorded. All existing prices, invoices, and reports use the current currency." },
+              { status: 400 }
+            );
+          }
+        }
+      }
 
       await prisma.organization.update({
         where: { id: auth.orgId },
@@ -171,6 +193,7 @@ export async function PUT(request: NextRequest) {
       },
       settings: org!.settings,
       tallyEnabled: org!.settings?.tallyEnabled ?? false,
+      currencyLocked: (await prisma.sale.count({ where: { orgId: auth.orgId } })) > 0,
     });
   } catch (error) {
     console.error("PUT /api/settings error:", error);

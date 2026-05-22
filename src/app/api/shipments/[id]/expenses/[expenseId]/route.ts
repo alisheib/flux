@@ -39,6 +39,13 @@ export async function PUT(
     const body = await request.json();
     const { category, description, amountLocal, amountUsd, notes } = body;
 
+    if (amountLocal !== undefined && (typeof amountLocal !== "number" || amountLocal < 0 || !isFinite(amountLocal))) {
+      return NextResponse.json({ error: "Local amount must be a non-negative finite number" }, { status: 400 });
+    }
+    if (amountUsd !== undefined && (typeof amountUsd !== "number" || amountUsd < 0 || !isFinite(amountUsd))) {
+      return NextResponse.json({ error: "USD amount must be a non-negative finite number" }, { status: 400 });
+    }
+
     const expense = await prisma.shipmentExpense.update({
       where: { id: expenseId },
       data: {

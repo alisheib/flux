@@ -40,10 +40,20 @@ export async function PUT(
     const body = await request.json();
     const { productId, name, thickness, width, height, color, unit, quantity, unitCost, notes } = body;
 
+    if (quantity !== undefined && (typeof quantity !== "number" || quantity <= 0 || !isFinite(quantity))) {
+      return NextResponse.json({ error: "Quantity must be a positive finite number" }, { status: 400 });
+    }
+    if (unitCost !== undefined && (typeof unitCost !== "number" || unitCost < 0 || !isFinite(unitCost))) {
+      return NextResponse.json({ error: "Unit cost must be a non-negative finite number" }, { status: 400 });
+    }
+    if (name !== undefined && (!name || !name.trim())) {
+      return NextResponse.json({ error: "Item name cannot be empty" }, { status: 400 });
+    }
+
     // Auto-calculate totalCost if quantity or unitCost changed
     const newQty = quantity !== undefined ? quantity : existing.quantity;
     const newUnitCost = unitCost !== undefined ? unitCost : existing.unitCost;
-    const totalCost = newQty * newUnitCost;
+    const totalCost = Math.round(newQty * newUnitCost * 100) / 100;
 
     const item = await prisma.shipmentItem.update({
       where: { id: itemId },

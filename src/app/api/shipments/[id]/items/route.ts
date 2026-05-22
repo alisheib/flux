@@ -82,7 +82,21 @@ export async function POST(
       );
     }
 
-    const totalCost = quantity * unitCost;
+    if (typeof quantity !== "number" || quantity <= 0 || !isFinite(quantity)) {
+      return NextResponse.json(
+        { error: "Quantity must be a positive finite number" },
+        { status: 400 }
+      );
+    }
+
+    if (typeof unitCost !== "number" || unitCost < 0 || !isFinite(unitCost)) {
+      return NextResponse.json(
+        { error: "Unit cost must be a non-negative finite number" },
+        { status: 400 }
+      );
+    }
+
+    const totalCost = Math.round(quantity * unitCost * 100) / 100;
 
     const item = await prisma.shipmentItem.create({
       data: {

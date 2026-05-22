@@ -131,11 +131,43 @@ export async function POST(request: NextRequest) {
     });
     const creditNoteNumber = `CN-${String(existingCount + 1).padStart(4, "0")}`;
 
-    // Determine if this is a full or partial refund
-    const previouslyRefunded = sale.creditNotes.reduce((sum, cn) => {
-      return sum + cn.total;
-    }, 0);
+    // Validate refund doesn't exceed original sale total
+    const previouslyRefunded = sale.creditNotes
+      .filter((cn) => cn.status !== "void")
+      .reduce((sum, cn) => sum + cn.total, 0);
     const totalRefundedAfter = previouslyRefunded + total;
+
+    if (totalRefundedAfter > sale.total + 0.01) {
+      return NextResponse.json(
+        { error: `Credit note total (${total}) would exceed remaining refundable amount (${Math.round((sale.total - previouslyRefunded) * 100) / 100})` },
+        { status: 400 }
+      );
+    }
+
+    // Validate each item's quantity doesn't exceed original sale item quantity
+    const saleItemMap = new Map(sale.items.map((si) => [si.productId, si]));
+    for (const item of items) {
+      const saleItem = saleItemMap.get(item.productId);
+      if (!saleItem) {
+        return NextResponse.json(
+          { error: `Product "${item.name}" was not in the original sale` },
+          { status: 400 }
+        );
+      }
+      if (item.quantity > saleItem.quantity) {
+        return NextResponse.json(
+          { error: `Refund quantity for "${item.name}" (${item.quantity}) exceeds sold quantity (${saleItem.quantity})` },
+          { status: 400 }
+        );
+      }
+      if (item.unitPrice > saleItem.unitPrice) {
+        return NextResponse.json(
+          { error: `Refund unit price for "${item.name}" (${item.unitPrice}) exceeds original price (${saleItem.unitPrice})` },
+          { status: 400 }
+        );
+      }
+    }
+
     const newSaleStatus =
       totalRefundedAfter >= sale.total ? "refunded" : "partially_refunded";
 

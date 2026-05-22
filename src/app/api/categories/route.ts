@@ -43,14 +43,14 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { name, icon, color, fields } = body;
 
-    if (!name) {
+    if (!name || !name.trim()) {
       return NextResponse.json({ error: "Name is required" }, { status: 400 });
     }
 
     const category = await prisma.category.create({
       data: {
         orgId: auth.orgId,
-        name,
+        name: name.trim(),
         icon: icon || null,
         color: color || null,
         fields: fields ? JSON.stringify(fields) : null,

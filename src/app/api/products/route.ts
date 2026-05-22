@@ -79,16 +79,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Product name is required" }, { status: 400 });
     }
 
-    if (costPrice !== undefined && costPrice !== null && costPrice < 0) {
-      return NextResponse.json({ error: "Cost price cannot be negative" }, { status: 400 });
+    if (costPrice !== undefined && costPrice !== null && (typeof costPrice !== "number" || costPrice < 0 || !isFinite(costPrice))) {
+      return NextResponse.json({ error: "Cost price must be a non-negative finite number" }, { status: 400 });
     }
 
-    if (sellingPrice !== undefined && sellingPrice !== null && sellingPrice < 0) {
-      return NextResponse.json({ error: "Selling price cannot be negative" }, { status: 400 });
+    if (sellingPrice !== undefined && sellingPrice !== null && (typeof sellingPrice !== "number" || sellingPrice < 0 || !isFinite(sellingPrice))) {
+      return NextResponse.json({ error: "Selling price must be a non-negative finite number" }, { status: 400 });
     }
 
-    if (stockQty !== undefined && stockQty !== null && stockQty < 0) {
-      return NextResponse.json({ error: "Stock quantity cannot be negative" }, { status: 400 });
+    if (stockQty !== undefined && stockQty !== null && (typeof stockQty !== "number" || stockQty < 0 || !isFinite(stockQty))) {
+      return NextResponse.json({ error: "Stock quantity must be a non-negative finite number" }, { status: 400 });
     }
 
     const product = await prisma.product.create({

@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "npx tsx tests/unit/calculations.test.ts && npx tsx tests/unit/validate.test.ts && npx tsx tests/unit/stress-categories.test.ts && npx tsx tests/unit/stress-products-inventory.test.ts && npx tsx tests/unit/stress-shipments.test.ts && npx tsx tests/unit/stress-sales-finance.test.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",

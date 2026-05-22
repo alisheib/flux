@@ -107,11 +107,17 @@ export async function PUT(
     }
 
     if (password) {
+      if (password.length < 8) {
+        return NextResponse.json({ error: "Password must be at least 8 characters" }, { status: 400 });
+      }
+      if (!/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/[0-9]/.test(password) || !/[^A-Za-z0-9]/.test(password)) {
+        return NextResponse.json({ error: "Password must contain uppercase, lowercase, number, and special character" }, { status: 400 });
+      }
       updateData.password = await hashPassword(password);
     }
 
     const user = await prisma.user.update({
-      where: { id },
+      where: { id, orgId: auth.orgId },
       data: updateData,
       select: {
         id: true,
@@ -166,7 +172,7 @@ export async function DELETE(
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    await prisma.user.delete({ where: { id } });
+    await prisma.user.delete({ where: { id, orgId: auth.orgId } });
 
     await logAudit({ orgId: auth.orgId, userId: auth.userId, action: "delete", entity: "user", entityId: id, details: `Deleted user: ${existing.email}` });
 

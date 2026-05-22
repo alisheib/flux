@@ -86,7 +86,7 @@ export async function PUT(
     }
 
     const shipment = await prisma.shipment.update({
-      where: { id },
+      where: { id, orgId: auth.orgId },
       data: {
         ...(name !== undefined && { name }),
         ...(dossierNumber !== undefined && { dossierNumber }),
@@ -134,7 +134,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Shipment not found" }, { status: 404 });
     }
 
-    await prisma.shipment.delete({ where: { id } });
+    await prisma.shipment.delete({ where: { id, orgId: auth.orgId } });
 
     await logAudit({ orgId: auth.orgId, userId: auth.userId, action: "delete", entity: "shipment", entityId: id, details: `Deleted shipment: ${existing.name}` });
 

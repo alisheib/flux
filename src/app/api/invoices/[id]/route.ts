@@ -97,7 +97,7 @@ export async function PUT(
     }
 
     const invoice = await prisma.invoice.update({
-      where: { id },
+      where: { id, orgId: auth.orgId },
       data: updateData,
       include: {
         sale: {
@@ -134,7 +134,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
     }
 
-    await prisma.invoice.delete({ where: { id } });
+    await prisma.invoice.delete({ where: { id, orgId: auth.orgId } });
 
     return NextResponse.json({ success: true });
   } catch (error) {

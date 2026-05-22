@@ -66,6 +66,7 @@ interface SettingsResponse {
   organization: OrgData;
   settings: OrgSettingsData;
   tallyEnabled: boolean;
+  currencyLocked?: boolean;
 }
 
 const CURRENCIES = ["USD", "TSH", "EUR", "GBP"];
@@ -93,6 +94,7 @@ export default function SettingsPage() {
   const [rolePerms, setRolePerms] = useState<RolePermissions>(DEFAULT_PERMISSIONS);
   const [tallyEnabled, setTallyEnabled] = useState(false);
   const [savingTally, setSavingTally] = useState(false);
+  const [currencyLocked, setCurrencyLocked] = useState(false);
 
   // ─── Fetch settings ───────────────────────────────────────────────
 
@@ -105,6 +107,7 @@ export default function SettingsPage() {
       setOrg(data.organization);
       setSettings(data.settings);
       setTallyEnabled(data.tallyEnabled ?? false);
+      setCurrencyLocked(data.currencyLocked ?? false);
       // Load role permissions
       if (data.settings?.rolePermissions) {
         try {
@@ -149,13 +152,18 @@ export default function SettingsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ organization: body }),
       });
-      if (!res.ok) throw new Error("Failed to save");
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        throw new Error(err?.error || "Failed to save");
+      }
       const data: SettingsResponse = await res.json();
       setOrg(data.organization);
       setSettings(data.settings);
+      setCurrencyLocked(data.currencyLocked ?? currencyLocked);
       toast.success("Organization saved", { description: "Your company details have been updated." });
-    } catch {
-      toast.error("Failed to save organization info", { description: "Please try again or contact support." });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Please try again or contact support.";
+      toast.error("Failed to save organization info", { description: message });
     } finally {
       setSavingOrg(false);
     }
@@ -466,14 +474,27 @@ export default function SettingsPage() {
                 />
               </div>
               <div>
-                <Label htmlFor="org-currency">Currency</Label>
-                <FormSelect
-                  id="org-currency"
-                  name="currency"
-                  defaultValue={org?.currency || "USD"}
-                  options={CURRENCIES.map((c) => ({ value: c, label: c }))}
-                  className="mt-1.5"
-                />
+                <Label htmlFor="org-currency">Currency {currencyLocked && <span className="text-xs font-normal text-muted-foreground ml-1">(locked)</span>}</Label>
+                {currencyLocked ? (
+                  <>
+                    <Input
+                      id="org-currency"
+                      value={org?.currency || "USD"}
+                      disabled
+                      className="mt-1.5 opacity-60"
+                    />
+                    <input type="hidden" name="currency" value={org?.currency || "USD"} />
+                    <p className="text-xs text-muted-foreground mt-1">Base currency cannot be changed after sales have been recorded.</p>
+                  </>
+                ) : (
+                  <FormSelect
+                    id="org-currency"
+                    name="currency"
+                    defaultValue={org?.currency || "USD"}
+                    options={CURRENCIES.map((c) => ({ value: c, label: c }))}
+                    className="mt-1.5"
+                  />
+                )}
               </div>
             </div>
             <div className="flex justify-end">

@@ -60,8 +60,11 @@ export async function PUT(request: NextRequest) {
       if (!valid) {
         return NextResponse.json({ error: "Current password is incorrect" }, { status: 401 });
       }
-      if (newPassword.length < 6) {
-        return NextResponse.json({ error: "New password must be at least 6 characters" }, { status: 400 });
+      if (newPassword.length < 8) {
+        return NextResponse.json({ error: "Password must be at least 8 characters" }, { status: 400 });
+      }
+      if (!/[A-Z]/.test(newPassword) || !/[a-z]/.test(newPassword) || !/[0-9]/.test(newPassword) || !/[^A-Za-z0-9]/.test(newPassword)) {
+        return NextResponse.json({ error: "Password must contain uppercase, lowercase, number, and special character" }, { status: 400 });
       }
       updateData.password = await hashPassword(newPassword);
     }
