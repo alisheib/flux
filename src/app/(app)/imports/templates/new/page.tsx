@@ -281,7 +281,7 @@ export default function CreateTemplatePage() {
 
         {step === 2 && (
           <div>
-            <div className="flex items-baseline justify-between mb-4">
+            <div className="flex items-baseline justify-between mb-3">
               <h3 className="text-[15px] font-semibold">Map your Excel columns to FLUX fields</h3>
               <div className="text-xs text-muted-foreground">
                 <span className="text-emerald-700 dark:text-emerald-400 font-semibold">{mappedCount} mapped</span>
@@ -293,64 +293,126 @@ export default function CreateTemplatePage() {
                 )}
               </div>
             </div>
+            <p className="text-xs text-muted-foreground mb-4">Your Excel columns may have different names. Use the dropdown to tell FLUX which field each column maps to, or choose "Ignore" to skip it.</p>
 
-            <div className="grid grid-cols-[1fr_32px_1fr] gap-3 items-start">
-              {/* Excel columns (left) */}
-              <div className="rounded-[10px] bg-muted/50 border border-border p-2.5">
-                <div className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground px-1.5 pb-2.5">Your Excel columns</div>
-                {excelColumns.map(col => {
-                  const mappedTo = mappings[col];
-                  const fieldLabel = mappedTo ? fields.find(f => f.id === mappedTo)?.label : null;
-                  return (
-                    <div key={col} className="flex items-center gap-2 px-2.5 py-2 rounded-lg mb-1 bg-card border border-border/50 cursor-grab">
-                      <GripVertical className="size-3.5 text-muted-foreground/50 shrink-0" />
-                      <span className="text-[12.5px] font-mono font-medium">{col}</span>
-                      {fieldLabel && <span className="ml-auto text-[10.5px] text-emerald-700 dark:text-emerald-400">→ {fieldLabel}</span>}
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Arrow column */}
-              <div className="flex flex-col items-center gap-1 pt-9">
-                {fields.map(f => {
-                  const isMapped = Object.values(mappings).includes(f.id);
-                  return (
-                    <div key={f.id} className="h-8 flex items-center justify-center">
-                      <ArrowRight className={`size-4 ${isMapped ? "text-emerald-500" : f.required ? "text-amber-500" : "text-muted-foreground/30"}`} strokeWidth={2.25} />
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* System fields (right) */}
-              <div className="rounded-[10px] bg-muted/50 border border-border p-2.5">
-                <div className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground px-1.5 pb-2.5">FLUX fields</div>
-                {fields.map(f => {
-                  const isMapped = Object.values(mappings).includes(f.id);
-                  const isReqMissing = !isMapped && f.required;
-                  return (
-                    <div key={f.id} className={`flex items-center gap-2 px-2.5 py-2 rounded-lg mb-1 border ${
-                      isReqMissing
-                        ? "bg-amber-500/5 border-amber-500/30"
-                        : "bg-card border-border/50"
-                    }`}>
-                      <span className="text-[12.5px] font-medium flex-1">{f.label}</span>
-                      {f.required && (
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10.5px] font-semibold ${
-                          isReqMissing
-                            ? "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300"
-                            : "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300"
-                        }`}>Required</span>
-                      )}
-                      {!f.required && !isMapped && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10.5px] font-semibold bg-muted text-muted-foreground">Optional</span>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
+            {/* Add new Excel column */}
+            <div className="flex gap-2 mb-4">
+              <Input
+                placeholder="Add an Excel column name (e.g. Item Code, Price USD...)"
+                className="h-9 text-sm font-mono"
+                onKeyDown={e => {
+                  if (e.key === "Enter") {
+                    const val = (e.target as HTMLInputElement).value.trim();
+                    if (val && !excelColumns.includes(val)) {
+                      setExcelColumns([...excelColumns, val]);
+                      setMappings({ ...mappings, [val]: "" });
+                      (e.target as HTMLInputElement).value = "";
+                    }
+                  }
+                }}
+              />
+              <Button variant="outline" size="sm" className="shrink-0" onClick={() => {
+                const input = document.querySelector<HTMLInputElement>('[placeholder*="Add an Excel column"]');
+                if (input) {
+                  const val = input.value.trim();
+                  if (val && !excelColumns.includes(val)) {
+                    setExcelColumns([...excelColumns, val]);
+                    setMappings({ ...mappings, [val]: "" });
+                    input.value = "";
+                  }
+                }
+              }}>
+                <Plus className="mr-1 h-3.5 w-3.5" />Add
+              </Button>
             </div>
+
+            {/* Mapping table */}
+            <div className="rounded-[10px] border border-border overflow-hidden">
+              <div className="grid grid-cols-[1fr_32px_1fr_40px] gap-0 bg-muted/50 px-3 py-2.5 border-b border-border">
+                <div className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Your Excel column</div>
+                <div />
+                <div className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Maps to FLUX field</div>
+                <div />
+              </div>
+              {excelColumns.map(col => {
+                const mappedTo = mappings[col] || "";
+                const targetField = fields.find(f => f.id === mappedTo);
+                const isReqTarget = targetField?.required;
+                const isMapped = mappedTo && mappedTo !== "__ignore__";
+                return (
+                  <div key={col} className="grid grid-cols-[1fr_32px_1fr_40px] gap-0 items-center px-3 py-2 border-b border-border/30 last:border-0 hover:bg-muted/30">
+                    <div className="flex items-center gap-2">
+                      <GripVertical className="size-3.5 text-muted-foreground/30 shrink-0" />
+                      <span className="text-[13px] font-mono font-medium truncate">{col}</span>
+                    </div>
+                    <div className="flex items-center justify-center">
+                      <ArrowRight className={`size-3.5 ${isMapped ? "text-emerald-500" : "text-muted-foreground/25"}`} strokeWidth={2.25} />
+                    </div>
+                    <div>
+                      <select
+                        value={mappedTo}
+                        onChange={e => setMappings({ ...mappings, [col]: e.target.value })}
+                        className={`w-full h-8 px-2.5 rounded-lg border text-[13px] bg-card transition-colors ${
+                          isMapped
+                            ? "border-emerald-500/40 text-foreground"
+                            : mappedTo === "__ignore__"
+                            ? "border-border text-muted-foreground/60 italic"
+                            : "border-amber-500/40 text-amber-700 dark:text-amber-400"
+                        }`}
+                      >
+                        <option value="">-- Select FLUX field --</option>
+                        <option value="__ignore__">Ignore this column</option>
+                        <optgroup label="FLUX Fields">
+                          {fields.map(f => {
+                            const alreadyUsed = Object.entries(mappings).some(([k, v]) => v === f.id && k !== col);
+                            return (
+                              <option key={f.id} value={f.id} disabled={alreadyUsed}>
+                                {f.label}{f.required ? " *" : ""}{alreadyUsed ? " (already mapped)" : ""}
+                              </option>
+                            );
+                          })}
+                        </optgroup>
+                      </select>
+                    </div>
+                    <div className="flex items-center justify-center">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setExcelColumns(excelColumns.filter(c => c !== col));
+                          const newMappings = { ...mappings };
+                          delete newMappings[col];
+                          setMappings(newMappings);
+                        }}
+                        className="p-1 rounded hover:bg-destructive/10 text-muted-foreground/40 hover:text-destructive transition-colors"
+                        title="Remove column"
+                      >
+                        <X className="size-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+              {excelColumns.length === 0 && (
+                <div className="py-10 text-center text-sm text-muted-foreground">
+                  No Excel columns defined yet. Add them above or they'll be auto-detected when you upload a file.
+                </div>
+              )}
+            </div>
+
+            {/* Unmapped required fields warning */}
+            {reqUnmapped > 0 && (
+              <div className="mt-3 p-3 rounded-lg bg-amber-500/5 border border-amber-500/20 flex gap-2.5 items-start">
+                <ArrowRight className="size-4 text-amber-600 mt-0.5 shrink-0" />
+                <div className="text-xs">
+                  <span className="font-semibold text-amber-700 dark:text-amber-400">
+                    {reqUnmapped} required field{reqUnmapped > 1 ? "s" : ""} not mapped:
+                  </span>{" "}
+                  <span className="text-muted-foreground">
+                    {fields.filter(f => f.required && !Object.values(mappings).includes(f.id)).map(f => f.label).join(", ")}
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
