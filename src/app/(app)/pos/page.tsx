@@ -19,6 +19,8 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { ReceiptSheet } from "@/components/receipt-sheet";
+import { CustomerTypeahead } from "@/components/customer-typeahead";
+import { CustomerDialog } from "@/components/customer-dialog";
 import { toast } from "sonner";
 import {
   Search,
@@ -163,6 +165,9 @@ export default function POSPage() {
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
+  const [selectedCustomer, setSelectedCustomer] = useState<{ id: string; name: string; phone: string | null; tin: string | null; email: string | null; address: string | null; outstanding: number; initials: string; company: string | null } | null>(null);
+  const [showAddCustomerDialog, setShowAddCustomerDialog] = useState(false);
+  const [addCustomerPrefill, setAddCustomerPrefill] = useState("");
 
   // Sale completion
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
@@ -332,6 +337,7 @@ export default function POSPage() {
     setCustomerName("");
     setCustomerPhone("");
     setCustomerEmail("");
+    setSelectedCustomer(null);
     setNotes("");
     setPaymentMethod("cash");
     setCustomerExpanded(false);
@@ -493,9 +499,10 @@ export default function POSPage() {
               area: area,
             };
           }),
-          customer: customerName || null,
-          customerPhone: customerPhone || null,
-          customerEmail: customerEmail || null,
+          customerId: selectedCustomer?.id || null,
+          customer: selectedCustomer?.name || customerName || null,
+          customerPhone: selectedCustomer?.phone || customerPhone || null,
+          customerEmail: selectedCustomer?.email || customerEmail || null,
           subtotal,
           taxRate: orgSettings.taxRate,
           taxAmount,
@@ -1251,24 +1258,35 @@ export default function POSPage() {
               </button>
               {customerExpanded && (
                 <div className="space-y-2 pb-2">
-                  <Input
-                    placeholder="Customer name (optional)"
-                    value={customerName}
-                    onChange={(e) => setCustomerName(e.target.value)}
-                    className="h-8 text-xs"
+                  <CustomerTypeahead
+                    value={selectedCustomer}
+                    onChange={(c) => {
+                      setSelectedCustomer(c);
+                      if (c) {
+                        setCustomerName(c.name);
+                        setCustomerPhone(c.phone || "");
+                        setCustomerEmail(c.email || "");
+                      } else {
+                        setCustomerName("");
+                        setCustomerPhone("");
+                        setCustomerEmail("");
+                      }
+                    }}
+                    onAddNew={(text) => {
+                      setAddCustomerPrefill(text);
+                      setShowAddCustomerDialog(true);
+                    }}
+                    currency={orgSettings.currency}
+                    placeholder="Search customer or type walk-in name..."
                   />
-                  <Input
-                    placeholder="Phone number"
-                    value={customerPhone}
-                    onChange={(e) => setCustomerPhone(e.target.value)}
-                    className="h-8 text-xs"
-                  />
-                  <Input
-                    placeholder="customer@email.com"
-                    value={customerEmail}
-                    onChange={(e) => setCustomerEmail(e.target.value)}
-                    className="h-8 text-xs"
-                  />
+                  {!selectedCustomer && (
+                    <Input
+                      placeholder="Or just type a name for walk-in..."
+                      value={customerName}
+                      onChange={(e) => setCustomerName(e.target.value)}
+                      className="h-8 text-xs"
+                    />
+                  )}
                 </div>
               )}
             </div>
@@ -1658,6 +1676,26 @@ export default function POSPage() {
         </DialogContent>
       </Dialog>
       )}
+      <CustomerDialog
+        open={showAddCustomerDialog}
+        onOpenChange={setShowAddCustomerDialog}
+        mode="add"
+        initialData={{ name: addCustomerPrefill }}
+        onSaved={(saved: any) => { /* eslint-disable-line @typescript-eslint/no-explicit-any */
+          setSelectedCustomer({
+            id: saved.id as string,
+            name: saved.name as string,
+            phone: (saved.phone as string) || null,
+            tin: (saved.tin as string) || null,
+            email: (saved.email as string) || null,
+            address: (saved.address as string) || null,
+            outstanding: 0,
+            initials: (saved.name as string).split(/\s+/).map((w: string) => w[0]).filter(Boolean).slice(0, 2).join("").toUpperCase(),
+            company: (saved.company as string) || null,
+          });
+          setCustomerName(saved.name as string);
+        }}
+      />
     </div>
   );
 }

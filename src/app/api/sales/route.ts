@@ -58,6 +58,7 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const {
+      customerId,
       customer,
       customerPhone,
       customerEmail,
@@ -214,6 +215,7 @@ export async function POST(request: NextRequest) {
         data: {
           orgId: auth.orgId,
           userId: auth.userId,
+          customerId: customerId || null,
           saleNumber,
           customer: customer || null,
           customerPhone: customerPhone || null,
@@ -250,15 +252,27 @@ export async function POST(request: NextRequest) {
         },
       });
 
+      // If customerId provided, fetch TIN for invoice
+      let customerTin: string | null = null;
+      if (customerId) {
+        const custRecord = await tx.customer.findUnique({
+          where: { id: customerId },
+          select: { tin: true },
+        });
+        customerTin = custRecord?.tin || null;
+      }
+
       // Create invoice linked to sale
       await tx.invoice.create({
         data: {
           orgId: auth.orgId,
           saleId: newSale.id,
+          customerId: customerId || null,
           number: invoiceNumber,
           customer: customer || "Walk-in Customer",
           customerPhone: customerPhone || null,
           customerEmail: customerEmail || null,
+          customerTin,
           subtotal,
           taxRate,
           taxAmount,

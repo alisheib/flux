@@ -38,6 +38,7 @@ export async function GET(
         customerPhone: invoice.customerPhone,
         customerEmail: invoice.customerEmail,
         customerAddress: invoice.customerAddress,
+        customerTin: invoice.customerTin,
         subtotal: invoice.subtotal,
         taxRate: invoice.taxRate,
         taxAmount: invoice.taxAmount,

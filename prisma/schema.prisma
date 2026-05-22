@@ -39,6 +39,9 @@ model Organization {
   payments       Payment[]
   suppliers      Supplier[]
   purchaseOrders PurchaseOrder[]
+  importTemplates ImportTemplate[]
+  importJobs      ImportJob[]
+  customers       Customer[]
 }
 
 // ─── Users & Auth ──────────────────────────────────────────────────────────
@@ -190,6 +193,7 @@ model Sale {
   id            String   @id @default(cuid())
   orgId         String
   userId        String
+  customerId    String?
   invoiceId     String?  @unique
   saleNumber    String
   customer      String?
@@ -206,15 +210,17 @@ model Sale {
   notes         String?
   createdAt     DateTime @default(now())
 
-  org         Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
-  user        User         @relation(fields: [userId], references: [id])
-  invoice     Invoice?
-  items       SaleItem[]
-  creditNotes CreditNote[]
-  payments    Payment[]
+  org            Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id])
+  customerRecord Customer?    @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  invoice        Invoice?
+  items          SaleItem[]
+  creditNotes    CreditNote[]
+  payments       Payment[]
 
   @@index([orgId])
   @@index([userId])
+  @@index([customerId])
 }
 
 model SaleItem {
@@ -241,11 +247,13 @@ model Invoice {
   id              String    @id @default(cuid())
   orgId           String
   saleId          String?   @unique
+  customerId      String?
   number          String
   customer        String
   customerPhone   String?
   customerEmail   String?
   customerAddress String?
+  customerTin     String?
   subtotal        Float
   taxRate         Float     @default(0)
   taxAmount       Float     @default(0)
@@ -258,10 +266,12 @@ model Invoice {
   paidAt          DateTime?
   notes           String?
 
-  org  Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
-  sale Sale?        @relation(fields: [saleId], references: [id], onDelete: SetNull)
+  org            Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  sale           Sale?        @relation(fields: [saleId], references: [id], onDelete: SetNull)
+  customerRecord Customer?    @relation(fields: [customerId], references: [id], onDelete: SetNull)
 
   @@index([orgId])
+  @@index([customerId])
 }
 
 // ─── Audit Log ─────────────────────────────────────────────────────────────
@@ -461,4 +471,108 @@ model Payment {
 
   @@index([orgId])
   @@index([saleId])
+}
+
+// ─── Customers / Clients ─────────────────────────────────────────────────
+
+model Customer {
+  id        String   @id @default(cuid())
+  orgId     String
+  name      String
+  company   String?
+  tin       String?  // Tax Identification Number (e.g. 142-993-871)
+  phone     String?
+  email     String?
+  address   String?
+  tags      String?  // JSON array: ["VIP", "wholesale", "net-30"]
+  notes     String?
+  status    String   @default("active") // active, inactive
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  org      Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  sales    Sale[]
+  invoices Invoice[]
+
+  @@index([orgId])
+  @@index([orgId, tin])
+  @@index([orgId, phone])
+}
+
+// ─── Excel Import Module ─────────────────────────────────────────────────
+
+model ImportTemplate {
+  id              String   @id @default(cuid())
+  orgId           String
+  name            String
+  entityType      String   // inventory, expenses, employees, transactions
+  description     String?
+  columnMappings  String?  // JSON: [{excelColumn, systemField, required}]
+  validationRules String?  // JSON: [{field, type, required, regex, min, max, allowed, message}]
+  sampleFileUrl   String?
+  usageCount      Int      @default(0)
+  lastUsedAt      DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  org  Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  jobs ImportJob[]
+
+  @@index([orgId])
+}
+
+model ImportJob {
+  id          String    @id @default(cuid())
+  orgId       String
+  templateId  String?
+  userId      String
+  fileName    String
+  fileUrl     String?
+  totalRows   Int       @default(0)
+  validRows   Int       @default(0)
+  warningRows Int       @default(0)
+  errorRows   Int       @default(0)
+  skippedRows Int       @default(0)
+  status      String    @default("pending") // pending, validating, validated, importing, completed, partial, failed
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  org      Organization    @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  template ImportTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  rowLogs  ImportRowLog[]
+  diffs    ImportDiff[]
+
+  @@index([orgId])
+  @@index([templateId])
+}
+
+model ImportRowLog {
+  id       String @id @default(cuid())
+  jobId    String
+  rowNum   Int
+  status   String // valid, warning, error, skipped, imported
+  data     String // JSON: the row data
+  errors   String? // JSON: [{field, message, value}]
+  warnings String? // JSON: [{field, message, value}]
+
+  job ImportJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@index([jobId])
+  @@index([jobId, status])
+}
+
+model ImportDiff {
+  id        String  @id @default(cuid())
+  jobId     String
+  entityRef String  // e.g. product SKU or employee ID
+  field     String
+  before    String?
+  after     String?
+  kind      String  // added, changed, removed
+  included  Boolean @default(true)
+
+  job ImportJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@index([jobId])
 }

@@ -20,6 +20,8 @@ import {
   ChevronRight,
   ShieldCheck,
   Wallet,
+  FileSpreadsheet,
+  UserCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { canAccessModule, type RolePermissions } from "@/lib/auth-client";
@@ -55,8 +57,10 @@ const navItems: NavItem[] = [
   { label: "Invoices", icon: FileText, href: "/invoices", module: "invoices" },
   { label: "Accounting", icon: Calculator, href: "/accounting", module: "accounting" },
   { label: "Receivables", icon: Wallet, href: "/receivables", module: "receivables" },
+  { label: "Customers", icon: UserCircle, href: "/customers", module: "receivables" },
   { label: "Reports", icon: BarChart3, href: "/reports", module: "reports" },
   { label: "TRA Tally", icon: ShieldCheck, href: "/tally", module: "tally" },
+  { label: "Excel Import", icon: FileSpreadsheet, href: "/imports/templates", module: "inventory" },
   { label: "Activity", icon: Activity, href: "/activity", module: "audit" },
   { label: "Stock", icon: ArrowUpDown, href: "/stock-movements", module: "inventory" },
   { label: "Users", icon: Users, href: "/users", module: "users" },

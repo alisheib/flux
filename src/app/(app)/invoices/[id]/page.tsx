@@ -13,6 +13,7 @@ interface InvoiceData {
     customerPhone: string | null;
     customerEmail: string | null;
     customerAddress: string | null;
+    customerTin: string | null;
     subtotal: number;
     taxRate: number;
     taxAmount: number;
