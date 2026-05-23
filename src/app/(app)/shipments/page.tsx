@@ -22,6 +22,7 @@ import {
 import { PageHeader } from "@/components/page-header";
 import { useAuth } from "@/components/auth-provider";
 import { formatCurrency, formatNumber } from "@/lib/calculations";
+import { CurrencyAmountInput, type CurrencyMeta } from "@/components/currency-amount-input";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -97,6 +98,10 @@ interface ShipmentItem {
   quantity: number;
   unitCost: number;
   totalCost: number;
+  // Foreign-currency entry for unitCost. Null when entered directly in org currency.
+  entryCurrency: string | null;
+  entryAmount: number | null;
+  entryRate: number | null;
   notes: string | null;
   product?: { id: string; name: string; sku: string } | null;
 }
@@ -108,6 +113,8 @@ interface ShipmentExpense {
   description: string;
   amountLocal: number;
   amountUsd: number;
+  entryCurrency: string | null;
+  entryRate: number | null;
   notes: string | null;
 }
 
@@ -189,6 +196,7 @@ export default function ShipmentsPage() {
 
   const [shipments, setShipments] = useState<Shipment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [orgCurrency, setOrgCurrency] = useState<string>("USD");
   const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [breakdown, setBreakdown] = useState<CostBreakdown | null>(null);
@@ -223,6 +231,18 @@ export default function ShipmentsPage() {
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  // Org currency drives all formatCurrency displays + the CurrencyAmountInput
+  // base currency. Fetched once on mount; not refreshed because currency is
+  // locked after the first sale anyway.
+  useEffect(() => {
+    fetch("/api/settings")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d?.organization?.currency) setOrgCurrency(d.organization.currency);
+      })
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -374,7 +394,14 @@ export default function ShipmentsPage() {
     const form = new FormData(e.currentTarget);
     const quantity = parseInt(form.get("quantity") as string) || 0;
     const unitCost = parseFloat(form.get("unitCost") as string) || 0;
-    const body = {
+    // ItemForm stamps these hidden fields when the user used the foreign-entry
+    // block. All three present → valid entry. All absent → direct entry.
+    const entryCurrency = (form.get("unitCostEntryCurrency") as string) || "";
+    const entryAmount = parseFloat(form.get("unitCostEntryAmount") as string);
+    const entryRate = parseFloat(form.get("unitCostEntryRate") as string);
+    const hasEntry =
+      entryCurrency && Number.isFinite(entryAmount) && Number.isFinite(entryRate);
+    const body: Record<string, unknown> = {
       name: form.get("name") as string,
       thickness: parseFloat(form.get("thickness") as string) || null,
       width: parseFloat(form.get("width") as string) || null,
@@ -384,6 +411,9 @@ export default function ShipmentsPage() {
       quantity,
       unitCost,
     };
+    if (hasEntry) {
+      body.unitCostEntry = { amount: entryAmount, currency: entryCurrency, rate: entryRate };
+    }
 
     if (!body.name || !quantity || !unitCost) {
       toast.error("Name, quantity, and unit cost are required");
@@ -414,7 +444,14 @@ export default function ShipmentsPage() {
     e.preventDefault();
     if (!selectedShipment || !editingItem) return;
     const form = new FormData(e.currentTarget);
-    const body = {
+    const entryCurrency = (form.get("unitCostEntryCurrency") as string) || "";
+    const entryAmount = parseFloat(form.get("unitCostEntryAmount") as string);
+    const entryRate = parseFloat(form.get("unitCostEntryRate") as string);
+    const hasEntry =
+      entryCurrency && Number.isFinite(entryAmount) && Number.isFinite(entryRate);
+    const wasForeign =
+      editingItem.entryCurrency != null && editingItem.entryAmount != null && editingItem.entryRate != null;
+    const body: Record<string, unknown> = {
       name: form.get("name") as string,
       thickness: parseFloat(form.get("thickness") as string) || null,
       width: parseFloat(form.get("width") as string) || null,
@@ -424,6 +461,12 @@ export default function ShipmentsPage() {
       quantity: parseInt(form.get("quantity") as string) || 0,
       unitCost: parseFloat(form.get("unitCost") as string) || 0,
     };
+    if (hasEntry) {
+      body.unitCostEntry = { amount: entryAmount, currency: entryCurrency, rate: entryRate };
+    } else if (wasForeign) {
+      // The item used to have a foreign entry; user collapsed it — clear server-side.
+      body.unitCostEntry = null;
+    }
 
     try {
       setSaving(true);
@@ -475,12 +518,18 @@ export default function ShipmentsPage() {
     e.preventDefault();
     if (!selectedShipment) return;
     const form = new FormData(e.currentTarget);
-    const body = {
+    const entryCurrency = (form.get("entryCurrency") as string) || "";
+    const entryRate = parseFloat(form.get("entryRate") as string);
+    const body: Record<string, unknown> = {
       category: form.get("category") as string,
       description: form.get("description") as string,
       amountLocal: parseFloat(form.get("amountLocal") as string) || 0,
       amountUsd: parseFloat(form.get("amountUsd") as string) || 0,
     };
+    if (entryCurrency && Number.isFinite(entryRate)) {
+      body.entryCurrency = entryCurrency;
+      body.entryRate = entryRate;
+    }
 
     if (!body.category || !body.description) {
       toast.error("Category and description are required");
@@ -511,12 +560,22 @@ export default function ShipmentsPage() {
     e.preventDefault();
     if (!selectedShipment || !editingExpense) return;
     const form = new FormData(e.currentTarget);
-    const body = {
+    const entryCurrency = (form.get("entryCurrency") as string) || "";
+    const entryRate = parseFloat(form.get("entryRate") as string);
+    const wasForeign = editingExpense.entryCurrency != null && editingExpense.entryRate != null;
+    const body: Record<string, unknown> = {
       category: form.get("category") as string,
       description: form.get("description") as string,
       amountLocal: parseFloat(form.get("amountLocal") as string) || 0,
       amountUsd: parseFloat(form.get("amountUsd") as string) || 0,
     };
+    if (entryCurrency && Number.isFinite(entryRate)) {
+      body.entryCurrency = entryCurrency;
+      body.entryRate = entryRate;
+    } else if (wasForeign) {
+      body.entryCurrency = null;
+      body.entryRate = null;
+    }
 
     try {
       setSaving(true);
@@ -775,10 +834,10 @@ export default function ShipmentsPage() {
                             {formatNumber(item.quantity, 0)}
                           </TableCell>
                           <TableCell className="text-right text-foreground text-sm">
-                            {formatCurrency(item.unitCost)}
+                            {formatCurrency(item.unitCost, orgCurrency)}
                           </TableCell>
                           <TableCell className="text-right font-semibold text-foreground">
-                            {formatCurrency(item.totalCost)}
+                            {formatCurrency(item.totalCost, orgCurrency)}
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-1">
@@ -827,7 +886,8 @@ export default function ShipmentsPage() {
                             selectedShipment.items.reduce(
                               (s, i) => s + i.totalCost,
                               0
-                            )
+                            ),
+                            orgCurrency
                           )}
                         </TableCell>
                         <TableCell />
@@ -874,8 +934,8 @@ export default function ShipmentsPage() {
                       <TableRow className="bg-muted/50 hover:bg-muted/50">
                         <TableHead className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Category</TableHead>
                         <TableHead className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Description</TableHead>
-                        <TableHead className="text-xs font-medium uppercase tracking-wide text-muted-foreground text-right">Local Amount</TableHead>
-                        <TableHead className="text-xs font-medium uppercase tracking-wide text-muted-foreground text-right">USD Amount</TableHead>
+                        <TableHead className="text-xs font-medium uppercase tracking-wide text-muted-foreground text-right">Original Amount</TableHead>
+                        <TableHead className="text-xs font-medium uppercase tracking-wide text-muted-foreground text-right">Amount ({orgCurrency})</TableHead>
                         <TableHead className="text-xs font-medium uppercase tracking-wide text-muted-foreground text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -890,11 +950,13 @@ export default function ShipmentsPage() {
                           <TableCell className="text-foreground text-sm">
                             {expense.description}
                           </TableCell>
-                          <TableCell className="text-right text-muted-foreground text-sm">
-                            {formatCurrency(expense.amountLocal, "TSH")}
+                          <TableCell className="text-right text-muted-foreground text-sm tabular-nums">
+                            {expense.amountLocal > 0
+                              ? formatNumber(expense.amountLocal, 2)
+                              : "—"}
                           </TableCell>
                           <TableCell className="text-right font-medium text-foreground">
-                            {formatCurrency(expense.amountUsd)}
+                            {formatCurrency(expense.amountUsd, orgCurrency)}
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-1">
@@ -928,13 +990,13 @@ export default function ShipmentsPage() {
                         <TableCell colSpan={2} className="font-semibold text-foreground">
                           Total
                         </TableCell>
-                        <TableCell className="text-right font-semibold text-foreground">
-                          {formatCurrency(
+                        <TableCell className="text-right font-semibold text-foreground tabular-nums">
+                          {formatNumber(
                             selectedShipment.expenses.reduce(
                               (s, e) => s + e.amountLocal,
                               0
                             ),
-                            "TSH"
+                            2
                           )}
                         </TableCell>
                         <TableCell className="text-right font-semibold text-foreground">
@@ -942,7 +1004,8 @@ export default function ShipmentsPage() {
                             selectedShipment.expenses.reduce(
                               (s, e) => s + e.amountUsd,
                               0
-                            )
+                            ),
+                            orgCurrency
                           )}
                         </TableCell>
                         <TableCell />
@@ -989,7 +1052,7 @@ export default function ShipmentsPage() {
                       <div className="bg-card border border-border rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow">
                         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Total FOB</p>
                         <p className="text-2xl font-semibold tracking-tight text-foreground mt-1">
-                          {formatCurrency(breakdown.totalFob)}
+                          {formatCurrency(breakdown.totalFob, orgCurrency)}
                         </p>
                       </div>
                       <div className="bg-card border border-border rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow">
@@ -997,7 +1060,7 @@ export default function ShipmentsPage() {
                           Total Expenses
                         </p>
                         <p className="text-2xl font-semibold tracking-tight text-foreground mt-1">
-                          {formatCurrency(breakdown.totalExpenses)}
+                          {formatCurrency(breakdown.totalExpenses, orgCurrency)}
                         </p>
                       </div>
                       <div className="bg-card border border-border rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow">
@@ -1005,7 +1068,7 @@ export default function ShipmentsPage() {
                           Total Landed Cost
                         </p>
                         <p className="text-2xl font-semibold tracking-tight text-foreground mt-1">
-                          {formatCurrency(breakdown.totalLandedCost)}
+                          {formatCurrency(breakdown.totalLandedCost, orgCurrency)}
                         </p>
                       </div>
                       <div className="bg-card border border-border rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow">
@@ -1013,7 +1076,7 @@ export default function ShipmentsPage() {
                           Avg Cost / Unit
                         </p>
                         <p className="text-2xl font-semibold tracking-tight text-foreground mt-1">
-                          {formatCurrency(breakdown.avgCostPerUnit)}
+                          {formatCurrency(breakdown.avgCostPerUnit, orgCurrency)}
                         </p>
                       </div>
                     </div>
@@ -1034,7 +1097,7 @@ export default function ShipmentsPage() {
                                 {cat.category}
                               </span>
                               <span className="text-sm font-semibold text-foreground">
-                                {formatCurrency(cat.total)}
+                                {formatCurrency(cat.total, orgCurrency)}
                               </span>
                             </div>
                           ))}
@@ -1090,26 +1153,26 @@ export default function ShipmentsPage() {
                                     {formatNumber(product.totalQty, 0)}
                                   </TableCell>
                                   <TableCell className="text-right text-foreground text-sm">
-                                    {formatCurrency(product.totalCost)}
+                                    {formatCurrency(product.totalCost, orgCurrency)}
                                   </TableCell>
                                   <TableCell className="text-right text-muted-foreground text-sm">
                                     {(product.valueShare * 100).toFixed(1)}%
                                   </TableCell>
                                   <TableCell className="text-right text-foreground text-sm">
-                                    {formatCurrency(product.allocatedExpenses)}
+                                    {formatCurrency(product.allocatedExpenses, orgCurrency)}
                                   </TableCell>
                                   <TableCell className="text-right font-semibold text-foreground">
-                                    {formatCurrency(product.landedCost)}
+                                    {formatCurrency(product.landedCost, orgCurrency)}
                                   </TableCell>
                                   <TableCell className="text-right font-semibold text-foreground">
-                                    {formatCurrency(product.costPerUnit)}
+                                    {formatCurrency(product.costPerUnit, orgCurrency)}
                                   </TableCell>
                                   {product.margins.map((m) => (
                                     <TableCell
                                       key={m.percent}
                                       className="text-right text-foreground text-sm"
                                     >
-                                      {formatCurrency(m.pricePerUnit)}
+                                      {formatCurrency(m.pricePerUnit, orgCurrency)}
                                     </TableCell>
                                   ))}
                                 </TableRow>
@@ -1306,6 +1369,7 @@ export default function ShipmentsPage() {
               onSubmit={handleCreateItem}
               saving={saving}
               onCancel={() => setShowAddItem(false)}
+              orgCurrency={orgCurrency}
             />
           </DialogContent>
         </Dialog>
@@ -1332,6 +1396,7 @@ export default function ShipmentsPage() {
                   setShowEditItem(false);
                   setEditingItem(null);
                 }}
+                orgCurrency={orgCurrency}
               />
             )}
           </DialogContent>
@@ -1388,6 +1453,7 @@ export default function ShipmentsPage() {
               onSubmit={handleCreateExpense}
               saving={saving}
               onCancel={() => setShowAddExpense(false)}
+              orgCurrency={orgCurrency}
             />
           </DialogContent>
         </Dialog>
@@ -1414,6 +1480,7 @@ export default function ShipmentsPage() {
                   setShowEditExpense(false);
                   setEditingExpense(null);
                 }}
+                orgCurrency={orgCurrency}
               />
             )}
           </DialogContent>
@@ -1704,17 +1771,37 @@ function ItemForm({
   onSubmit,
   saving,
   onCancel,
+  orgCurrency,
 }: {
   item?: ShipmentItem;
   onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
   saving: boolean;
   onCancel: () => void;
+  orgCurrency: string;
 }) {
   const [quantity, setQuantity] = useState(item?.quantity || 0);
-  const [unitCost, setUnitCost] = useState(item?.unitCost || 0);
+  // unitCost is stored in org currency. CurrencyAmountInput emits the
+  // already-converted amount via its onChange.
+  const [unitCost, setUnitCost] = useState<string>(item?.unitCost ? item.unitCost.toString() : "");
+  const [unitCostMeta, setUnitCostMeta] = useState<CurrencyMeta>({ valid: true, originalAmount: null, originalCurrency: null, exchangeRate: null });
+
+  // Restore the previously-saved foreign entry on edit so the user sees the
+  // same numbers they originally typed.
+  const unitCostInitial = item?.entryCurrency && item?.entryAmount != null && item?.entryRate != null
+    ? { currency: item.entryCurrency, amount: item.entryAmount.toString(), rate: item.entryRate.toString() }
+    : undefined;
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    if (!unitCostMeta.valid) {
+      e.preventDefault();
+      toast.error("Unit cost needs both amount and exchange rate", { description: "Fill the foreign amount and rate, or collapse the conversion." });
+      return;
+    }
+    onSubmit(e);
+  };
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
         <div className="col-span-2 space-y-1.5">
           <Label htmlFor="item-name">Name *</Label>
@@ -1787,16 +1874,23 @@ function ItemForm({
             required
           />
         </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="item-unitCost">Unit Cost ($) *</Label>
-          <Input
-            id="item-unitCost"
-            name="unitCost"
-            type="number"
-            step="0.01"
-            min={0}
+        <div className="col-span-2 space-y-1.5">
+          {/* Hidden fields ship the converted org-currency amount AND the
+              foreign-entry metadata into FormData. The page-level submit
+              handler reads these to build the JSON body. */}
+          <input type="hidden" name="unitCost" value={unitCost} />
+          <input type="hidden" name="unitCostEntryCurrency" value={unitCostMeta.originalCurrency ?? ""} />
+          <input type="hidden" name="unitCostEntryAmount" value={unitCostMeta.originalAmount != null ? String(unitCostMeta.originalAmount) : ""} />
+          <input type="hidden" name="unitCostEntryRate" value={unitCostMeta.exchangeRate != null ? String(unitCostMeta.exchangeRate) : ""} />
+          <CurrencyAmountInput
+            label="Unit Cost"
             value={unitCost}
-            onChange={(e) => setUnitCost(parseFloat(e.target.value) || 0)}
+            onChange={(v, meta) => {
+              setUnitCost(v);
+              setUnitCostMeta(meta);
+            }}
+            orgCurrency={orgCurrency}
+            initialOriginal={unitCostInitial}
             required
           />
         </div>
@@ -1804,7 +1898,7 @@ function ItemForm({
           <div className="rounded-lg bg-muted/50 border border-border px-3 py-2.5">
             <span className="text-sm text-muted-foreground">Total Cost: </span>
             <span className="text-sm font-semibold text-foreground">
-              {formatCurrency(quantity * unitCost)}
+              {formatCurrency(quantity * (parseFloat(unitCost) || 0), orgCurrency)}
             </span>
           </div>
         </div>
@@ -1833,14 +1927,42 @@ function ExpenseForm({
   onSubmit,
   saving,
   onCancel,
+  orgCurrency,
 }: {
   expense?: ShipmentExpense;
   onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
   saving: boolean;
   onCancel: () => void;
+  orgCurrency: string;
 }) {
+  // We persist:
+  //   amountUsd = the amount expressed in the org's base currency (column name
+  //               kept for backwards compat — calculateShipmentCosts reads this).
+  //   amountLocal = the original foreign amount the user typed, when foreign-mode
+  //                 was used. 0 when the user entered directly in org currency.
+  //   entryCurrency + entryRate = which currency the foreign amount is in and
+  //                               the rate used to derive amountUsd.
+  const [amount, setAmount] = useState<string>(expense?.amountUsd ? expense.amountUsd.toString() : "");
+  const [amountMeta, setAmountMeta] = useState<CurrencyMeta>({ valid: true, originalAmount: null, originalCurrency: null, exchangeRate: null });
+
+  // Restore on edit: if the expense had a foreign entry on record, prefill
+  // the foreign block with the original currency, the amountLocal value, and
+  // the saved rate.
+  const amountInitial = expense?.entryCurrency && expense?.entryRate != null && expense?.amountLocal
+    ? { currency: expense.entryCurrency, amount: expense.amountLocal.toString(), rate: expense.entryRate.toString() }
+    : undefined;
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    if (!amountMeta.valid) {
+      e.preventDefault();
+      toast.error("Amount needs both foreign amount and exchange rate", { description: "Fill the foreign amount and rate, or collapse the conversion." });
+      return;
+    }
+    onSubmit(e);
+  };
+
   return (
-    <form onSubmit={onSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
         <div className="col-span-2 space-y-1.5">
           <Label htmlFor="expense-category">Category *</Label>
@@ -1861,24 +1983,28 @@ function ExpenseForm({
             required
           />
         </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="expense-amountLocal">Local Amount (TSh)</Label>
-          <Input
-            id="expense-amountLocal"
+        <div className="col-span-2 space-y-1.5">
+          {/* Hidden fields carry: the converted (org-currency) amount, the
+              raw foreign amount, and the entry currency + rate. The page-level
+              submit handler reads these to build the JSON body. */}
+          <input type="hidden" name="amountUsd" value={amount || "0"} />
+          <input
+            type="hidden"
             name="amountLocal"
-            type="number"
-            step="0.01"
-            defaultValue={expense?.amountLocal || 0}
+            value={amountMeta.originalAmount != null ? String(amountMeta.originalAmount) : "0"}
           />
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="expense-amountUsd">USD Amount ($)</Label>
-          <Input
-            id="expense-amountUsd"
-            name="amountUsd"
-            type="number"
-            step="0.01"
-            defaultValue={expense?.amountUsd || 0}
+          <input type="hidden" name="entryCurrency" value={amountMeta.originalCurrency ?? ""} />
+          <input type="hidden" name="entryRate" value={amountMeta.exchangeRate != null ? String(amountMeta.exchangeRate) : ""} />
+          <CurrencyAmountInput
+            label="Amount"
+            value={amount}
+            onChange={(v, meta) => {
+              setAmount(v);
+              setAmountMeta(meta);
+            }}
+            orgCurrency={orgCurrency}
+            initialOriginal={amountInitial}
+            required
           />
         </div>
       </div>

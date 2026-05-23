@@ -145,9 +145,26 @@ export async function PUT(request: NextRequest) {
       } = settings;
 
       const updateData: Record<string, unknown> = {};
-      if (defaultMargin !== undefined) updateData.defaultMargin = defaultMargin;
-      if (secondaryMargin !== undefined) updateData.secondaryMargin = secondaryMargin;
-      if (exchangeRate !== undefined) updateData.exchangeRate = exchangeRate;
+      if (defaultMargin !== undefined) {
+        if (typeof defaultMargin !== "number" || !isFinite(defaultMargin) || defaultMargin < 0) {
+          return NextResponse.json({ error: "Default margin must be a non-negative finite number" }, { status: 400 });
+        }
+        updateData.defaultMargin = defaultMargin;
+      }
+      if (secondaryMargin !== undefined) {
+        if (typeof secondaryMargin !== "number" || !isFinite(secondaryMargin) || secondaryMargin < 0) {
+          return NextResponse.json({ error: "Secondary margin must be a non-negative finite number" }, { status: 400 });
+        }
+        updateData.secondaryMargin = secondaryMargin;
+      }
+      if (exchangeRate !== undefined) {
+        // Exchange rate must be strictly positive — zero or negative would corrupt
+        // all downstream conversions. NaN/Infinity must also be rejected.
+        if (typeof exchangeRate !== "number" || !isFinite(exchangeRate) || exchangeRate <= 0) {
+          return NextResponse.json({ error: "Exchange rate must be a positive finite number" }, { status: 400 });
+        }
+        updateData.exchangeRate = exchangeRate;
+      }
       if (invoicePrefix !== undefined) updateData.invoicePrefix = invoicePrefix;
       if (invoiceNextNum !== undefined) updateData.invoiceNextNum = invoiceNextNum;
       if (receiptPrefix !== undefined) updateData.receiptPrefix = receiptPrefix;

@@ -4,6 +4,8 @@
  * Designed for A4 print at 300 DPI quality.
  */
 
+import { formatCurrencyValue } from "@/lib/currency";
+
 interface InvoiceTemplateData {
   invoice: {
     number: string;
@@ -38,11 +40,8 @@ interface InvoiceTemplateData {
 }
 
 function formatAmount(value: number, currency: string): string {
-  const formatted = value.toLocaleString("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-  return `${currency} ${formatted}`;
+  // Single source of truth for currency rendering — see lib/currency.ts.
+  return formatCurrencyValue(value, currency);
 }
 
 function formatDate(dateStr: string): string {

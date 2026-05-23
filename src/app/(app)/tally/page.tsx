@@ -127,6 +127,7 @@ export default function TallyPage() {
     totalInvoices: 0, paidInvoices: 0, pendingSync: 0, synced: 0, failed: 0,
   });
   const [receipts, setReceipts] = useState<ReceiptRecord[]>([]);
+  const [orgCurrency, setOrgCurrency] = useState<string>("USD");
   const [saving, setSaving] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [testing, setTesting] = useState(false);
@@ -140,12 +141,19 @@ export default function TallyPage() {
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await fetch("/api/tally");
-      if (!res.ok) throw new Error("Failed to load");
-      const data = await res.json();
+      const [tallyRes, settingsRes] = await Promise.all([
+        fetch("/api/tally"),
+        fetch("/api/settings"),
+      ]);
+      if (!tallyRes.ok) throw new Error("Failed to load");
+      const data = await tallyRes.json();
       setConfig(data.config);
       setStats(data.stats);
       setReceipts(data.recentReceipts);
+      if (settingsRes.ok) {
+        const s = await settingsRes.json();
+        if (s?.organization?.currency) setOrgCurrency(s.organization.currency);
+      }
     } catch {
       toast.error("Failed to load TRA data");
     } finally {
@@ -359,7 +367,7 @@ export default function TallyPage() {
                         <TableCell className="text-sm text-foreground">{r.customer}</TableCell>
                         <TableCell className="text-xs text-muted-foreground">{r.salesperson}</TableCell>
                         <TableCell className="text-sm font-semibold text-foreground text-right">
-                          {formatCurrency(r.total, "USD")}
+                          {formatCurrency(r.total, orgCurrency)}
                         </TableCell>
                         <TableCell className="text-xs font-mono text-muted-foreground">
                           {r.invoiceNumber || "—"}

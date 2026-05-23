@@ -4,6 +4,7 @@ import { verifyToken } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { parsePagination, paginatedResponse } from "@/lib/pagination";
 import { logAudit } from "@/lib/audit";
+import { parseCurrencyEntry } from "@/lib/currency-entry";
 
 async function getAuth() {
   const cookieStore = await cookies();
@@ -57,8 +58,30 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { supplierId, items, expectedAt, notes, currency } = body;
 
+    // ── Validate the entire payload BEFORE any DB calls ──
+    // This gives us 400 for malformed input even if the DB is unreachable,
+    // and means we never spend a supplier-lookup roundtrip on a doomed request.
     if (!supplierId) {
       return NextResponse.json({ error: "Supplier is required" }, { status: 400 });
+    }
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return NextResponse.json({ error: "At least one item is required" }, { status: 400 });
+    }
+
+    const itemEntries: Array<{ entryCurrency: string | null; entryAmount: number | null; entryRate: number | null }> = [];
+    for (const item of items) {
+      if (!item.name?.trim()) {
+        return NextResponse.json({ error: "Each item must have a name" }, { status: 400 });
+      }
+      if (typeof item.quantityOrdered !== "number" || !isFinite(item.quantityOrdered) || item.quantityOrdered <= 0) {
+        return NextResponse.json({ error: `Item "${item.name}" must have a positive finite quantity` }, { status: 400 });
+      }
+      if (typeof item.unitCost !== "number" || !isFinite(item.unitCost) || item.unitCost < 0) {
+        return NextResponse.json({ error: `Item "${item.name}" must have a non-negative finite unit cost` }, { status: 400 });
+      }
+      const parsed = parseCurrencyEntry(item.unitCostEntry, `Item "${item.name}" unit cost`);
+      if (!parsed.ok) return NextResponse.json({ error: parsed.error }, { status: 400 });
+      itemEntries.push(parsed.columns);
     }
 
     const supplier = await prisma.supplier.findFirst({
@@ -66,22 +89,6 @@ export async function POST(request: NextRequest) {
     });
     if (!supplier) {
       return NextResponse.json({ error: "Supplier not found" }, { status: 404 });
-    }
-
-    if (!items || !Array.isArray(items) || items.length === 0) {
-      return NextResponse.json({ error: "At least one item is required" }, { status: 400 });
-    }
-
-    for (const item of items) {
-      if (!item.name?.trim()) {
-        return NextResponse.json({ error: "Each item must have a name" }, { status: 400 });
-      }
-      if (typeof item.quantityOrdered !== "number" || item.quantityOrdered <= 0) {
-        return NextResponse.json({ error: `Item "${item.name}" must have a quantity greater than 0` }, { status: 400 });
-      }
-      if (typeof item.unitCost !== "number" || item.unitCost < 0) {
-        return NextResponse.json({ error: `Item "${item.name}" must have a non-negative unit cost` }, { status: 400 });
-      }
     }
 
     // Generate PO number
@@ -116,7 +123,7 @@ export async function POST(request: NextRequest) {
               quantityOrdered: number;
               unitCost: number;
               notes?: string;
-            }) => ({
+            }, idx: number) => ({
               productId: item.productId || null,
               name: item.name,
               unit: item.unit || "piece",
@@ -125,6 +132,9 @@ export async function POST(request: NextRequest) {
               unitCost: item.unitCost,
               totalCost: item.quantityOrdered * item.unitCost,
               notes: item.notes?.trim() || null,
+              entryCurrency: itemEntries[idx].entryCurrency,
+              entryAmount: itemEntries[idx].entryAmount,
+              entryRate: itemEntries[idx].entryRate,
             })
           ),
         },

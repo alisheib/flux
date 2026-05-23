@@ -1,4 +1,5 @@
 import ExcelJS from "exceljs";
+import { getCurrencyExcelFormat } from "@/lib/currency";
 
 // Flux brand colors
 const FLUX_BRAND = "D97706"; // amber/orange
@@ -168,8 +169,7 @@ export async function exportToExcel(options: ExcelExportOptions) {
 
       // Number formatting
       if (col?.type === "currency") {
-        const sym = currency === "TSH" || currency === "TZS" ? "TSh " : currency === "EUR" ? "€" : currency === "GBP" ? "£" : "$";
-        cell.numFmt = `${sym}#,##0.00`;
+        cell.numFmt = getCurrencyExcelFormat(currency);
       } else if (col?.type === "percent") {
         cell.numFmt = `0.0"%"`;
       } else if (col?.type === "number") {
@@ -225,8 +225,7 @@ export async function exportToExcel(options: ExcelExportOptions) {
       };
 
       if (col?.type === "currency") {
-        const sym = currency === "TSH" || currency === "TZS" ? "TSh " : currency === "EUR" ? "€" : currency === "GBP" ? "£" : "$";
-        cell.numFmt = `${sym}#,##0.00`;
+        cell.numFmt = getCurrencyExcelFormat(currency);
       } else if (col?.type === "percent") {
         cell.numFmt = `0.0"%"`;
       } else if (col?.type === "number") {

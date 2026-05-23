@@ -26,6 +26,7 @@ import {
 import { PageHeader } from "@/components/page-header";
 import { useAuth } from "@/components/auth-provider";
 import { formatCurrency, formatNumber } from "@/lib/calculations";
+import { getCurrencySymbol } from "@/lib/currency";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -72,6 +73,17 @@ export default function AccountingPage() {
   const [data, setData] = useState<AccountingData | null>(null);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
+  // Org currency drives every formatCurrency call on this page. Without it,
+  // formatCurrency falls through to the USD default — which is exactly the
+  // bug we just fixed everywhere else.
+  const [orgCurrency, setOrgCurrency] = useState<string>("USD");
+
+  useEffect(() => {
+    fetch("/api/settings")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (d?.organization?.currency) setOrgCurrency(d.organization.currency); })
+      .catch(() => {});
+  }, []);
 
   const fetchData = useCallback(async () => {
     try {
@@ -143,7 +155,7 @@ export default function AccountingPage() {
       sheetName: "P&L Report",
       title: "Profit & Loss Report",
       subtitle: `${data.shipments.length} shipments | Generated ${new Date().toLocaleDateString()}`,
-      currency: "USD",
+      currency: orgCurrency,
       filename: `flux-pnl-report-${new Date().toISOString().split("T")[0]}`,
       columns: [
         { header: "Shipment", key: "name", width: 28, type: "string" },
@@ -264,7 +276,7 @@ export default function AccountingPage() {
           </div>
           <p className="text-[12.5px] font-medium text-muted-foreground">Total Investment</p>
           <p className="text-[clamp(24px,2.4vw,30px)] font-semibold tracking-tight leading-none">
-            {formatCurrency(data.totalInvestment)}
+            {formatCurrency(data.totalInvestment, orgCurrency)}
           </p>
           <p className="text-xs text-muted-foreground">FOB + landed costs</p>
         </div>
@@ -278,7 +290,7 @@ export default function AccountingPage() {
           </div>
           <p className="text-[12.5px] font-medium text-muted-foreground">Total Revenue</p>
           <p className="text-[clamp(24px,2.4vw,30px)] font-semibold tracking-tight leading-none">
-            {formatCurrency(data.totalRevenue)}
+            {formatCurrency(data.totalRevenue, orgCurrency)}
           </p>
         </div>
 
@@ -291,7 +303,7 @@ export default function AccountingPage() {
           </div>
           <p className="text-[12.5px] font-medium text-muted-foreground">Profit / Loss</p>
           <p className={`text-[clamp(24px,2.4vw,30px)] font-semibold tracking-tight leading-none ${isProfitable ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
-            {formatCurrency(data.profitLoss)}
+            {formatCurrency(data.profitLoss, orgCurrency)}
           </p>
         </div>
 
@@ -338,7 +350,10 @@ export default function AccountingPage() {
                   <YAxis
                     className="text-xs"
                     tick={{ fill: "hsl(var(--muted-foreground))" }}
-                    tickFormatter={(value: number) => `$${(value / 1000).toFixed(0)}k`}
+                    tickFormatter={(value: number) =>
+                      // Use the org currency's actual symbol, not a hardcoded "$".
+                      `${getCurrencySymbol(orgCurrency).trim()}${(value / 1000).toFixed(0)}k`
+                    }
                   />
                   <Tooltip
                     contentStyle={{
@@ -349,7 +364,7 @@ export default function AccountingPage() {
                     }}
                     labelStyle={{ color: "hsl(var(--foreground))" }}
                     formatter={(value) =>
-                      value != null ? formatCurrency(Number(value)) : ""
+                      value != null ? formatCurrency(Number(value), orgCurrency) : ""
                     }
                   />
                   <Legend
@@ -406,16 +421,16 @@ export default function AccountingPage() {
                           {shipment.name}
                         </TableCell>
                         <TableCell className="text-right text-foreground">
-                          {formatCurrency(shipment.fobCost)}
+                          {formatCurrency(shipment.fobCost, orgCurrency)}
                         </TableCell>
                         <TableCell className="text-right text-foreground">
-                          {formatCurrency(shipment.expenses)}
+                          {formatCurrency(shipment.expenses, orgCurrency)}
                         </TableCell>
                         <TableCell className="text-right text-foreground">
-                          {formatCurrency(shipment.landedCost)}
+                          {formatCurrency(shipment.landedCost, orgCurrency)}
                         </TableCell>
                         <TableCell className="text-right text-foreground">
-                          {formatCurrency(shipment.salesRevenue)}
+                          {formatCurrency(shipment.salesRevenue, orgCurrency)}
                         </TableCell>
                         <TableCell
                           className={`text-right font-semibold ${
@@ -424,7 +439,7 @@ export default function AccountingPage() {
                               : "text-red-600 dark:text-red-400"
                           }`}
                         >
-                          {formatCurrency(shipment.profit)}
+                          {formatCurrency(shipment.profit, orgCurrency)}
                         </TableCell>
                         <TableCell
                           className={`text-right font-medium ${
@@ -443,16 +458,16 @@ export default function AccountingPage() {
                   <TableRow className="border-t-2 border-border bg-muted/30 font-bold hover:bg-muted/30">
                     <TableCell className="font-bold">TOTAL</TableCell>
                     <TableCell className="text-right font-bold">
-                      {formatCurrency(tableTotals.fob)}
+                      {formatCurrency(tableTotals.fob, orgCurrency)}
                     </TableCell>
                     <TableCell className="text-right font-bold">
-                      {formatCurrency(tableTotals.expenses)}
+                      {formatCurrency(tableTotals.expenses, orgCurrency)}
                     </TableCell>
                     <TableCell className="text-right font-bold">
-                      {formatCurrency(tableTotals.landed)}
+                      {formatCurrency(tableTotals.landed, orgCurrency)}
                     </TableCell>
                     <TableCell className="text-right font-bold">
-                      {formatCurrency(tableTotals.revenue)}
+                      {formatCurrency(tableTotals.revenue, orgCurrency)}
                     </TableCell>
                     <TableCell
                       className={`text-right font-bold ${
@@ -461,7 +476,7 @@ export default function AccountingPage() {
                           : "text-red-600 dark:text-red-400"
                       }`}
                     >
-                      {formatCurrency(tableTotals.profit)}
+                      {formatCurrency(tableTotals.profit, orgCurrency)}
                     </TableCell>
                     <TableCell
                       className={`text-right font-bold ${

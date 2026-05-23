@@ -4,6 +4,8 @@
  * Uses Inter font, inline styles, no external dependencies.
  */
 
+import { formatCurrencyValue } from "@/lib/currency";
+
 interface ReceiptTemplateData {
   receipt: {
     number: string;
@@ -32,7 +34,8 @@ interface ReceiptTemplateData {
 }
 
 function formatAmount(value: number, currency: string): string {
-  return `${currency} ${value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  // Single source of truth — see lib/currency.ts.
+  return formatCurrencyValue(value, currency);
 }
 
 function escapeHtml(str: string): string {

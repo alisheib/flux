@@ -69,6 +69,7 @@ Organization, User, Shipment, ShipmentItem, ShipmentExpense, Category, Product, 
 
 ## Key Decisions Made
 - **Currency locked after first sale** — prevents data corruption from mid-stream currency change
+- **Multi-currency entry feature** — see `## Currency Architecture` below
 - **Customer is optional** — walk-in sales use free-text `customer` field, registered customers use `customerId` FK
 - **TIN stored in backend only** — `Invoice.customerTin` exists in DB for records, never shown on PDF output (customer security)
 - **Stock check inside transaction** — prevents race condition overselling on concurrent sales
@@ -76,6 +77,54 @@ Organization, User, Shipment, ShipmentItem, ShipmentExpense, Category, Product, 
 - **orgId in every update/delete query** — belt-and-suspenders multi-tenant isolation
 - **Password rules enforced on ALL endpoints** — 8+ chars, upper, lower, number, special (profile, admin, register)
 - **Soft delete for customers** — deactivate sets status, preserves sale/invoice history
+
+## Currency Architecture
+
+Every money column on every model stores the **org's base currency** (the canonical amount). Foreign-currency entry is supported as user-facing input only — the system converts at input time using a rate the user provides (or auto-fetches from `/api/fx/latest`), and persists both the converted org-currency value AND the original entry metadata.
+
+### Code surfaces
+- **`src/lib/currency.ts`** — canonical currency registry. `CURRENCIES` is the supported list (15+ codes including TZS, KES, NGN, UGX, ZAR, GHS, EUR, GBP, CNY, INR, AED, JPY, etc.). Single source of truth for symbols, decimal rules, and Excel format strings. `normalizeCurrencyCode` handles aliases (e.g. TSH → TZS) and falls back to USD on null/whitespace.
+- **`src/lib/calculations.ts:formatCurrency`** — public display helper, delegates to the registry. **Never silently falls through to `$` for unknown codes** (a critical bug from before this rewrite).
+- **`src/lib/currency-entry.ts`** — server-side parser. `parseCurrencyEntry(input, fieldLabel)` validates and normalizes the optional `{amount, currency, rate}` payload before persistence. `formatEntryForAudit` builds the audit-log line.
+- **`src/components/currency-amount-input.tsx`** — reusable UI. Shows a single amount field by default; expands to a foreign-entry block with auto-fetched rate; emits both the converted org-currency amount and `CurrencyMeta` for the parent to send to the server.
+- **`src/app/api/fx/latest/route.ts`** — auth-gated proxy to `open.er-api.com` (free, no API key, supports ~160 currencies). 6h in-memory cache + Next server cache.
+
+### Entry-metadata columns (added in migration `20260523_add_currency_entry_columns.sql`)
+| Model | Columns |
+|---|---|
+| `Product` | `costEntry{Currency,Amount,Rate}`, `sellingEntry{Currency,Amount,Rate}`, `pricePerSqmEntry{Currency,Amount,Rate}` |
+| `ShipmentItem` | `entryCurrency`, `entryAmount`, `entryRate` |
+| `ShipmentExpense` | `entryCurrency`, `entryRate` (uses existing `amountLocal` for the raw value) |
+| `PurchaseOrderItem` | `entryCurrency`, `entryAmount`, `entryRate` |
+| `Payment` | `entryCurrency`, `entryAmount`, `entryRate` |
+
+All nullable, all additive. Pre-existing rows remain valid.
+
+### API payload contract
+Every API route that accepts a money field also accepts an OPTIONAL entry object:
+```jsonc
+// POST /api/products
+{
+  "name": "5mm Float Glass",
+  "costPrice": 214593,                                       // org-currency value
+  "costEntry": { "amount": 82, "currency": "USD", "rate": 2616.99 }, // optional
+  ...
+}
+```
+Semantics:
+- **Omitted / undefined** → on create, columns stay NULL. On update, columns are unchanged.
+- **Explicit `null`** → columns are cleared. Use this when a user collapses the foreign-entry block during edit.
+- **`{amount, currency, rate}`** → must include all three; amount ≥ 0, rate > 0, currency normalized via `normalizeCurrencyCode`. Partial objects are rejected with 400.
+
+### UI behavior
+- Inventory list shows `entered $82 @ 2616.99` beneath the cost cell when entry metadata exists.
+- Opening an existing product for edit auto-expands the foreign-entry block with the saved values restored.
+- All currency formatting goes through `formatCurrency(value, orgCurrency)`. Never call without a currency arg or with a hardcoded string — both forms used to silently render as `$`.
+
+### Deployment steps for the entry-metadata columns
+The schema change is additive (nullable columns only). Two ways to apply on Neon:
+1. **`npx prisma db push`** — preferred; Prisma reads `schema.prisma` and runs the same DDL.
+2. **Manual** — copy `prisma/migrations/20260523_add_currency_entry_columns.sql` into the Neon SQL editor. Idempotent (uses `IF NOT EXISTS`).
 
 ## Auth & Roles
 - **Admin:** Full access
@@ -136,7 +185,7 @@ Vercel auto-deploys from `main`. Required env vars: `DATABASE_URL`, `JWT_SECRET`
 ### Phase 1 — Next to Build
 1. **Offline POS** — Service Worker + IndexedDB + sync queue
 2. **Barcode Scanning** — Camera + USB scanner, barcode labels
-3. **Multi-Currency** — Exchange rate table, per-transaction currency
+3. ~~**Multi-Currency** — Exchange rate table, per-transaction currency~~ **Done** (see Currency Architecture above)
 4. **Email Notifications** — Resend integration, invoice/payment/alert emails
 
 ### Phase 2 — Competitive

@@ -111,6 +111,10 @@ model ShipmentItem {
   quantity   Int
   unitCost   Float
   totalCost  Float
+  // Foreign-currency entry for unitCost. See Product.costEntryCurrency.
+  entryCurrency String?
+  entryAmount   Float?
+  entryRate     Float?
   notes      String?
 
   shipment Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
@@ -126,8 +130,14 @@ model ShipmentExpense {
   shipmentId  String
   category    String
   description String
+  // amountUsd is the canonical org-currency value (despite the historical
+  // column name — pre-existing data and calculateShipmentCosts both rely on it).
+  // amountLocal holds the original foreign-currency amount when the user used
+  // the foreign-entry block. entryCurrency tells you what currency that was.
   amountLocal Float  @default(0)
   amountUsd   Float  @default(0)
+  entryCurrency String?
+  entryRate     Float?
   notes       String?
 
   org      Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
@@ -172,6 +182,23 @@ model Product {
   stockQty     Float    @default(0)
   minStockQty  Float    @default(0)
   active       Boolean  @default(true)
+  // ─── Foreign-currency entry metadata ────────────────────────────────
+  // When the user enters a price in a non-org currency (e.g. costPrice in
+  // USD for a TZS-based org), these columns capture exactly what was typed
+  // plus the rate used. The {costPrice, sellingPrice, pricePerSqm} columns
+  // above hold the converted org-currency value (the canonical number for
+  // every downstream P&L / report). These columns let the edit dialog
+  // restore the foreign-entry block AND give the audit trail a reportable
+  // form. Nullable across the board — pre-existing rows stay valid.
+  costEntryCurrency        String?
+  costEntryAmount          Float?
+  costEntryRate            Float?
+  sellingEntryCurrency     String?
+  sellingEntryAmount       Float?
+  sellingEntryRate         Float?
+  pricePerSqmEntryCurrency String?
+  pricePerSqmEntryAmount   Float?
+  pricePerSqmEntryRate     Float?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -444,6 +471,10 @@ model PurchaseOrderItem {
   quantityReceived Float  @default(0)
   unitCost        Float
   totalCost       Float
+  // Foreign-currency entry for unitCost. See Product.costEntryCurrency.
+  entryCurrency   String?
+  entryAmount     Float?
+  entryRate       Float?
   notes           String?
 
   purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
@@ -459,9 +490,15 @@ model Payment {
   id        String   @id @default(cuid())
   orgId     String
   saleId    String
-  amount    Float
+  amount    Float    // canonical org-currency amount
   method    String // mpesa, tigo, airtel, bank, cash, card
   reference String? // M-Pesa ref, bank ref, etc.
+  // Foreign-currency entry for amount. When the customer paid in a different
+  // currency (e.g. EUR cash deposited at a TZS shop) and the user recorded
+  // the rate, these columns preserve the original.
+  entryCurrency String?
+  entryAmount   Float?
+  entryRate     Float?
   notes     String?
   date      DateTime @default(now())
   createdAt DateTime @default(now())

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { verifyToken } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { parseCurrencyEntry } from "@/lib/currency-entry";
 
 async function getAuth() {
   const cookieStore = await cookies();
@@ -38,7 +39,7 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { productId, name, thickness, width, height, color, unit, quantity, unitCost, notes } = body;
+    const { productId, name, thickness, width, height, color, unit, quantity, unitCost, notes, unitCostEntry } = body;
 
     if (quantity !== undefined && (typeof quantity !== "number" || quantity <= 0 || !isFinite(quantity))) {
       return NextResponse.json({ error: "Quantity must be a positive finite number" }, { status: 400 });
@@ -49,6 +50,12 @@ export async function PUT(
     if (name !== undefined && (!name || !name.trim())) {
       return NextResponse.json({ error: "Item name cannot be empty" }, { status: 400 });
     }
+
+    // Foreign-currency entry: only touch columns when the client explicitly
+    // provided the key. See products PUT route for the same pattern.
+    const wantsEntry = body.unitCostEntry !== undefined;
+    const parsed = parseCurrencyEntry(unitCostEntry, "Unit cost");
+    if (!parsed.ok) return NextResponse.json({ error: parsed.error }, { status: 400 });
 
     // Auto-calculate totalCost if quantity or unitCost changed
     const newQty = quantity !== undefined ? quantity : existing.quantity;
@@ -69,6 +76,11 @@ export async function PUT(
         ...(unitCost !== undefined && { unitCost }),
         totalCost,
         ...(notes !== undefined && { notes }),
+        ...(wantsEntry && {
+          entryCurrency: parsed.columns.entryCurrency,
+          entryAmount: parsed.columns.entryAmount,
+          entryRate: parsed.columns.entryRate,
+        }),
       },
       include: { product: { select: { id: true, name: true, sku: true } } },
     });

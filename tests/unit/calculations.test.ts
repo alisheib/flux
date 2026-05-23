@@ -70,12 +70,16 @@ test("handles very large numbers", () => {
   assert(result.includes("1,000,000,000"), `Large number format: ${result}`);
 });
 
-test("handles NaN gracefully", () => {
-  assertEq(formatCurrency(NaN, "USD"), "$0");
+test("handles NaN gracefully (honors currency decimals)", () => {
+  // formatCurrency now delegates to the currency registry which honors the
+  // currency's decimal config — NaN collapses to 0 but still renders with
+  // 2 decimals for USD. Previously it was inconsistent: $0 amount → "$0.00"
+  // but NaN amount → "$0".
+  assertEq(formatCurrency(NaN, "USD"), "$0.00");
 });
 
-test("handles null-like input gracefully", () => {
-  assertEq(formatCurrency(undefined as unknown as number, "USD"), "$0");
+test("handles null-like input gracefully (honors currency decimals)", () => {
+  assertEq(formatCurrency(undefined as unknown as number, "USD"), "$0.00");
 });
 
 // ── formatNumber ────────────────────────────────────────────────────────

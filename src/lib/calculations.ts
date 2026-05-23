@@ -1,3 +1,5 @@
+import { formatCurrencyValue } from "@/lib/currency";
+
 export interface ProductCost {
   itemId: string;
   name: string;
@@ -86,11 +88,10 @@ export function calculateShipmentCosts(
 }
 
 export function formatCurrency(amount: number, currency: string = "USD"): string {
-  const upper = currency.toUpperCase();
-  if (upper === "TSH" || upper === "TZS") {
-    return `TSh ${formatNumber(amount, 0)}`;
-  }
-  return `$${formatNumber(amount, 2)}`;
+  // Delegates to the canonical currency registry in lib/currency.ts so the
+  // symbol/decimals come from a single source — previously every non-TZS code
+  // silently fell through to "$" which mis-labeled EUR/KES/NGN/etc as USD.
+  return formatCurrencyValue(amount, currency);
 }
 
 export function formatNumber(n: number, decimals: number = 2): string {

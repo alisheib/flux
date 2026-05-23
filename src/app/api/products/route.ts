@@ -4,6 +4,7 @@ import { verifyToken } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { parsePagination, paginatedResponse } from "@/lib/pagination";
 import { logAudit } from "@/lib/audit";
+import { parseCurrencyEntry, formatEntryForAudit } from "@/lib/currency-entry";
 
 async function getAuth() {
   const cookieStore = await cookies();
@@ -73,6 +74,14 @@ export async function POST(request: NextRequest) {
       stockQty,
       minStockQty,
       active,
+      // Optional foreign-currency audit metadata. When the user typed a price
+      // in a non-org currency, the client posts the original amount + currency
+      // + rate so the audit log can reconstruct what was entered. The price
+      // columns store the converted org-currency value; this lives only in
+      // AuditLog.details (no schema change required).
+      costEntry,
+      sellingEntry,
+      pricePerSqmEntry,
     } = body;
 
     if (!name || !name.trim()) {
@@ -87,9 +96,28 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Selling price must be a non-negative finite number" }, { status: 400 });
     }
 
+    if (pricePerSqm !== undefined && pricePerSqm !== null && (typeof pricePerSqm !== "number" || pricePerSqm < 0 || !isFinite(pricePerSqm))) {
+      return NextResponse.json({ error: "Price per m² must be a non-negative finite number" }, { status: 400 });
+    }
+
     if (stockQty !== undefined && stockQty !== null && (typeof stockQty !== "number" || stockQty < 0 || !isFinite(stockQty))) {
       return NextResponse.json({ error: "Stock quantity must be a non-negative finite number" }, { status: 400 });
     }
+
+    if (minStockQty !== undefined && minStockQty !== null && (typeof minStockQty !== "number" || minStockQty < 0 || !isFinite(minStockQty))) {
+      return NextResponse.json({ error: "Min stock quantity must be a non-negative finite number" }, { status: 400 });
+    }
+
+    // Parse the optional foreign-currency entry payloads. Each parse returns
+    // {entryCurrency, entryAmount, entryRate} columns, all NULL if the user
+    // didn't use the foreign-entry block. Partial entries (e.g. currency
+    // without rate) are rejected here as a server-side defense.
+    const costParsed = parseCurrencyEntry(costEntry, "Cost price");
+    if (!costParsed.ok) return NextResponse.json({ error: costParsed.error }, { status: 400 });
+    const sellingParsed = parseCurrencyEntry(sellingEntry, "Selling price");
+    if (!sellingParsed.ok) return NextResponse.json({ error: sellingParsed.error }, { status: 400 });
+    const sqmParsed = parseCurrencyEntry(pricePerSqmEntry, "Price per m²");
+    if (!sqmParsed.ok) return NextResponse.json({ error: sqmParsed.error }, { status: 400 });
 
     const product = await prisma.product.create({
       data: {
@@ -110,13 +138,33 @@ export async function POST(request: NextRequest) {
         stockQty: Number(stockQty) || 0,
         minStockQty: Number(minStockQty) || 0,
         active: active !== undefined ? active : true,
+        costEntryCurrency: costParsed.columns.entryCurrency,
+        costEntryAmount: costParsed.columns.entryAmount,
+        costEntryRate: costParsed.columns.entryRate,
+        sellingEntryCurrency: sellingParsed.columns.entryCurrency,
+        sellingEntryAmount: sellingParsed.columns.entryAmount,
+        sellingEntryRate: sellingParsed.columns.entryRate,
+        pricePerSqmEntryCurrency: sqmParsed.columns.entryCurrency,
+        pricePerSqmEntryAmount: sqmParsed.columns.entryAmount,
+        pricePerSqmEntryRate: sqmParsed.columns.entryRate,
       },
       include: {
         category: { select: { id: true, name: true, icon: true, color: true } },
       },
     });
 
-    await logAudit({ orgId: auth.orgId, userId: auth.userId, action: "create", entity: "product", entityId: product.id, details: `Created product: ${product.name}` });
+    // Compose audit detail. With the entry columns now persisted on the row,
+    // this is belt-and-braces — but it gives an at-a-glance trail in the
+    // activity log without needing to query the entry columns.
+    const auditParts: string[] = [`Created product: ${product.name}`];
+    const costAudit = formatEntryForAudit("Cost price", costParsed.columns);
+    if (costAudit) auditParts.push(costAudit);
+    const sellingAudit = formatEntryForAudit("Selling price", sellingParsed.columns);
+    if (sellingAudit) auditParts.push(sellingAudit);
+    const sqmAudit = formatEntryForAudit("Price per m²", sqmParsed.columns);
+    if (sqmAudit) auditParts.push(sqmAudit);
+
+    await logAudit({ orgId: auth.orgId, userId: auth.userId, action: "create", entity: "product", entityId: product.id, details: auditParts.join(" | ") });
 
     return NextResponse.json(product, { status: 201 });
   } catch (error) {

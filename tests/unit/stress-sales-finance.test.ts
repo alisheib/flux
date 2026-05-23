@@ -327,9 +327,12 @@ test("TSH: zero amount", () => {
   eq(formatCurrency(0, "TSH"), "TSh 0");
 });
 
-test("unknown currency defaults to USD format", () => {
+test("EUR renders with euro sign (post-fix: no silent USD fallback)", () => {
+  // Previously formatCurrency silently rendered EUR (and every non-TSH/TZS
+  // code) as "$". That was the bug fixed by routing through the canonical
+  // currency registry in lib/currency.ts — EUR now correctly renders with €.
   const result = formatCurrency(100, "EUR");
-  eq(result, "$100.00"); // Defaults to USD $
+  eq(result, "€100.00");
 });
 
 test("formatNumber handles large TSH amounts", () => {

@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { parsePagination, paginatedResponse } from "@/lib/pagination";
 import { logAudit } from "@/lib/audit";
 import { rateLimit } from "@/lib/rate-limit";
+import { parseCurrencyEntry, formatEntryForAudit } from "@/lib/currency-entry";
 
 async function getAuth() {
   const cookieStore = await cookies();
@@ -90,7 +91,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { saleId, amount, method, reference, notes, date } = body;
+    const { saleId, amount, method, reference, notes, date, amountEntry } = body;
 
     // Validation
     if (!saleId || !amount || !method) {
@@ -100,12 +101,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (typeof amount !== "number" || amount <= 0) {
+    if (typeof amount !== "number" || !isFinite(amount) || amount <= 0) {
       return NextResponse.json(
-        { error: "Amount must be a positive number" },
+        { error: "Amount must be a positive finite number" },
         { status: 400 }
       );
     }
+
+    const parsedEntry = parseCurrencyEntry(amountEntry, "Payment amount");
+    if (!parsedEntry.ok) return NextResponse.json({ error: parsedEntry.error }, { status: 400 });
 
     if (!VALID_PAYMENT_METHODS.includes(method)) {
       return NextResponse.json(
@@ -164,6 +168,9 @@ export async function POST(request: NextRequest) {
           reference: reference || null,
           notes: notes || null,
           date: date ? new Date(date) : new Date(),
+          entryCurrency: parsedEntry.columns.entryCurrency,
+          entryAmount: parsedEntry.columns.entryAmount,
+          entryRate: parsedEntry.columns.entryRate,
         },
       });
 
@@ -201,13 +208,14 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    const entryNote = formatEntryForAudit("Amount", parsedEntry.columns);
     await logAudit({
       orgId: auth.orgId,
       userId: auth.userId,
       action: "create",
       entity: "payment",
       entityId: payment.id,
-      details: `Payment of ${amount} via ${method} for sale ${sale.saleNumber}. Status: ${newStatus}`,
+      details: `Payment of ${amount} via ${method} for sale ${sale.saleNumber}. Status: ${newStatus}${entryNote ? " | " + entryNote : ""}`,
     });
 
     return NextResponse.json(fullPayment, { status: 201 });

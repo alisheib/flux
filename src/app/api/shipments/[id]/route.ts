@@ -84,6 +84,12 @@ export async function PUT(
         { status: 400 }
       );
     }
+    if (exchangeRate !== undefined && (typeof exchangeRate !== "number" || !isFinite(exchangeRate) || exchangeRate <= 0)) {
+      return NextResponse.json({ error: "Exchange rate must be a positive finite number" }, { status: 400 });
+    }
+    if (containerCount !== undefined && (typeof containerCount !== "number" || !isFinite(containerCount) || containerCount < 1)) {
+      return NextResponse.json({ error: "Container count must be at least 1" }, { status: 400 });
+    }
 
     const shipment = await prisma.shipment.update({
       where: { id, orgId: auth.orgId },

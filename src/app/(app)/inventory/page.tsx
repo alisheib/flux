@@ -56,6 +56,7 @@ import {
 import { FormSelect } from "@/components/ui/form-select";
 import { toast } from "sonner";
 import { validateRequired, validateNumber, validateSKU, numbersOnly } from "@/lib/validate";
+import { CurrencyAmountInput, type CurrencyMeta } from "@/components/currency-amount-input";
 import {
   Plus,
   Search,
@@ -99,6 +100,17 @@ interface Product {
   active: boolean;
   createdAt: string;
   category?: { id: string; name: string } | null;
+  // Foreign-currency entry metadata. Populated when the user entered a price
+  // in a non-org currency; null otherwise.
+  costEntryCurrency: string | null;
+  costEntryAmount: number | null;
+  costEntryRate: number | null;
+  sellingEntryCurrency: string | null;
+  sellingEntryAmount: number | null;
+  sellingEntryRate: number | null;
+  pricePerSqmEntryCurrency: string | null;
+  pricePerSqmEntryAmount: number | null;
+  pricePerSqmEntryRate: number | null;
 }
 
 interface Category {
@@ -230,6 +242,19 @@ export default function InventoryPage() {
   const [productForm, setProductForm] = useState(emptyProductForm);
   const [savingProduct, setSavingProduct] = useState(false);
   const [exporting, setExporting] = useState(false);
+  // Per-field foreign-currency validity. CurrencyAmountInput signals when the
+  // user has opened the foreign-entry block but hasn't filled in both amount
+  // and rate — in that state we must block submit even though the converted
+  // org-currency amount would be empty.
+  const [costMeta, setCostMeta] = useState<CurrencyMeta>({ valid: true, originalAmount: null, originalCurrency: null, exchangeRate: null });
+  const [sellMeta, setSellMeta] = useState<CurrencyMeta>({ valid: true, originalAmount: null, originalCurrency: null, exchangeRate: null });
+  const [sqmMeta, setSqmMeta] = useState<CurrencyMeta>({ valid: true, originalAmount: null, originalCurrency: null, exchangeRate: null });
+  // For the EDIT case: the previously-saved foreign entry, restored into the
+  // CurrencyAmountInput on dialog open. undefined = no foreign entry on record.
+  type StoredEntry = { currency: string; amount: string; rate: string } | undefined;
+  const [costInitial, setCostInitial] = useState<StoredEntry>(undefined);
+  const [sellInitial, setSellInitial] = useState<StoredEntry>(undefined);
+  const [sqmInitial, setSqmInitial] = useState<StoredEntry>(undefined);
 
   // Delete dialog
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -399,14 +424,43 @@ export default function InventoryPage() {
 
   // ── Product CRUD ─────────────────────────────────────────────────────────
 
+  const resetCurrencyMeta = () => {
+    const clean: CurrencyMeta = { valid: true, originalAmount: null, originalCurrency: null, exchangeRate: null };
+    setCostMeta(clean);
+    setSellMeta(clean);
+    setSqmMeta(clean);
+  };
+
+  // Build the StoredEntry shape from a saved product, or undefined when the
+  // product has no foreign-entry on record (== org-currency direct entry).
+  const storedEntryFrom = (
+    currency: string | null,
+    amount: number | null,
+    rate: number | null,
+  ): StoredEntry => {
+    if (currency == null || amount == null || rate == null) return undefined;
+    return { currency, amount: amount.toString(), rate: rate.toString() };
+  };
+
   const openAddProduct = () => {
     setEditingProduct(null);
     setProductForm(emptyProductForm);
+    resetCurrencyMeta();
+    setCostInitial(undefined);
+    setSellInitial(undefined);
+    setSqmInitial(undefined);
     setProductDialogOpen(true);
   };
 
   const openEditProduct = (product: Product) => {
     setEditingProduct(product);
+    resetCurrencyMeta();
+    // Restore the previously-saved foreign-entry state per field. The
+    // CurrencyAmountInput opens with the foreign block expanded and the
+    // currency/amount/rate fields prefilled when initialOriginal is provided.
+    setCostInitial(storedEntryFrom(product.costEntryCurrency, product.costEntryAmount, product.costEntryRate));
+    setSellInitial(storedEntryFrom(product.sellingEntryCurrency, product.sellingEntryAmount, product.sellingEntryRate));
+    setSqmInitial(storedEntryFrom(product.pricePerSqmEntryCurrency, product.pricePerSqmEntryAmount, product.pricePerSqmEntryRate));
     setProductForm({
       name: product.name,
       sku: product.sku || "",
@@ -433,6 +487,12 @@ export default function InventoryPage() {
     if ((parseFloat(productForm.costPrice) || 0) < 0) { toast.error("Invalid cost price", { description: "Cost price cannot be negative." }); return; }
     if ((parseFloat(productForm.sellingPrice) || 0) < 0) { toast.error("Invalid selling price", { description: "Selling price cannot be negative." }); return; }
     if ((parseFloat(productForm.stockQty) || 0) < 0) { toast.error("Invalid stock", { description: "Stock quantity cannot be negative." }); return; }
+
+    // Cross-currency entry mode: if the user opened a foreign-currency block on
+    // any price field, both the foreign amount and the exchange rate must be filled.
+    if (!costMeta.valid) { toast.error("Cost price needs both amount and exchange rate", { description: "Fill the foreign amount and rate, or collapse the conversion." }); return; }
+    if (!sellMeta.valid) { toast.error("Selling price needs both amount and exchange rate", { description: "Fill the foreign amount and rate, or collapse the conversion." }); return; }
+    if (!sqmMeta.valid) { toast.error("Price per m² needs both amount and exchange rate", { description: "Fill the foreign amount and rate, or collapse the conversion." }); return; }
 
     // Determine if this category has sellByArea enabled
     const selectedCat = categories.find((c) => c.id === productForm.categoryId);
@@ -466,6 +526,25 @@ export default function InventoryPage() {
 
     setSavingProduct(true);
     try {
+      // Build the foreign-currency entry payload per field. Semantics:
+      //   • valid foreign meta  → { amount, currency, rate } — persist
+      //   • no foreign meta + we're EDITING and the product previously had an
+      //     entry on record → null — clears the persisted entry server-side
+      //   • no foreign meta + creating, or editing-and-was-never-foreign → undefined
+      //     (server leaves the column NULL or untouched)
+      const entryOf = (
+        meta: CurrencyMeta,
+        previouslyStored: StoredEntry,
+      ): { amount: number; currency: string; rate: number } | null | undefined => {
+        if (meta.originalAmount != null && meta.originalCurrency && meta.exchangeRate != null) {
+          return { amount: meta.originalAmount, currency: meta.originalCurrency, rate: meta.exchangeRate };
+        }
+        // Editing a product that USED to have a foreign entry but the user
+        // collapsed the block — send null to explicitly clear server-side.
+        if (editingProduct && previouslyStored) return null;
+        return undefined;
+      };
+
       const payload = {
         name: productForm.name.trim(),
         sku: productForm.sku.trim() || null,
@@ -482,6 +561,9 @@ export default function InventoryPage() {
         pricePerSqm: hasSellByArea && productForm.pricePerSqm ? parseFloat(productForm.pricePerSqm) : null,
         stockQty,
         minStockQty: parseFloat(productForm.minStockQty) || 0,
+        costEntry: entryOf(costMeta, costInitial),
+        sellingEntry: entryOf(sellMeta, sellInitial),
+        pricePerSqmEntry: entryOf(sqmMeta, sqmInitial),
       };
 
       const url = editingProduct
@@ -752,10 +834,20 @@ export default function InventoryPage() {
           {product.unit}
         </TableCell>
         <TableCell className="text-muted-foreground text-sm">
-          {formatCurrency(product.costPrice, orgSettings.currency)}
+          <div>{formatCurrency(product.costPrice, orgSettings.currency)}</div>
+          {product.costEntryCurrency && product.costEntryAmount != null && product.costEntryRate != null && (
+            <div className="text-[10px] text-muted-foreground/70 mt-0.5" title={`Entered in ${product.costEntryCurrency} at exchange rate ${product.costEntryRate}`}>
+              entered {formatCurrency(product.costEntryAmount, product.costEntryCurrency)} @ {product.costEntryRate}
+            </div>
+          )}
         </TableCell>
         <TableCell className="font-medium text-foreground text-sm">
-          {formatCurrency(product.sellingPrice, orgSettings.currency)}
+          <div>{formatCurrency(product.sellingPrice, orgSettings.currency)}</div>
+          {product.sellingEntryCurrency && product.sellingEntryAmount != null && product.sellingEntryRate != null && (
+            <div className="text-[10px] text-muted-foreground/70 mt-0.5" title={`Entered in ${product.sellingEntryCurrency} at exchange rate ${product.sellingEntryRate}`}>
+              entered {formatCurrency(product.sellingEntryAmount, product.sellingEntryCurrency)} @ {product.sellingEntryRate}
+            </div>
+          )}
         </TableCell>
         <TableCell>
           <span
@@ -1399,61 +1491,51 @@ export default function InventoryPage() {
                 <div>
                   <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">Pricing & Stock</h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="space-y-1.5">
-                      <Label>Cost Price</Label>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        value={productForm.costPrice}
-                        onChange={(e) =>
-                          setProductForm((f) => ({
-                            ...f,
-                            costPrice: e.target.value,
-                          }))
-                        }
-                        onKeyDown={numbersOnly}
-                        placeholder="0.00"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label>Selling Price {hasSellByArea ? "(per sheet)" : ""}</Label>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        value={productForm.sellingPrice}
-                        onChange={(e) =>
-                          setProductForm((f) => ({
-                            ...f,
-                            sellingPrice: e.target.value,
-                          }))
-                        }
-                        onKeyDown={numbersOnly}
-                        placeholder="0.00"
-                      />
-                    </div>
+                    <CurrencyAmountInput
+                      // key on editingProduct.id forces a clean mount when the
+                      // user switches between editing different products, so
+                      // initialOriginal is honored each time.
+                      key={`cost-${editingProduct?.id ?? "new"}`}
+                      label="Cost Price"
+                      value={productForm.costPrice}
+                      onChange={(v, meta) => {
+                        setProductForm((f) => ({ ...f, costPrice: v }));
+                        setCostMeta(meta);
+                      }}
+                      orgCurrency={orgSettings.currency}
+                      initialOriginal={costInitial}
+                    />
+                    <CurrencyAmountInput
+                      key={`sell-${editingProduct?.id ?? "new"}`}
+                      label={`Selling Price${hasSellByArea ? " (per sheet)" : ""}`}
+                      value={productForm.sellingPrice}
+                      onChange={(v, meta) => {
+                        setProductForm((f) => ({ ...f, sellingPrice: v }));
+                        setSellMeta(meta);
+                      }}
+                      orgCurrency={orgSettings.currency}
+                      initialOriginal={sellInitial}
+                    />
                     {hasSellByArea && (
-                      <div className="space-y-1.5">
-                        <Label>Price per m²</Label>
-                        <Input
-                          type="number"
-                          step="0.01"
+                      <div className="sm:col-span-2">
+                        <CurrencyAmountInput
+                          key={`sqm-${editingProduct?.id ?? "new"}`}
+                          label="Price per m²"
                           value={productForm.pricePerSqm}
-                          onChange={(e) =>
-                            setProductForm((f) => ({
-                              ...f,
-                              pricePerSqm: e.target.value,
-                            }))
+                          onChange={(v, meta) => {
+                            setProductForm((f) => ({ ...f, pricePerSqm: v }));
+                            setSqmMeta(meta);
+                          }}
+                          orgCurrency={orgSettings.currency}
+                          initialOriginal={sqmInitial}
+                          helperText={
+                            sqm > 0 && parseFloat(productForm.sellingPrice) > 0
+                              ? (parseFloat(productForm.pricePerSqm) || 0) > 0
+                                ? `Sheet equiv: ${((parseFloat(productForm.pricePerSqm) || 0) * sqm).toFixed(2)}/sheet at m² price`
+                                : `Suggested: ${(parseFloat(productForm.sellingPrice) / sqm).toFixed(2)}/m² from sheet price`
+                              : undefined
                           }
-                          onKeyDown={numbersOnly}
-                          placeholder="0.00"
                         />
-                        {sqm > 0 && parseFloat(productForm.sellingPrice) > 0 && (
-                          <p className="text-xs text-muted-foreground">
-                            Sheet equiv: {(parseFloat(productForm.pricePerSqm) || 0) > 0
-                              ? `${((parseFloat(productForm.pricePerSqm) || 0) * sqm).toFixed(2)}/sheet at m² price`
-                              : `Suggested: ${(parseFloat(productForm.sellingPrice) / sqm).toFixed(2)}/m² from sheet price`}
-                          </p>
-                        )}
                       </div>
                     )}
                     <div className="space-y-1.5">

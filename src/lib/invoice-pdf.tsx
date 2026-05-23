@@ -7,6 +7,7 @@ import {
   StyleSheet,
   pdf,
 } from "@react-pdf/renderer";
+import { formatCurrencyValue } from "@/lib/currency";
 
 const BRAND = "#d97706";
 const DARK = "#1a1813";
@@ -92,7 +93,10 @@ interface InvoicePDFData {
 }
 
 function fmt(value: number, currency: string): string {
-  return `${currency} ${value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  // Use the canonical registry formatter so PDFs show proper symbols and
+  // decimal rules (TSh 100 for TZS, € 99.99 for EUR, etc.) instead of the
+  // raw ISO code prefix.
+  return formatCurrencyValue(value, currency);
 }
 
 function statusColor(status: string) {

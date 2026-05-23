@@ -53,15 +53,9 @@ export async function POST(
 
     const { id } = await params;
 
-    const shipment = await prisma.shipment.findFirst({
-      where: { id, orgId: auth.orgId },
-    });
-    if (!shipment) {
-      return NextResponse.json({ error: "Shipment not found" }, { status: 404 });
-    }
-
+    // Validate body before hitting the DB — see comment on the items route.
     const body = await request.json();
-    const { category, description, amountLocal, amountUsd, notes } = body;
+    const { category, description, amountLocal, amountUsd, notes, entryCurrency, entryRate } = body;
 
     if (!category || !description) {
       return NextResponse.json(
@@ -74,7 +68,38 @@ export async function POST(
       return NextResponse.json({ error: "Local amount must be a non-negative finite number" }, { status: 400 });
     }
     if (amountUsd !== undefined && (typeof amountUsd !== "number" || amountUsd < 0 || !isFinite(amountUsd))) {
-      return NextResponse.json({ error: "USD amount must be a non-negative finite number" }, { status: 400 });
+      return NextResponse.json({ error: "Amount must be a non-negative finite number" }, { status: 400 });
+    }
+
+    // Foreign-currency entry — for expenses, only entryCurrency + entryRate
+    // are needed because amountLocal already holds the original foreign value.
+    let entryCurrencyNormalized: string | null = null;
+    let entryRateChecked: number | null = null;
+    if (entryCurrency !== undefined && entryCurrency !== null) {
+      if (typeof entryCurrency !== "string" || !entryCurrency.trim()) {
+        return NextResponse.json({ error: "entryCurrency must be a non-empty string" }, { status: 400 });
+      }
+      entryCurrencyNormalized = entryCurrency.trim().toUpperCase();
+      if (entryCurrencyNormalized.length > 8) {
+        return NextResponse.json({ error: "entryCurrency code too long" }, { status: 400 });
+      }
+    }
+    if (entryRate !== undefined && entryRate !== null) {
+      if (typeof entryRate !== "number" || !isFinite(entryRate) || entryRate <= 0) {
+        return NextResponse.json({ error: "entryRate must be a positive finite number" }, { status: 400 });
+      }
+      entryRateChecked = entryRate;
+    }
+    // If one is given the other must be too (or both null).
+    if ((entryCurrencyNormalized == null) !== (entryRateChecked == null)) {
+      return NextResponse.json({ error: "entryCurrency and entryRate must be provided together" }, { status: 400 });
+    }
+
+    const shipment = await prisma.shipment.findFirst({
+      where: { id, orgId: auth.orgId },
+    });
+    if (!shipment) {
+      return NextResponse.json({ error: "Shipment not found" }, { status: 404 });
     }
 
     const expense = await prisma.shipmentExpense.create({
@@ -85,6 +110,8 @@ export async function POST(
         description,
         amountLocal: amountLocal || 0,
         amountUsd: amountUsd || 0,
+        entryCurrency: entryCurrencyNormalized,
+        entryRate: entryRateChecked,
         notes: notes || null,
       },
     });

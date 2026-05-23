@@ -37,13 +37,38 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { category, description, amountLocal, amountUsd, notes } = body;
+    const { category, description, amountLocal, amountUsd, notes, entryCurrency, entryRate } = body;
 
     if (amountLocal !== undefined && (typeof amountLocal !== "number" || amountLocal < 0 || !isFinite(amountLocal))) {
       return NextResponse.json({ error: "Local amount must be a non-negative finite number" }, { status: 400 });
     }
     if (amountUsd !== undefined && (typeof amountUsd !== "number" || amountUsd < 0 || !isFinite(amountUsd))) {
       return NextResponse.json({ error: "USD amount must be a non-negative finite number" }, { status: 400 });
+    }
+
+    // entryCurrency / entryRate are only touched when the client provides them.
+    // null clears the foreign-entry metadata (user reverted to org-only).
+    const wantsEntryCurrency = body.entryCurrency !== undefined;
+    const wantsEntryRate = body.entryRate !== undefined;
+    let entryCurrencyNormalized: string | null = null;
+    let entryRateChecked: number | null = null;
+    if (entryCurrency != null) {
+      if (typeof entryCurrency !== "string" || !entryCurrency.trim()) {
+        return NextResponse.json({ error: "entryCurrency must be a non-empty string" }, { status: 400 });
+      }
+      entryCurrencyNormalized = entryCurrency.trim().toUpperCase();
+      if (entryCurrencyNormalized.length > 8) {
+        return NextResponse.json({ error: "entryCurrency code too long" }, { status: 400 });
+      }
+    }
+    if (entryRate != null) {
+      if (typeof entryRate !== "number" || !isFinite(entryRate) || entryRate <= 0) {
+        return NextResponse.json({ error: "entryRate must be a positive finite number" }, { status: 400 });
+      }
+      entryRateChecked = entryRate;
+    }
+    if (wantsEntryCurrency && wantsEntryRate && (entryCurrencyNormalized == null) !== (entryRateChecked == null)) {
+      return NextResponse.json({ error: "entryCurrency and entryRate must be provided together" }, { status: 400 });
     }
 
     const expense = await prisma.shipmentExpense.update({
@@ -54,6 +79,8 @@ export async function PUT(
         ...(amountLocal !== undefined && { amountLocal }),
         ...(amountUsd !== undefined && { amountUsd }),
         ...(notes !== undefined && { notes }),
+        ...(wantsEntryCurrency && { entryCurrency: entryCurrencyNormalized }),
+        ...(wantsEntryRate && { entryRate: entryRateChecked }),
       },
     });
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { verifyToken } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { parseCurrencyEntry } from "@/lib/currency-entry";
 
 async function getAuth() {
   const cookieStore = await cookies();
@@ -54,13 +55,9 @@ export async function POST(
 
     const { id } = await params;
 
-    const shipment = await prisma.shipment.findFirst({
-      where: { id, orgId: auth.orgId },
-    });
-    if (!shipment) {
-      return NextResponse.json({ error: "Shipment not found" }, { status: 404 });
-    }
-
+    // Validate the request body BEFORE hitting the DB so malformed inputs
+    // are rejected without consuming a query (and so we return 400 for bad
+    // input even when the DB is unreachable in test environments).
     const body = await request.json();
     const {
       productId,
@@ -73,6 +70,7 @@ export async function POST(
       quantity,
       unitCost,
       notes,
+      unitCostEntry,
     } = body;
 
     if (!name || quantity === undefined || unitCost === undefined) {
@@ -96,6 +94,16 @@ export async function POST(
       );
     }
 
+    const parsed = parseCurrencyEntry(unitCostEntry, "Unit cost");
+    if (!parsed.ok) return NextResponse.json({ error: parsed.error }, { status: 400 });
+
+    const shipment = await prisma.shipment.findFirst({
+      where: { id, orgId: auth.orgId },
+    });
+    if (!shipment) {
+      return NextResponse.json({ error: "Shipment not found" }, { status: 404 });
+    }
+
     const totalCost = Math.round(quantity * unitCost * 100) / 100;
 
     const item = await prisma.shipmentItem.create({
@@ -112,6 +120,9 @@ export async function POST(
         unitCost,
         totalCost,
         notes: notes || null,
+        entryCurrency: parsed.columns.entryCurrency,
+        entryAmount: parsed.columns.entryAmount,
+        entryRate: parsed.columns.entryRate,
       },
       include: { product: { select: { id: true, name: true, sku: true } } },
     });
