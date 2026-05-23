@@ -117,7 +117,8 @@ interface ReceiptRecord {
 // ── Main Page ───────────────────────────────────────────────────────────
 
 export default function TallyPage() {
-  const { user } = useAuth();
+  const { user, org } = useAuth();
+  const orgCurrency = org.currency;
   const [loading, setLoading] = useState(true);
   const [config, setConfig] = useState<TallyConfig>({
     enabled: false, tin: "", vrn: "", serial: "", certPath: "",
@@ -127,7 +128,6 @@ export default function TallyPage() {
     totalInvoices: 0, paidInvoices: 0, pendingSync: 0, synced: 0, failed: 0,
   });
   const [receipts, setReceipts] = useState<ReceiptRecord[]>([]);
-  const [orgCurrency, setOrgCurrency] = useState<string>("USD");
   const [saving, setSaving] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [testing, setTesting] = useState(false);
@@ -141,19 +141,14 @@ export default function TallyPage() {
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      const [tallyRes, settingsRes] = await Promise.all([
-        fetch("/api/tally"),
-        fetch("/api/settings"),
-      ]);
+      // No /api/settings here — org currency comes from server-resolved
+      // context (see useAuth().org below).
+      const tallyRes = await fetch("/api/tally");
       if (!tallyRes.ok) throw new Error("Failed to load");
       const data = await tallyRes.json();
       setConfig(data.config);
       setStats(data.stats);
       setReceipts(data.recentReceipts);
-      if (settingsRes.ok) {
-        const s = await settingsRes.json();
-        if (s?.organization?.currency) setOrgCurrency(s.organization.currency);
-      }
     } catch {
       toast.error("Failed to load TRA data");
     } finally {

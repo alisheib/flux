@@ -93,8 +93,14 @@ export function CurrencyAmountInput({
 
   // Foreign-entry state
   const [expanded, setExpanded] = useState<boolean>(!!initialOriginal);
+  // Default foreign currency: the FIRST currency in the canonical registry
+  // that isn't the org's own currency. The registry is ordered with the most
+  // common import-market codes first (USD, TZS, KES, ...), so this gives a
+  // sensible suggestion regardless of what the org currency is — no more
+  // hardcoded "EUR if org is USD else USD" assumption.
+  const defaultForeign = CURRENCIES.find((c) => c.code !== orgCode)?.code ?? "USD";
   const [foreignCurrency, setForeignCurrency] = useState<string>(
-    initialOriginal?.currency ?? (orgCode === "USD" ? "EUR" : "USD")
+    initialOriginal?.currency ?? defaultForeign
   );
   const [foreignAmount, setForeignAmount] = useState<string>(initialOriginal?.amount ?? "");
   const [rate, setRate] = useState<string>(initialOriginal?.rate ?? "");

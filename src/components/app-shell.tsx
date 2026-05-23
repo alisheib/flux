@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { AuthProvider, type AuthUser } from "@/components/auth-provider";
+import { AuthProvider, type AuthUser, type OrgContext } from "@/components/auth-provider";
 import { AppSidebar } from "@/components/app-sidebar";
 import { AppHeader } from "@/components/app-header";
 import { SessionGuard } from "@/components/session-guard";
@@ -10,6 +10,7 @@ import { toast } from "sonner";
 
 interface AppShellProps {
   user: AuthUser;
+  org: OrgContext;
   children: React.ReactNode;
 }
 
@@ -67,11 +68,11 @@ function VerifyBanner({ email }: { email: string }) {
   );
 }
 
-export function AppShell({ user, children }: AppShellProps) {
+export function AppShell({ user, org, children }: AppShellProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <AuthProvider user={user}>
+    <AuthProvider user={user} org={org}>
       <SessionGuard>
       <div className="flex h-screen overflow-hidden">
         {/* Desktop sidebar */}

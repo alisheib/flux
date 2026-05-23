@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { PageHeader } from "@/components/page-header";
 import { formatCurrency } from "@/lib/calculations";
+import { getCurrencySymbol } from "@/lib/currency";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -824,10 +825,7 @@ function RecordPaymentDialog({
             <div className="flex items-center gap-2">
               <div className="relative flex-1">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 font-mono text-[13px] font-medium text-muted-foreground">
-                  {currency.toUpperCase() === "TZS" ||
-                  currency.toUpperCase() === "TSH"
-                    ? "TSh"
-                    : "$"}
+                  {getCurrencySymbol(currency).trim()}
                 </span>
                 <Input
                   type="number"

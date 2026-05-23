@@ -85,7 +85,8 @@ export async function POST(request: NextRequest) {
         containerCount: containerCount || 1,
         supplier: supplier || null,
         origin: origin || "China",
-        exchangeRate: exchangeRate || 2630,
+        // No body default needed — the Prisma column has @default(1).
+        ...(exchangeRate !== undefined && { exchangeRate }),
         status: status || "clearing",
         notes: notes || null,
       },

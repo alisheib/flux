@@ -15,11 +15,18 @@ export default async function AppLayout({
     redirect("/login");
   }
 
-  // Fetch org name and email verification status
-  const [org, dbUser] = await Promise.all([
+  // Fetch org metadata + settings server-side so the AppShell can hand a
+  // fully-populated org context to every page. This eliminates the
+  // brief "$" flicker that used to happen when each page client-fetched
+  // /api/settings just to learn the currency.
+  const [org, settings, dbUser] = await Promise.all([
     prisma.organization.findUnique({
       where: { id: session.orgId },
-      select: { name: true },
+      select: { name: true, currency: true, taxLabel: true },
+    }),
+    prisma.orgSettings.findUnique({
+      where: { orgId: session.orgId },
+      select: { exchangeRate: true },
     }),
     prisma.user.findUnique({
       where: { id: session.userId },
@@ -37,8 +44,14 @@ export default async function AppLayout({
     emailVerified: dbUser?.emailVerified ?? false,
   };
 
+  const orgCtx = {
+    currency: org?.currency || "USD",
+    taxLabel: org?.taxLabel || "VAT",
+    exchangeRate: settings?.exchangeRate ?? 1,
+  };
+
   return (
-    <AppShell user={user}>
+    <AppShell user={user} org={orgCtx}>
       <ErrorBoundary>{children}</ErrorBoundary>
     </AppShell>
   );

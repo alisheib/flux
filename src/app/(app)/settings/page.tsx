@@ -243,7 +243,7 @@ export default function SettingsPage() {
       secondaryMargin:
         parseFloat(form.get("secondaryMargin") as string) || 5,
       exchangeRate:
-        parseFloat(form.get("exchangeRate") as string) || 2630,
+        parseFloat(form.get("exchangeRate") as string) || 1,
     };
 
     try {
@@ -551,7 +551,7 @@ export default function SettingsPage() {
                 <Input
                   id="tax-label"
                   name="taxLabel"
-                  defaultValue={org?.taxLabel || "TVA"}
+                  defaultValue={org?.taxLabel || "VAT"}
                   placeholder="VAT"
                   className="mt-1.5"
                 />
@@ -720,7 +720,7 @@ export default function SettingsPage() {
                   type="number"
                   step="0.01"
                   min={0}
-                  defaultValue={settings?.exchangeRate || 2630}
+                  defaultValue={settings?.exchangeRate ?? 1}
                   className="mt-1.5"
                 />
               </div>

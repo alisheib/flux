@@ -60,6 +60,18 @@ ALTER TABLE "Payment" ADD COLUMN IF NOT EXISTS "entryCurrency" TEXT;
 ALTER TABLE "Payment" ADD COLUMN IF NOT EXISTS "entryAmount"   DOUBLE PRECISION;
 ALTER TABLE "Payment" ADD COLUMN IF NOT EXISTS "entryRate"     DOUBLE PRECISION;
 
+-- ─── Drop legacy hardcoded defaults ─────────────────────────────────
+-- Older schema baked Tanzania-specific values into Postgres column defaults:
+--   Shipment.exchangeRate     defaulted to 2630 (TZS/USD spot rate)
+--   OrgSettings.exchangeRate  defaulted to 2630
+--   Organization.taxLabel     defaulted to "TVA" (French)
+-- These leaked TZ-specific bias into every new row. The schema now uses
+-- neutral defaults (rate=1, taxLabel="VAT"). Pre-existing rows keep their
+-- current values; only NEW rows pick up the neutral defaults.
+ALTER TABLE "Shipment"     ALTER COLUMN "exchangeRate" SET DEFAULT 1;
+ALTER TABLE "OrgSettings"  ALTER COLUMN "exchangeRate" SET DEFAULT 1;
+ALTER TABLE "Organization" ALTER COLUMN "taxLabel"     SET DEFAULT 'VAT';
+
 COMMIT;
 
 -- =====================================================================

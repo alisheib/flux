@@ -69,21 +69,12 @@ interface AccountingData {
 // ─── Main Page Component ───────────────────────────────────────────────
 
 export default function AccountingPage() {
-  const { user } = useAuth();
+  const { user, org } = useAuth();
+  // Org currency from server-resolved context (see (app)/layout.tsx).
+  const orgCurrency = org.currency;
   const [data, setData] = useState<AccountingData | null>(null);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
-  // Org currency drives every formatCurrency call on this page. Without it,
-  // formatCurrency falls through to the USD default — which is exactly the
-  // bug we just fixed everywhere else.
-  const [orgCurrency, setOrgCurrency] = useState<string>("USD");
-
-  useEffect(() => {
-    fetch("/api/settings")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => { if (d?.organization?.currency) setOrgCurrency(d.organization.currency); })
-      .catch(() => {});
-  }, []);
 
   const fetchData = useCallback(async () => {
     try {

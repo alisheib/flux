@@ -16,7 +16,11 @@ model Organization {
   currency  String   @default("USD")
   locale    String   @default("en")
   taxRate   Float    @default(0)
-  taxLabel  String   @default("TVA")
+  // "VAT" is the generic English-speaking default. Users in francophone
+  // markets can override to "TVA" on the Settings page; tanzania users
+  // often set it to "VAT" too. Previously defaulted to "TVA" which biased
+  // every new org toward a French-regional label.
+  taxLabel  String   @default("VAT")
   address   String?
   phone     String?
   email     String?
@@ -85,7 +89,11 @@ model Shipment {
   containerCount  Int      @default(1)
   supplier        String?
   origin          String   @default("China")
-  exchangeRate    Float    @default(2630)
+  // exchangeRate is the shipment-level local→USD or foreign→org rate. The
+  // historical default 2630 was TZS-specific. Now defaults to 1 (a neutral
+  // value); the UI prefills from OrgSettings.exchangeRate which the user
+  // controls, and individual line items have per-entry rates anyway.
+  exchangeRate    Float    @default(1)
   status          String   @default("clearing")
   notes           String?
   createdAt       DateTime @default(now())
@@ -347,7 +355,10 @@ model OrgSettings {
   orgId           String  @unique
   defaultMargin   Float   @default(10)
   secondaryMargin Float   @default(5)
-  exchangeRate    Float   @default(2630)
+  // Org-level fallback exchange rate, used as a sensible prefill when the
+  // user creates a new shipment in an FX-margin-sensitive currency. Default
+  // is 1 (no-op for any base currency); user sets it on the Settings page.
+  exchangeRate    Float   @default(1)
   invoicePrefix   String  @default("INV")
   invoiceNextNum  Int     @default(1)
   receiptPrefix   String  @default("RCP")

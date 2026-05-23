@@ -220,14 +220,16 @@ const CATEGORY_ACCENTS = [
 // ── Main Page ────────────────────────────────────────────────────────────────
 
 export default function InventoryPage() {
-  const { user } = useAuth();
+  const { user, org } = useAuth();
 
-  // Data
+  // Org currency comes from server-resolved context (see (app)/layout.tsx
+  // and components/auth-provider.tsx). No client-side /api/settings fetch
+  // needed → no "$" flicker before the real currency loads, no duplicate
+  // request on every navigation. Backwards-compatible: pages that still
+  // use the old `orgSettings.currency` pattern just delegate to it now.
+  const orgSettings: OrgSettings = { currency: org.currency };
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [orgSettings, setOrgSettings] = useState<OrgSettings>({
-    currency: "USD",
-  });
   const [loading, setLoading] = useState(true);
 
   // Filters
@@ -279,10 +281,11 @@ export default function InventoryPage() {
 
   const fetchData = useCallback(async () => {
     try {
-      const [productsRes, categoriesRes, settingsRes] = await Promise.all([
+      // No /api/settings call here — org currency comes from context. Just
+      // load the data the page actually needs.
+      const [productsRes, categoriesRes] = await Promise.all([
         fetch("/api/products?limit=500"),
         fetch("/api/categories"),
-        fetch("/api/settings"),
       ]);
 
       if (productsRes.ok) {
@@ -290,10 +293,6 @@ export default function InventoryPage() {
         setProducts(productsJson.data || productsJson);
       }
       if (categoriesRes.ok) setCategories(await categoriesRes.json());
-      if (settingsRes.ok) {
-        const data = await settingsRes.json();
-        setOrgSettings({ currency: data.currency || "USD" });
-      }
     } catch {
       toast.error("Failed to load inventory data");
     } finally {

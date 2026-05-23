@@ -192,11 +192,14 @@ const ITEM_UNITS = ["sheet", "piece", "box"];
 // ─── Main Page Component ───────────────────────────────────────────────
 
 export default function ShipmentsPage() {
-  const { user } = useAuth();
+  const { user, org } = useAuth();
 
   const [shipments, setShipments] = useState<Shipment[]>([]);
   const [loading, setLoading] = useState(true);
-  const [orgCurrency, setOrgCurrency] = useState<string>("USD");
+  // Org currency + exchange-rate prefill come from server-resolved context.
+  // No /api/settings client fetch needed; no flicker.
+  const orgCurrency = org.currency;
+  const orgExchangeRate = org.exchangeRate;
   const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [breakdown, setBreakdown] = useState<CostBreakdown | null>(null);
@@ -231,18 +234,6 @@ export default function ShipmentsPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
-
-  // Org currency drives all formatCurrency displays + the CurrencyAmountInput
-  // base currency. Fetched once on mount; not refreshed because currency is
-  // locked after the first sale anyway.
-  useEffect(() => {
-    fetch("/api/settings")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        if (d?.organization?.currency) setOrgCurrency(d.organization.currency);
-      })
-      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -295,7 +286,7 @@ export default function ShipmentsPage() {
       containerCount: parseInt(form.get("containerCount") as string) || 1,
       supplier: form.get("supplier") as string,
       origin: form.get("origin") as string,
-      exchangeRate: parseFloat(form.get("exchangeRate") as string) || 2630,
+      exchangeRate: parseFloat(form.get("exchangeRate") as string) || orgExchangeRate,
       notes: form.get("notes") as string,
     };
 
@@ -341,7 +332,7 @@ export default function ShipmentsPage() {
       containerCount: parseInt(form.get("containerCount") as string) || 1,
       supplier: form.get("supplier") as string,
       origin: form.get("origin") as string,
-      exchangeRate: parseFloat(form.get("exchangeRate") as string) || 2630,
+      exchangeRate: parseFloat(form.get("exchangeRate") as string) || orgExchangeRate,
       status: form.get("status") as string,
       notes: form.get("notes") as string,
     };
@@ -1716,7 +1707,7 @@ export default function ShipmentsPage() {
                   name="exchangeRate"
                   type="number"
                   step="0.01"
-                  defaultValue={2630}
+                  defaultValue={orgExchangeRate}
                 />
               </div>
               <div className="sm:col-span-2 space-y-1.5">

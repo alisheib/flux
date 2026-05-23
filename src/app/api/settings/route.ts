@@ -31,7 +31,9 @@ export async function GET() {
     const defaultSettings = {
       defaultMargin: 10,
       secondaryMargin: 5,
-      exchangeRate: 2630,
+      // Neutral default — no assumption about which currency pair the org
+      // operates in. Was historically 2630 (TZS/USD spot).
+      exchangeRate: 1,
       invoicePrefix: "INV",
       invoiceNextNum: 1,
       receiptPrefix: "RCP",
