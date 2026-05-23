@@ -31,6 +31,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { FormSelect } from "@/components/ui/form-select";
+import { CURRENCIES } from "@/lib/currency";
 
 // ─── Types ─────────────────────────────────────────────────────────────
 
@@ -69,7 +70,10 @@ interface SettingsResponse {
   currencyLocked?: boolean;
 }
 
-const CURRENCIES = ["USD", "TSH", "EUR", "GBP"];
+// Currency list comes from the canonical registry — see lib/currency.ts.
+// The old hardcoded ["USD","TSH","EUR","GBP"] list left users unable to
+// set their org currency to KES, NGN, UGX, ZAR, and the other markets
+// the rest of the app already supports.
 
 // ─── Main Page Component ───────────────────────────────────────────────
 
@@ -491,7 +495,15 @@ export default function SettingsPage() {
                     id="org-currency"
                     name="currency"
                     defaultValue={org?.currency || "USD"}
-                    options={CURRENCIES.map((c) => ({ value: c, label: c }))}
+                    // Dropdown shows the full "USD — US Dollar" so users can
+                    // identify what they're picking. The trigger button shows
+                    // just the code (USD/TZS/...) so it stays compact in this
+                    // narrow column.
+                    options={CURRENCIES.map((c) => ({
+                      value: c.code,
+                      label: `${c.code} — ${c.name}`,
+                      triggerLabel: c.code,
+                    }))}
                     className="mt-1.5"
                   />
                 )}

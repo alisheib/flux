@@ -13,6 +13,11 @@ import { cn } from "@/lib/utils";
 interface FormSelectOption {
   value: string;
   label: string;
+  // Optional shorter label shown in the trigger button when this option is
+  // selected. Defaults to `label`. Useful when the dropdown shows a verbose
+  // label (e.g. "USD — US Dollar") but the trigger should show only the
+  // identifier (e.g. "USD") because the trigger lives in a narrow column.
+  triggerLabel?: string;
 }
 
 interface FormSelectProps {
@@ -83,23 +88,29 @@ export function FormSelect({
             )}
           >
             <span className="truncate">
-              {selectedOption?.label ?? placeholder}
+              {selectedOption
+                ? (selectedOption.triggerLabel ?? selectedOption.label)
+                : placeholder}
             </span>
             <ChevronsUpDown className="ml-2 size-4 shrink-0 text-muted-foreground" />
           </button>
         </PopoverTrigger>
         <PopoverContent
-          className="p-1"
+          className="p-1 max-w-[min(420px,calc(100vw-2rem))]"
           align="start"
           side="bottom"
           sideOffset={4}
           style={{
-            width: triggerRef.current
+            // minWidth (not width) so the popover never SHRINKS below the
+            // trigger, but is free to GROW to fit the longest option label.
+            // The max-w cap above prevents runaway width on edge cases and
+            // ensures we stay inside the viewport on mobile.
+            minWidth: triggerRef.current
               ? `${triggerRef.current.offsetWidth}px`
               : undefined,
           }}
         >
-          <div className="max-h-[240px] overflow-y-auto">
+          <div className="max-h-[280px] overflow-y-auto">
             {options.map((option) => (
               <button
                 key={option.value}
@@ -110,7 +121,10 @@ export function FormSelect({
                 )}
                 onClick={() => handleSelect(option.value)}
               >
-                <span className="flex-1 truncate text-left">
+                {/* whitespace-nowrap keeps option text on one line so the
+                    popover sizes to the natural width of the longest label.
+                    No more "TZS — Tanzani..." truncation in the currency picker. */}
+                <span className="flex-1 whitespace-nowrap text-left">
                   {option.label}
                 </span>
                 {currentValue === option.value && (

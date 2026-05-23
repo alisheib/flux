@@ -215,9 +215,14 @@ export function CurrencyAmountInput({
   };
 
   // ── Render ───────────────────────────────────────────────────────────
+  // Dropdown shows the full "USD — US Dollar" so users can identify what
+  // they're picking. Trigger shows only the code because the picker often
+  // lives in a narrow column inside a dialog. FormSelect picks the
+  // appropriate label automatically via the triggerLabel field.
   const currencyOptions = CURRENCIES.map((c) => ({
     value: c.code,
     label: `${c.code} — ${c.name}`,
+    triggerLabel: c.code,
   }));
 
   // When in foreign mode, the main input is read-only and shows the converted preview.
@@ -285,10 +290,14 @@ export function CurrencyAmountInput({
         <p className="text-xs text-muted-foreground">{helperText}</p>
       )}
 
-      {/* Foreign-currency entry block */}
+      {/* Foreign-currency entry block.
+          Two-column layout: a compact currency picker (the trigger renders
+          just the code thanks to triggerLabel) next to the amount input.
+          The popover that opens when you click the picker auto-sizes to the
+          longest "USD — US Dollar" label, so options are never truncated. */}
       {expanded && (
         <div className="rounded-lg border border-border bg-muted/20 p-3 space-y-3">
-          <div className="grid grid-cols-2 gap-2.5">
+          <div className="grid grid-cols-[110px_1fr] gap-2.5">
             <div className="space-y-1">
               <Label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
                 Source currency *
