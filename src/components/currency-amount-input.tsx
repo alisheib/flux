@@ -72,6 +72,10 @@ interface CurrencyAmountInputProps {
     amount: string;
     rate: string;
   };
+  // Notifies the parent when the foreign-entry block opens or closes. Lets
+  // the parent's grid lay out smarter — e.g. give the expanded field a
+  // full row instead of leaving it cramped inside a half-column.
+  onExpandChange?: (expanded: boolean) => void;
 }
 
 export function CurrencyAmountInput({
@@ -86,6 +90,7 @@ export function CurrencyAmountInput({
   disabled = false,
   className,
   initialOriginal,
+  onExpandChange,
 }: CurrencyAmountInputProps) {
   const fieldId = useId();
   const orgCode = normalizeCurrencyCode(orgCurrency);
@@ -242,31 +247,22 @@ export function CurrencyAmountInput({
     return "";
   })();
 
+  // Notify parent on expand/collapse so the surrounding grid can give
+  // the field full row width when expanded (otherwise the foreign block
+  // gets jammed inside a half-column).
+  useEffect(() => {
+    onExpandChange?.(expanded);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [expanded]);
+
   return (
     <div className={cn("space-y-1.5", className)}>
-      <Label htmlFor={fieldId} className="flex items-center justify-between">
-        <span>
-          {label} {required && <span className="text-red-500">*</span>}
-          <span className="ml-1 text-xs font-normal text-muted-foreground">({orgCode})</span>
-        </span>
-        <button
-          type="button"
-          onClick={() => (expanded ? handleCollapse() : setExpanded(true))}
-          disabled={disabled}
-          className="text-[11px] font-medium text-[#d97706] hover:underline disabled:opacity-50"
-        >
-          {expanded ? (
-            <span className="inline-flex items-center gap-0.5">
-              <ChevronUp className="size-3" />
-              Hide conversion
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-0.5">
-              <ChevronDown className="size-3" />
-              Enter in another currency
-            </span>
-          )}
-        </button>
+      {/* Clean label row: just the field name + currency code. The toggle
+          moves below the input as a small secondary link so a long label
+          like "Selling Price (per sheet)" never collides with it. */}
+      <Label htmlFor={fieldId}>
+        {label} {required && <span className="text-red-500">*</span>}
+        <span className="ml-1 text-xs font-normal text-muted-foreground">({orgCode})</span>
       </Label>
 
       {/* Primary org-currency input (or read-only preview when foreign-mode) */}
@@ -292,21 +288,43 @@ export function CurrencyAmountInput({
         />
       </div>
 
-      {helperText && !isForeign && (
-        <p className="text-xs text-muted-foreground">{helperText}</p>
-      )}
+      {/* Toggle as a subtle inline link beneath the input — no longer
+          competing with the label for width. */}
+      <div className="flex items-center justify-between">
+        <span className="text-xs text-muted-foreground">
+          {!isForeign && helperText}
+        </span>
+        <button
+          type="button"
+          onClick={() => (expanded ? handleCollapse() : setExpanded(true))}
+          disabled={disabled}
+          className="text-[11px] font-medium text-[#d97706] hover:underline disabled:opacity-50 inline-flex items-center gap-0.5"
+        >
+          {expanded ? (
+            <>
+              <ChevronUp className="size-3" />
+              Stop converting
+            </>
+          ) : (
+            <>
+              <ChevronDown className="size-3" />
+              Convert from another currency
+            </>
+          )}
+        </button>
+      </div>
 
       {/* Foreign-currency entry block.
-          Two-column layout: a compact currency picker (the trigger renders
-          just the code thanks to triggerLabel) next to the amount input.
-          The popover that opens when you click the picker auto-sizes to the
-          longest "USD — US Dollar" label, so options are never truncated. */}
+          Inline flex layout: [currency code pill] [amount input] [rate input]
+          all on one row when there's space; wraps on narrow widths.
+          Single-column labels keep wording short ("From", "Amount", "Rate")
+          so they don't wrap to two lines. */}
       {expanded && (
-        <div className="rounded-lg border border-border bg-muted/20 p-3 space-y-3">
-          <div className="grid grid-cols-[110px_1fr] gap-2.5">
-            <div className="space-y-1">
-              <Label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
-                Source currency *
+        <div className="rounded-lg border border-border bg-muted/20 p-3 space-y-2.5">
+          <div className="flex flex-wrap items-end gap-2">
+            <div className="space-y-1 w-[88px] shrink-0">
+              <Label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
+                From
               </Label>
               <FormSelect
                 value={foreignCurrency}
@@ -319,9 +337,9 @@ export function CurrencyAmountInput({
                 disabled={disabled}
               />
             </div>
-            <div className="space-y-1">
-              <Label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
-                Amount in {foreignCurrency} *
+            <div className="space-y-1 flex-1 min-w-[140px]">
+              <Label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
+                Amount ({foreignCurrency})
               </Label>
               <Input
                 type="number"
@@ -332,31 +350,25 @@ export function CurrencyAmountInput({
                 onKeyDown={numbersOnly}
                 placeholder="0.00"
                 disabled={disabled}
+                className="tabular-nums"
               />
             </div>
-          </div>
-
-          {foreignCurrency === orgCode ? (
-            <p className="text-xs text-amber-600 dark:text-amber-400">
-              Source currency matches your organization currency. Pick a different currency or collapse this section.
-            </p>
-          ) : (
-            <>
-              <div className="space-y-1">
-                <Label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide flex items-center justify-between">
-                  <span>Exchange rate: 1 {foreignCurrency} = ? {orgCode} *</span>
+            {foreignCurrency !== orgCode && (
+              <div className="space-y-1 flex-1 min-w-[140px]">
+                <Label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide flex items-center justify-between gap-1">
+                  <span>Rate (1 {foreignCurrency} → {orgCode})</span>
                   <button
                     type="button"
                     onClick={() => fetchRate(foreignCurrency, orgCode)}
                     disabled={disabled || rateLoading}
-                    className="inline-flex items-center gap-1 text-[10px] font-medium text-[#d97706] hover:underline disabled:opacity-50"
+                    title="Refresh live rate"
+                    className="inline-flex items-center text-[#d97706] hover:opacity-80 disabled:opacity-50"
                   >
                     {rateLoading ? (
                       <Loader2 className="size-3 animate-spin" />
                     ) : (
                       <RefreshCw className="size-3" />
                     )}
-                    Refresh
                   </button>
                 </Label>
                 <Input
@@ -369,26 +381,34 @@ export function CurrencyAmountInput({
                     setRateSource("manual");
                   }}
                   onKeyDown={numbersOnly}
-                  placeholder={rateLoading ? "Fetching..." : "Enter rate"}
+                  placeholder={rateLoading ? "Fetching…" : "0.00"}
                   disabled={disabled || rateLoading}
+                  className="tabular-nums"
                 />
-                {rateError && (
-                  <p className="text-xs text-red-500">
-                    {rateError}. Enter the rate manually to continue.
-                  </p>
-                )}
-                {!rateError && rateSource === "auto" && (
-                  <p className="text-xs text-muted-foreground">
-                    Live rate from open.er-api.com — you can override above.
-                  </p>
-                )}
-                {!rateError && rateSource === "manual" && !rateLoading && (
-                  <p className="text-xs text-muted-foreground">Using manually entered rate.</p>
-                )}
               </div>
+            )}
+          </div>
 
-              <div className="rounded-md border border-border bg-card p-2.5 text-sm flex items-center justify-between">
-                <span className="text-muted-foreground">Converts to:</span>
+          {/* Status messages live BELOW the inputs so the row above stays clean. */}
+          {foreignCurrency === orgCode ? (
+            <p className="text-xs text-amber-600 dark:text-amber-400">
+              Source matches your organization currency. Pick a different one or stop converting.
+            </p>
+          ) : (
+            <>
+              {rateError && (
+                <p className="text-xs text-red-500">{rateError}. Enter the rate manually to continue.</p>
+              )}
+              {!rateError && rateSource === "auto" && (
+                <p className="text-[11px] text-muted-foreground">Live rate from open.er-api.com — you can override.</p>
+              )}
+              {!rateError && rateSource === "manual" && !rateLoading && (
+                <p className="text-[11px] text-muted-foreground">Using your manually entered rate.</p>
+              )}
+
+              {/* Conversion preview — full-width row, prominent. */}
+              <div className="rounded-md border border-border bg-card px-2.5 py-2 text-sm flex items-center justify-between">
+                <span className="text-muted-foreground text-xs">Converts to</span>
                 <span className="font-semibold tabular-nums text-foreground">
                   {previewValue
                     ? `${orgDef.symbol}${parseFloat(previewValue).toLocaleString("en-US", {

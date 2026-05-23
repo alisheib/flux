@@ -257,6 +257,12 @@ export default function InventoryPage() {
   const [costInitial, setCostInitial] = useState<StoredEntry>(undefined);
   const [sellInitial, setSellInitial] = useState<StoredEntry>(undefined);
   const [sqmInitial, setSqmInitial] = useState<StoredEntry>(undefined);
+  // Track which price field is currently in foreign-entry mode. The expanded
+  // field claims the full grid row width so the foreign block doesn't get
+  // jammed inside a half-column.
+  const [costExpanded, setCostExpanded] = useState(false);
+  const [sellExpanded, setSellExpanded] = useState(false);
+  const [sqmExpanded, setSqmExpanded] = useState(false);
 
   // Delete dialog
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -428,6 +434,9 @@ export default function InventoryPage() {
     setCostMeta(clean);
     setSellMeta(clean);
     setSqmMeta(clean);
+    setCostExpanded(false);
+    setSellExpanded(false);
+    setSqmExpanded(false);
   };
 
   // Build the StoredEntry shape from a saved product, or undefined when the
@@ -457,9 +466,17 @@ export default function InventoryPage() {
     // Restore the previously-saved foreign-entry state per field. The
     // CurrencyAmountInput opens with the foreign block expanded and the
     // currency/amount/rate fields prefilled when initialOriginal is provided.
-    setCostInitial(storedEntryFrom(product.costEntryCurrency, product.costEntryAmount, product.costEntryRate));
-    setSellInitial(storedEntryFrom(product.sellingEntryCurrency, product.sellingEntryAmount, product.sellingEntryRate));
-    setSqmInitial(storedEntryFrom(product.pricePerSqmEntryCurrency, product.pricePerSqmEntryAmount, product.pricePerSqmEntryRate));
+    const costRestored = storedEntryFrom(product.costEntryCurrency, product.costEntryAmount, product.costEntryRate);
+    const sellRestored = storedEntryFrom(product.sellingEntryCurrency, product.sellingEntryAmount, product.sellingEntryRate);
+    const sqmRestored = storedEntryFrom(product.pricePerSqmEntryCurrency, product.pricePerSqmEntryAmount, product.pricePerSqmEntryRate);
+    setCostInitial(costRestored);
+    setSellInitial(sellRestored);
+    setSqmInitial(sqmRestored);
+    // Sync expanded state so the row claims full width on first paint
+    // whenever the saved product was originally entered in a foreign currency.
+    setCostExpanded(!!costRestored);
+    setSellExpanded(!!sellRestored);
+    setSqmExpanded(!!sqmRestored);
     setProductForm({
       name: product.name,
       sku: product.sku || "",
@@ -1490,31 +1507,37 @@ export default function InventoryPage() {
                 <div>
                   <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">Pricing & Stock</h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <CurrencyAmountInput
-                      // key on editingProduct.id forces a clean mount when the
-                      // user switches between editing different products, so
-                      // initialOriginal is honored each time.
-                      key={`cost-${editingProduct?.id ?? "new"}`}
-                      label="Cost Price"
-                      value={productForm.costPrice}
-                      onChange={(v, meta) => {
-                        setProductForm((f) => ({ ...f, costPrice: v }));
-                        setCostMeta(meta);
-                      }}
-                      orgCurrency={orgSettings.currency}
-                      initialOriginal={costInitial}
-                    />
-                    <CurrencyAmountInput
-                      key={`sell-${editingProduct?.id ?? "new"}`}
-                      label={`Selling Price${hasSellByArea ? " (per sheet)" : ""}`}
-                      value={productForm.sellingPrice}
-                      onChange={(v, meta) => {
-                        setProductForm((f) => ({ ...f, sellingPrice: v }));
-                        setSellMeta(meta);
-                      }}
-                      orgCurrency={orgSettings.currency}
-                      initialOriginal={sellInitial}
-                    />
+                    <div className={costExpanded ? "sm:col-span-2" : undefined}>
+                      <CurrencyAmountInput
+                        // key on editingProduct.id forces a clean mount when the
+                        // user switches between editing different products, so
+                        // initialOriginal is honored each time.
+                        key={`cost-${editingProduct?.id ?? "new"}`}
+                        label="Cost Price"
+                        value={productForm.costPrice}
+                        onChange={(v, meta) => {
+                          setProductForm((f) => ({ ...f, costPrice: v }));
+                          setCostMeta(meta);
+                        }}
+                        orgCurrency={orgSettings.currency}
+                        initialOriginal={costInitial}
+                        onExpandChange={setCostExpanded}
+                      />
+                    </div>
+                    <div className={sellExpanded ? "sm:col-span-2" : undefined}>
+                      <CurrencyAmountInput
+                        key={`sell-${editingProduct?.id ?? "new"}`}
+                        label={`Selling Price${hasSellByArea ? " (per sheet)" : ""}`}
+                        value={productForm.sellingPrice}
+                        onChange={(v, meta) => {
+                          setProductForm((f) => ({ ...f, sellingPrice: v }));
+                          setSellMeta(meta);
+                        }}
+                        orgCurrency={orgSettings.currency}
+                        initialOriginal={sellInitial}
+                        onExpandChange={setSellExpanded}
+                      />
+                    </div>
                     {hasSellByArea && (
                       <div className="sm:col-span-2">
                         <CurrencyAmountInput
@@ -1527,6 +1550,7 @@ export default function InventoryPage() {
                           }}
                           orgCurrency={orgSettings.currency}
                           initialOriginal={sqmInitial}
+                          onExpandChange={setSqmExpanded}
                           helperText={
                             sqm > 0 && parseFloat(productForm.sellingPrice) > 0
                               ? (parseFloat(productForm.pricePerSqm) || 0) > 0
