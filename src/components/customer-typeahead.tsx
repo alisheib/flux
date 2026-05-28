@@ -28,6 +28,11 @@ interface CustomerTypeaheadProps {
   value: CustomerResult | null;
   onChange: (customer: CustomerResult | null) => void;
   onAddNew?: (searchText: string) => void;
+  // Emits the raw search text on every keystroke. The POS page mirrors this
+  // into its `customerName` state so a typed-but-not-selected name still
+  // saves on the sale — fixing the "I can't enter a client name" bug where
+  // users typed in this box, never clicked a dropdown result, and lost it.
+  onQueryChange?: (query: string) => void;
   currency?: string;
   placeholder?: string;
 }
@@ -39,7 +44,7 @@ function getAvatarColor(initials: string): string {
   return AVATAR_COLORS[seed];
 }
 
-export function CustomerTypeahead({ value, onChange, onAddNew, currency = "TSH", placeholder }: CustomerTypeaheadProps) {
+export function CustomerTypeahead({ value, onChange, onAddNew, onQueryChange, currency = "TSH", placeholder }: CustomerTypeaheadProps) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<CustomerResult[]>([]);
   const [loading, setLoading] = useState(false);
@@ -79,12 +84,16 @@ export function CustomerTypeahead({ value, onChange, onAddNew, currency = "TSH",
   const handleSelect = (customer: CustomerResult) => {
     onChange(customer);
     setQuery("");
+    // Do NOT call onQueryChange("") here — the parent's onChange handler
+    // has already set customerName to the picked customer's name. Clearing
+    // the query mirror would race-overwrite it inside the same React batch.
     setOpen(false);
   };
 
   const handleClear = () => {
     onChange(null);
     setQuery("");
+    onQueryChange?.(""); // user explicitly removed the selection — wipe walk-in name too
   };
 
   // Selected state — show info card
@@ -117,7 +126,12 @@ export function CustomerTypeahead({ value, onChange, onAddNew, currency = "TSH",
         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
         <Input
           value={query}
-          onChange={e => { setQuery(e.target.value); setOpen(true); }}
+          onChange={e => {
+            const v = e.target.value;
+            setQuery(v);
+            onQueryChange?.(v);
+            setOpen(true);
+          }}
           onFocus={() => setOpen(true)}
           placeholder={placeholder || "Search customer by name, phone, or TIN..."}
           className="pl-9 h-[42px] text-sm"

@@ -1263,30 +1263,38 @@ export default function POSPage() {
                     onChange={(c) => {
                       setSelectedCustomer(c);
                       if (c) {
+                        // Picked a saved customer — fill all three fields.
                         setCustomerName(c.name);
                         setCustomerPhone(c.phone || "");
                         setCustomerEmail(c.email || "");
                       } else {
-                        setCustomerName("");
+                        // c === null means either "Walk-in" was clicked OR the
+                        // user cleared the selection. In both cases we keep
+                        // whatever the user has typed in customerName (driven
+                        // by the typeahead's onQueryChange below) — the typed
+                        // text becomes the walk-in name on the sale.
                         setCustomerPhone("");
                         setCustomerEmail("");
                       }
+                    }}
+                    onQueryChange={(q) => {
+                      // Mirror the typeahead's typed text into customerName so
+                      // a typed-but-not-picked name still saves on the sale.
+                      // This was the "I can't enter a client name" bug: the
+                      // typeahead's query was internal-only and got lost on
+                      // submit. Now whatever you type is the walk-in name.
+                      if (!selectedCustomer) setCustomerName(q);
                     }}
                     onAddNew={(text) => {
                       setAddCustomerPrefill(text);
                       setShowAddCustomerDialog(true);
                     }}
                     currency={orgSettings.currency}
-                    placeholder="Search customer or type walk-in name..."
+                    placeholder="Search by name, phone, TIN — or type a walk-in name"
                   />
-                  {!selectedCustomer && (
-                    <Input
-                      placeholder="Or just type a name for walk-in..."
-                      value={customerName}
-                      onChange={(e) => setCustomerName(e.target.value)}
-                      className="h-8 text-xs"
-                    />
-                  )}
+                  {/* No secondary input — the typeahead is the single source of
+                      truth for the customer name, whether they pick a saved
+                      record or just type a walk-in name. */}
                 </div>
               )}
             </div>
