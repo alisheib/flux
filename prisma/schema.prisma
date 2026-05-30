@@ -46,6 +46,7 @@ model Organization {
   importTemplates ImportTemplate[]
   importJobs      ImportJob[]
   customers       Customer[]
+  proformas       Proforma[]
 }
 
 // ─── Users & Auth ──────────────────────────────────────────────────────────
@@ -216,6 +217,7 @@ model Product {
   saleItems          SaleItem[]
   stockMovements     StockMovement[]
   purchaseOrderItems PurchaseOrderItem[]
+  proformaItems      ProformaItem[]
 
   @@unique([orgId, sku])
   @@index([orgId])
@@ -304,6 +306,7 @@ model Invoice {
   org            Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
   sale           Sale?        @relation(fields: [saleId], references: [id], onDelete: SetNull)
   customerRecord Customer?    @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  proforma       Proforma?
 
   @@index([orgId])
   @@index([customerId])
@@ -363,6 +366,13 @@ model OrgSettings {
   invoiceNextNum  Int     @default(1)
   receiptPrefix   String  @default("RCP")
   receiptNextNum  Int     @default(1)
+  // Proforma numbering uses a separate sequence (PRO-####) so customers and
+  // auditors can never confuse a proforma number with a tax-invoice number.
+  proformaPrefix       String  @default("PRO")
+  proformaNextNum      Int     @default(1)
+  // Default validity window when creating a new proforma; 14 days matches
+  // common B2B quote practice. User can override per-proforma.
+  proformaValidityDays Int     @default(14)
   rolePermissions String? // JSON string: { [module]: [roles] }
 
   // Tally / TRA Integration
@@ -541,10 +551,92 @@ model Customer {
   org      Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
   sales    Sale[]
   invoices Invoice[]
+  proformas Proforma[]
 
   @@index([orgId])
   @@index([orgId, tin])
   @@index([orgId, phone])
+}
+
+// ─── Proformas ────────────────────────────────────────────────────────────
+// A proforma is a non-binding price quote a user sends to a customer BEFORE
+// closing the sale. Three differences from Invoice:
+//   1. No saleId — proformas exist independently. Stock is not decremented
+//      and the amount is not in revenue or receivables.
+//   2. validUntil — every proforma expires; default 14 days from issue
+//      (configurable via OrgSettings.proformaValidityDays).
+//   3. status flow: draft → sent → (accepted|declined|expired) → converted.
+//      When converted, convertedToInvoiceId links to the real Invoice
+//      created at that moment; the proforma row is retained for the audit
+//      trail and can still be downloaded with a "Converted" stamp.
+//
+// PDF: src/lib/proforma-template.ts (Claude Design's spec).
+
+model Proforma {
+  id              String    @id @default(cuid())
+  orgId           String
+  customerId      String?
+  // PRO-#### sequence, separate from invoice numbering (OrgSettings.proformaPrefix + proformaNextNum).
+  number          String
+  // Customer snapshot — same as Invoice. customerTin is stored for org
+  // reference but the PDF template intentionally does not render it.
+  customer        String
+  customerPhone   String?
+  customerEmail   String?
+  customerAddress String?
+  customerTin     String?
+  subtotal        Float
+  taxRate         Float     @default(0)
+  taxAmount       Float     @default(0)
+  discount        Float     @default(0)
+  total           Float
+  currency        String
+  // Status drives the PDF treatment:
+  //   "draft"      — being built, not sent
+  //   "sent"       — sent to customer, awaiting response
+  //   "accepted"   — customer accepted but not yet converted to invoice
+  //   "converted"  — converted to a real tax Invoice (terminal happy path)
+  //   "expired"    — validUntil has lapsed
+  //   "declined"   — customer rejected
+  status          String    @default("draft")
+  issuedAt        DateTime  @default(now())
+  validUntil      DateTime
+  convertedToInvoiceId String? @unique
+  convertedAt     DateTime?
+  notes           String?
+  // Foreign-currency entry metadata — same pattern as Invoice/Product.
+  // When the user typed totals in a foreign currency, this captures it.
+  entryCurrency   String?
+  entryRate       Float?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  org            Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  customerRecord Customer?    @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  invoice        Invoice?     @relation(fields: [convertedToInvoiceId], references: [id], onDelete: SetNull)
+  items          ProformaItem[]
+
+  @@index([orgId])
+  @@index([orgId, status])
+  @@index([customerId])
+}
+
+model ProformaItem {
+  id          String  @id @default(cuid())
+  proformaId  String
+  productId   String?
+  name        String
+  quantity    Float
+  unitPrice   Float
+  total       Float
+  sellingUnit String  @default("unit")  // "unit" or "sqm" — matches SaleItem
+  area        Float?
+
+  proforma Proforma @relation(fields: [proformaId], references: [id], onDelete: Cascade)
+  product  Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@index([proformaId])
+  @@index([productId])
 }
 
 // ─── Excel Import Module ─────────────────────────────────────────────────

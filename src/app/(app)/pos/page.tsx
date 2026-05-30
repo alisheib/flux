@@ -28,6 +28,7 @@ import {
   Minus,
   Trash2,
   ShoppingCart,
+  ClipboardList,
   X,
   Printer,
   MessageCircle,
@@ -473,6 +474,71 @@ export default function POSPage() {
       }
     }
     setConfirmDialogOpen(true);
+  };
+
+  // ── Save as Proforma (quote, doesn't decrement stock) ───────────────
+  // Same cart payload as completeSale but routed to /api/proformas instead.
+  // The proforma is created with status="sent" so the user can immediately
+  // hand the PDF to the customer. No stock movement, no invoice, no revenue
+  // accrual — proformas exist only as quotes until they're explicitly
+  // converted from the /proformas page.
+
+  const [savingProforma, setSavingProforma] = useState(false);
+
+  const saveAsProforma = async () => {
+    if (cart.length === 0) {
+      toast.error("Cart is empty");
+      return;
+    }
+    if (!selectedCustomer?.name && !customerName.trim()) {
+      toast.error("Customer name required", { description: "Proformas must be addressed to a customer — type a name or pick one." });
+      return;
+    }
+    setSavingProforma(true);
+    try {
+      const response = await fetch("/api/proformas", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: cart.map((item) => {
+            const isSqm = item.sellingUnit === "sqm";
+            const area = isSqm ? getCartItemArea(item) : null;
+            return {
+              productId: item.productId,
+              name: item.name,
+              quantity: isSqm ? area! : item.quantity,
+              unitPrice: item.unitPrice,
+              sellingUnit: item.sellingUnit,
+              area: area,
+            };
+          }),
+          customerId: selectedCustomer?.id || null,
+          customer: selectedCustomer?.name || customerName.trim(),
+          customerPhone: selectedCustomer?.phone || customerPhone || null,
+          customerEmail: selectedCustomer?.email || customerEmail || null,
+          taxRate: orgSettings.taxRate,
+          discount: discountAmount,
+          currency: orgSettings.currency,
+          notes: notes || null,
+          status: "sent",
+        }),
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error || "Failed to save proforma");
+      }
+
+      const proforma = await response.json();
+      toast.success(`Proforma ${proforma.number} saved`, {
+        description: `Valid until ${new Date(proforma.validUntil).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}. Find it on the Proformas page.`,
+      });
+      clearCart(true);
+    } catch (error: unknown) {
+      toast.error("Could not save proforma", { description: error instanceof Error ? error.message : "Please try again." });
+    } finally {
+      setSavingProforma(false);
+    }
   };
 
   // ── Complete Sale (called after confirmation) ────────────────────────
@@ -1345,7 +1411,7 @@ export default function POSPage() {
               <Button
                 className="btn-accent h-12 w-full text-base font-bold"
                 onClick={openConfirmSale}
-                disabled={cart.length === 0 || completingSale}
+                disabled={cart.length === 0 || completingSale || savingProforma}
               >
                 {completingSale ? (
                   <>
@@ -1357,6 +1423,28 @@ export default function POSPage() {
                     <ShoppingCart className="mr-2 size-5" />
                     Complete Sale -{" "}
                     {formatCurrency(total, orgSettings.currency)}
+                  </>
+                )}
+              </Button>
+
+              {/* Save as Proforma — secondary action. Issues a quote without
+                  decrementing stock or creating an invoice. Customer can
+                  accept later and we convert it from the Proformas page. */}
+              <Button
+                variant="outline"
+                className="h-10 w-full text-sm"
+                onClick={saveAsProforma}
+                disabled={cart.length === 0 || completingSale || savingProforma}
+              >
+                {savingProforma ? (
+                  <>
+                    <Loader2 className="mr-2 size-4 animate-spin" />
+                    Saving proforma...
+                  </>
+                ) : (
+                  <>
+                    <ClipboardList className="mr-2 size-4" />
+                    Save as proforma (quote)
                   </>
                 )}
               </Button>

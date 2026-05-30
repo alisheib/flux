@@ -20,10 +20,11 @@ src/
   app/
     (app)/             # Authenticated pages (sidebar + header layout)
       dashboard/       # KPI cards, revenue chart, recent sales, low stock
-      pos/             # Point of sale — product grid + cart + checkout + customer typeahead
+      pos/             # Point of sale — product grid + cart + checkout + customer typeahead + "save as proforma"
       inventory/       # Products CRUD, categories, stock, area selling (sqm)
       shipments/       # Import containers, landed cost, expense allocation
       invoices/        # Invoice list + detail, PDF download, WhatsApp share
+      proformas/       # Quote list + detail dialog + convert-to-invoice flow
       receivables/     # Debt tracking, aging, payment recording
       customers/       # Customer CRM — list, detail (4 tabs), typeahead search
       accounting/      # P&L by shipment, monthly charts
@@ -125,6 +126,46 @@ Semantics:
 The schema change is additive (nullable columns only). Two ways to apply on Neon:
 1. **`npx prisma db push`** — preferred; Prisma reads `schema.prisma` and runs the same DDL.
 2. **Manual** — copy `prisma/migrations/20260523_add_currency_entry_columns.sql` into the Neon SQL editor. Idempotent (uses `IF NOT EXISTS`).
+
+## Proforma Architecture
+
+A **proforma** is a non-binding price quotation issued to a customer before a sale closes. It's distinct from an invoice in three ways: no stock impact, not part of revenue/receivables, and it expires.
+
+### Lifecycle states
+```
+draft ── sent ──┬── accepted ── converted ──► (locked, linked to Invoice)
+                │
+                ├── declined  (terminal — preserved for audit)
+                │
+                └── expired   (auto-stamped when validUntil < now)
+```
+
+### Code surfaces
+- **`src/lib/proforma-template.ts`** — PDF template. Sibling of `invoice-template.ts`. Six visual states: `draft / sent / accepted / converted / expired / declined`. Watermark for expired, conversion stamp for converted, acceptance signature block for the rest. **NEVER renders `customerTin`** — same security rule as the tax invoice.
+- **`src/app/api/proformas/route.ts`** — `GET` (list, auto-marks past-validity ones as expired) and `POST` (create). Computes subtotal/tax/total server-side; client can't lie.
+- **`src/app/api/proformas/[id]/route.ts`** — `GET`/`PUT`/`DELETE`. Converted proformas are locked against updates and deletes (terminal state).
+- **`src/app/api/proformas/[id]/convert/route.ts`** — `POST` the critical action. Atomically: creates the `Sale` + `Invoice`, decrements stock, links the proforma via `convertedToInvoiceId`, stamps `convertedAt`, sets status to `converted`. Idempotent — re-running on an already-converted proforma returns the existing invoice with `alreadyConverted: true`.
+- **`src/app/api/proformas/[id]/download/route.ts`** — Same Puppeteer pipeline as `/invoices/[id]/download`. Falls back to HTML if Chromium isn't available.
+- **`src/app/(app)/proformas/page.tsx`** — list + detail dialog + convert + delete + download actions.
+- **`src/app/(app)/pos/page.tsx`** — adds "Save as proforma (quote)" alongside "Complete sale". Same cart payload, different endpoint; status defaults to `sent`.
+- **`src/components/app-sidebar.tsx`** — `Proformas` nav entry between Invoices and Accounting.
+
+### Schema (added in `prisma/migrations/20260529_add_proforma_module.sql`)
+| Table / column | Purpose |
+|---|---|
+| `Proforma` | Standalone quote — no `saleId` link until converted. |
+| `ProformaItem` | Line items, mirrors `SaleItem`. |
+| `Proforma.convertedToInvoiceId` | One-to-one back-ref into `Invoice` once converted. |
+| `Proforma.validUntil` | Required. Past this date status auto-flips to `expired`. |
+| `OrgSettings.proformaPrefix` | Defaults `"PRO"` — separate from `invoicePrefix` so the two number sequences never collide. |
+| `OrgSettings.proformaNextNum` | Defaults `1`. |
+| `OrgSettings.proformaValidityDays` | Defaults `14`. |
+
+### Deployment
+Same migration story as the currency feature — additive only, run `npx prisma db push` or paste `prisma/migrations/20260529_add_proforma_module.sql` into Neon. Idempotent.
+
+### Design source
+The PDF was designed by Claude Design per `Flux main proforma showcase/` (handoff materials deleted post-implementation — the canonical source of truth going forward is `src/lib/proforma-template.ts` itself, which contains inline rationale comments for D1–D8 decisions).
 
 ## Auth & Roles
 - **Admin:** Full access

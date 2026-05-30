@@ -59,6 +59,9 @@ interface OrgSettingsData {
   invoiceNextNum: number;
   receiptPrefix: string;
   receiptNextNum: number;
+  proformaPrefix: string;
+  proformaNextNum: number;
+  proformaValidityDays: number;
   rolePermissions: string | null;
   tallyEnabled: boolean;
 }
@@ -212,6 +215,9 @@ export default function SettingsPage() {
       invoiceNextNum: parseInt(form.get("invoiceNextNum") as string) || 1,
       receiptPrefix: form.get("receiptPrefix") as string,
       receiptNextNum: parseInt(form.get("receiptNextNum") as string) || 1,
+      proformaPrefix: form.get("proformaPrefix") as string,
+      proformaNextNum: parseInt(form.get("proformaNextNum") as string) || 1,
+      proformaValidityDays: parseInt(form.get("proformaValidityDays") as string) || 14,
     };
 
     try {
@@ -649,6 +655,41 @@ export default function SettingsPage() {
                   defaultValue={settings?.receiptNextNum || 1}
                   className="mt-1.5"
                 />
+              </div>
+              <div>
+                <Label htmlFor="proforma-prefix">Proforma Prefix</Label>
+                <Input
+                  id="proforma-prefix"
+                  name="proformaPrefix"
+                  defaultValue={settings?.proformaPrefix || "PRO"}
+                  placeholder="PRO"
+                  className="mt-1.5"
+                />
+                <p className="mt-1 text-[11px] text-muted-foreground">Separate from invoice numbering so customers/auditors can't confuse the two.</p>
+              </div>
+              <div>
+                <Label htmlFor="proforma-next">Next Proforma Number</Label>
+                <Input
+                  id="proforma-next"
+                  name="proformaNextNum"
+                  type="number"
+                  min={1}
+                  defaultValue={settings?.proformaNextNum || 1}
+                  className="mt-1.5"
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <Label htmlFor="proforma-validity">Proforma Validity (days)</Label>
+                <Input
+                  id="proforma-validity"
+                  name="proformaValidityDays"
+                  type="number"
+                  min={1}
+                  max={365}
+                  defaultValue={settings?.proformaValidityDays || 14}
+                  className="mt-1.5"
+                />
+                <p className="mt-1 text-[11px] text-muted-foreground">Default window quotes remain valid. After this many days, a proforma auto-marks as expired.</p>
               </div>
             </div>
             <div className="flex justify-end">

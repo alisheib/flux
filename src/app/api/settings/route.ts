@@ -142,6 +142,9 @@ export async function PUT(request: NextRequest) {
         invoiceNextNum,
         receiptPrefix,
         receiptNextNum,
+        proformaPrefix,
+        proformaNextNum,
+        proformaValidityDays,
         rolePermissions,
         tallyEnabled,
       } = settings;
@@ -171,6 +174,24 @@ export async function PUT(request: NextRequest) {
       if (invoiceNextNum !== undefined) updateData.invoiceNextNum = invoiceNextNum;
       if (receiptPrefix !== undefined) updateData.receiptPrefix = receiptPrefix;
       if (receiptNextNum !== undefined) updateData.receiptNextNum = receiptNextNum;
+      if (proformaPrefix !== undefined) {
+        if (typeof proformaPrefix !== "string" || !proformaPrefix.trim() || proformaPrefix.length > 16) {
+          return NextResponse.json({ error: "Proforma prefix must be 1–16 characters" }, { status: 400 });
+        }
+        updateData.proformaPrefix = proformaPrefix.trim();
+      }
+      if (proformaNextNum !== undefined) {
+        if (typeof proformaNextNum !== "number" || !Number.isInteger(proformaNextNum) || proformaNextNum < 1) {
+          return NextResponse.json({ error: "Proforma next number must be a positive integer" }, { status: 400 });
+        }
+        updateData.proformaNextNum = proformaNextNum;
+      }
+      if (proformaValidityDays !== undefined) {
+        if (typeof proformaValidityDays !== "number" || !Number.isInteger(proformaValidityDays) || proformaValidityDays < 1 || proformaValidityDays > 365) {
+          return NextResponse.json({ error: "Proforma validity must be 1–365 days" }, { status: 400 });
+        }
+        updateData.proformaValidityDays = proformaValidityDays;
+      }
       if (rolePermissions !== undefined) {
         updateData.rolePermissions = typeof rolePermissions === "string"
           ? rolePermissions
