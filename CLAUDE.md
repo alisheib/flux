@@ -190,17 +190,59 @@ npx prisma db push   # Push schema changes to database
 ## Deployment
 Vercel auto-deploys from `main`. Required env vars: `DATABASE_URL`, `JWT_SECRET`, `NEXT_PUBLIC_APP_URL`
 
-## Design System — "Savannah Ochre"
+## FLUX UI Kit — single reference
+
+**This is THE reference for everything visual.** Every page in FLUX is built from these locations; nothing exists in a separate kit folder. When a new screen or PDF needs design tokens, components, or brand assets, it pulls from here — no exceptions, no parallel files.
+
+### Where the kit lives
+
+```
+src/
+  app/
+    globals.css              ← design tokens (colors, radii, badges, KPI patterns, btn-* classes)
+  components/
+    ui/                      ← shadcn primitives (Button, Input, Dialog, Table, Tabs,
+                               Select, DropdownMenu, Popover, Tooltip, Card,
+                               Badge, Label, Separator, ScrollArea, Sheet, Textarea,
+                               Avatar, Command, Form, FormSelect, InputGroup, Progress, Sonner)
+    flux-logo.tsx            ← brand mark — IMMUTABLE
+    app-sidebar.tsx          ← canonical nav + density rules
+    app-header.tsx           ← breadcrumb shape
+    currency-amount-input.tsx← canonical money-entry control
+    customer-typeahead.tsx   ← canonical customer picker (POS + invoices)
+  lib/
+    currency.ts              ← currency registry — single source of truth for symbols/decimals
+    invoice-template.ts      ← tax-invoice PDF — pattern for any new printable A4 document
+    invoice-pdf.tsx          ← React-PDF variant of the above
+    receipt-template.ts      ← POS receipt template
+    proforma-template.ts     ← quote PDF — sibling of invoice-template.ts
+```
+
+### Brand tokens — "Savannah Ochre"
 - **btn-brand:** Dark ink `#0f0e0a` (light) / amber `#e39340` (dark)
 - **btn-accent:** Amber `#d97706` always
 - **Sidebar:** Always dark `#0f0e0a`
 - **Focus rings:** Amber 20% opacity
-- **Border radius:** Inputs/cards 10px, dialogs 20px
+- **Border radius:** Inputs/cards `10px`, dialogs `20px`
 - **Badges:** `badge-success` (green), `badge-danger` (red), `badge-warn` (amber), `badge-info` (blue), `badge-violet`
-- **KPI Cards:** Colored icon box + label + large value + subtitle
-- **Tables:** Uppercase sticky headers, row hover
+- **KPI Cards:** Colored icon box (`size-10 rounded-lg bg-*-500/12`) + uppercase muted label + large value + subtitle
+- **Tables:** Uppercase sticky headers, row hover (`hover:bg-muted/40 transition-colors`)
 - **Empty states:** Centered icon box + title + description + CTA
 - **NEVER modify `flux-logo.tsx`**
+
+### How to add a new screen / PDF without breaking the kit
+1. **Use the shadcn primitives** from `src/components/ui/` — never re-style a Button or Input outside the kit.
+2. **Pull tokens from `globals.css`** — never invent a new color value. If you genuinely need one, add it to `globals.css` and document why.
+3. **Pull currency formatting from `lib/currency.ts`** — never call `formatCurrency()` without a currency arg or hardcode `$`.
+4. **Sidebar entries** go in `app-sidebar.tsx`'s `navItems` array — same shape as every other module.
+5. **PDF templates** mirror `invoice-template.ts` structurally — inline styles, A4 portrait, Inter via Google CDN, `formatCurrencyValue` from `lib/currency.ts`.
+
+### Where the kit is NOT
+- No separate `ui-kit/`, `design-system/`, `flux-handoff/`, or `tokens/` folder at the repo root.
+- No prototype HTML files sitting outside `src/`.
+- No vendor-prefixed CSS or framework-flavored copies of the same primitive.
+
+If anyone asks "where's the FLUX UI kit?" — point them here. **One reference.**
 
 ## Important Rules
 - All queries scoped by `orgId` (multi-tenant)
