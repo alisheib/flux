@@ -22,7 +22,6 @@ import {
   Tabs,
   TabsList,
   TabsTrigger,
-  TabsContent,
 } from "@/components/ui/tabs";
 import {
   Dialog,
@@ -277,20 +276,24 @@ export default function ProformasPage() {
         />
       </div>
 
-      {/* Tabs by status */}
-      <Tabs value={statusFilter} onValueChange={setStatusFilter}>
-        <TabsList>
-          <TabsTrigger value="all">All</TabsTrigger>
-          <TabsTrigger value="draft">Draft</TabsTrigger>
-          <TabsTrigger value="sent">Sent</TabsTrigger>
-          <TabsTrigger value="accepted">Accepted</TabsTrigger>
-          <TabsTrigger value="converted">Converted</TabsTrigger>
-          <TabsTrigger value="expired">Expired</TabsTrigger>
-        </TabsList>
+      {/* Tabs by status — search + table sit OUTSIDE TabsContent because
+          we're using `statusFilter` state to drive filtering ourselves;
+          a TabsContent block with a dynamic `value` would mount/unmount
+          on every keystroke and the search input would lose focus.
+          This is the same pattern Invoices uses. */}
+      <Tabs value={statusFilter} onValueChange={setStatusFilter} className="space-y-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <TabsList>
+            <TabsTrigger value="all">All</TabsTrigger>
+            <TabsTrigger value="draft">Draft</TabsTrigger>
+            <TabsTrigger value="sent">Sent</TabsTrigger>
+            <TabsTrigger value="accepted">Accepted</TabsTrigger>
+            <TabsTrigger value="converted">Converted</TabsTrigger>
+            <TabsTrigger value="expired">Expired</TabsTrigger>
+          </TabsList>
 
-        <TabsContent value={statusFilter} className="space-y-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <div className="relative w-full sm:w-72">
+            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
             <Input
               placeholder="Search by number, customer, or phone..."
               value={query}
@@ -298,8 +301,9 @@ export default function ProformasPage() {
               className="pl-10"
             />
           </div>
+        </div>
 
-          <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
+        <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
             <Table>
               <TableHeader className="sticky top-0 z-10">
                 <TableRow className="bg-muted/50 hover:bg-muted/50">
@@ -384,7 +388,6 @@ export default function ProformasPage() {
               </TableBody>
             </Table>
           </div>
-        </TabsContent>
       </Tabs>
 
       {/* Detail dialog */}

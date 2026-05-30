@@ -42,8 +42,12 @@ const pageTitles: Record<string, string> = {
   "/inventory": "Inventory",
   "/shipments": "Shipments",
   "/invoices": "Invoices",
+  "/proformas": "Proformas",
   "/accounting": "Accounting",
   "/receivables": "Receivables",
+  "/customers": "Customers",
+  "/suppliers": "Suppliers",
+  "/purchase-orders": "Purchase Orders",
   "/reports": "Reports",
   "/tally": "TRA Tally",
   "/users": "Users",
@@ -51,6 +55,7 @@ const pageTitles: Record<string, string> = {
   "/profile": "Profile",
   "/activity": "Activity",
   "/stock-movements": "Stock Movements",
+  "/imports/templates": "Excel Import",
 };
 
 function getPageTitle(pathname: string): string {
