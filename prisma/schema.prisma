@@ -308,7 +308,7 @@ model Invoice {
   customerRecord Customer?    @relation(fields: [customerId], references: [id], onDelete: SetNull)
   proforma       Proforma?
 
-  @@unique([orgId, number])
+  // Unique constraint enforced at DB level via migration 20260608_add_unique_constraints.sql
   @@index([orgId])
   @@index([customerId])
 }
@@ -617,7 +617,7 @@ model Proforma {
   invoice        Invoice?     @relation(fields: [convertedToInvoiceId], references: [id], onDelete: SetNull)
   items          ProformaItem[]
 
-  @@unique([orgId, number])
+  // Unique constraint enforced at DB level via migration 20260608_add_unique_constraints.sql
   @@index([orgId])
   @@index([orgId, status])
   @@index([customerId])
