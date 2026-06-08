@@ -541,12 +541,15 @@ export default function StockMovementsPage() {
                 <span className="text-sm text-muted-foreground">
                   New balance:{" "}
                 </span>
-                <span className="text-sm font-semibold text-foreground">
-                  {(
-                    (products.find((p) => p.id === adjustProductId)?.stockQty ||
-                      0) + (parseFloat(adjustQuantity) || 0)
-                  ).toFixed(0)}
-                </span>
+                {(() => {
+                  const newBal = (products.find((p) => p.id === adjustProductId)?.stockQty || 0) + (parseFloat(adjustQuantity) || 0);
+                  return (
+                    <span className={`text-sm font-semibold ${newBal < 0 ? "text-red-600 dark:text-red-400" : "text-foreground"}`}>
+                      {newBal.toFixed(0)}
+                      {newBal < 0 && <span className="ml-1 text-xs font-normal">(negative stock!)</span>}
+                    </span>
+                  );
+                })()}
               </div>
             )}
           </div>

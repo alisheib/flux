@@ -95,9 +95,9 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
               {c.address && <span className="inline-flex items-center gap-1.5"><MapPin className="size-3.5" />{c.address}</span>}
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}><Pencil className="mr-2 h-3.5 w-3.5" />Edit</Button>
-            <Button variant="outline" size="sm"><Wallet className="mr-2 h-3.5 w-3.5" />Record payment</Button>
+            <Button variant="outline" size="sm" onClick={() => router.push("/receivables")}><Wallet className="mr-2 h-3.5 w-3.5" />Record payment</Button>
             <Button className="btn-accent" size="sm" onClick={() => router.push("/pos")}><ShoppingBag className="mr-2 h-3.5 w-3.5" />New sale</Button>
           </div>
         </div>

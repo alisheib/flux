@@ -205,7 +205,10 @@ export default function UsersPage() {
       email: form.get("email") as string,
       role: form.get("role") as string,
     };
+    if (!body.name.trim()) { toast.error("Name is required"); return; }
+    if (!body.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(body.email)) { toast.error("Valid email is required"); return; }
     if (password) {
+      if (password.length < 8) { toast.error("Password must be at least 8 characters"); return; }
       body.password = password;
     }
 

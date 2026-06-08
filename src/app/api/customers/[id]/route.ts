@@ -76,7 +76,7 @@ export async function GET(
 
     return NextResponse.json({
       ...customer,
-      tags: customer.tags ? JSON.parse(customer.tags) : [],
+      tags: (() => { try { return customer.tags ? JSON.parse(customer.tags) : []; } catch { return []; } })(),
       initials: getInitials(customer.name),
       stats: { totalSpent, outstanding, salesCount, avgOrder, lastSaleAt, monthlyRevenue },
       invoices,
@@ -133,7 +133,7 @@ export async function PUT(
 
     return NextResponse.json({
       ...customer,
-      tags: customer.tags ? JSON.parse(customer.tags) : [],
+      tags: (() => { try { return customer.tags ? JSON.parse(customer.tags) : []; } catch { return []; } })(),
       initials: getInitials(customer.name),
     });
   } catch (error) {

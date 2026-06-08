@@ -119,6 +119,7 @@ export default function ProformasPage() {
   const [convertDialogOpen, setConvertDialogOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Proforma | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   const fetchAll = useCallback(async () => {
     try {
@@ -173,6 +174,7 @@ export default function ProformasPage() {
   }, [proformas]);
 
   const handleDownload = async (p: Proforma) => {
+    setDownloadingId(p.id);
     try {
       const res = await fetch(`/api/proformas/${p.id}/download`);
       if (!res.ok) throw new Error();
@@ -187,6 +189,8 @@ export default function ProformasPage() {
       URL.revokeObjectURL(url);
     } catch {
       toast.error("Download failed");
+    } finally {
+      setDownloadingId(null);
     }
   };
 
@@ -201,7 +205,7 @@ export default function ProformasPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Convert failed");
-      toast.success(`Converted to invoice ${data.invoice.number}`);
+      toast.success(`Converted to invoice ${data.invoice?.number || ""}`);
       setConvertDialogOpen(false);
       setDetail(null);
       await fetchAll();
@@ -303,7 +307,7 @@ export default function ProformasPage() {
           </div>
         </div>
 
-        <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
+        <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden overflow-x-auto">
             <Table>
               <TableHeader className="sticky top-0 z-10">
                 <TableRow className="bg-muted/50 hover:bg-muted/50">
@@ -456,8 +460,8 @@ export default function ProformasPage() {
               </div>
 
               <DialogFooter>
-                <Button variant="outline" onClick={() => handleDownload(detail)}>
-                  <Download className="mr-1.5 size-4" /> Download PDF
+                <Button variant="outline" onClick={() => handleDownload(detail)} disabled={downloadingId === detail.id}>
+                  {downloadingId === detail.id ? <Loader2 className="mr-1.5 size-4 animate-spin" /> : <Download className="mr-1.5 size-4" />} Download PDF
                 </Button>
                 {detail.status !== "converted" && detail.status !== "declined" && (
                   <Button onClick={() => setConvertDialogOpen(true)} className="bg-[#d97706] hover:bg-[#c2410c] text-white">

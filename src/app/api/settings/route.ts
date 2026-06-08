@@ -98,20 +98,24 @@ export async function PUT(request: NextRequest) {
         website,
       } = organization;
 
-      // Lock currency after first financial transaction
+      // Lock currency after first financial transaction — check inside transaction to prevent race
       if (currency !== undefined) {
-        const currentOrg = await prisma.organization.findUnique({
-          where: { id: auth.orgId },
-          select: { currency: true },
+        const currentOrg = await prisma.$transaction(async (tx) => {
+          // Lock org row to prevent concurrent currency change + sale creation race
+          const rows = await tx.$queryRaw<Array<{ currency: string }>>`
+            SELECT "currency" FROM "Organization" WHERE "id" = ${auth.orgId} FOR UPDATE
+          `;
+          if (rows[0] && currency !== rows[0].currency) {
+            const saleCount = await tx.sale.count({ where: { orgId: auth.orgId } });
+            if (saleCount > 0) return { locked: true } as const;
+          }
+          return { locked: false, currency: rows[0]?.currency } as const;
         });
-        if (currentOrg && currency !== currentOrg.currency) {
-          const saleCount = await prisma.sale.count({ where: { orgId: auth.orgId } });
-          if (saleCount > 0) {
+        if (currentOrg.locked) {
             return NextResponse.json(
               { error: "Cannot change currency after sales have been recorded. All existing prices, invoices, and reports use the current currency." },
               { status: 400 }
             );
-          }
         }
       }
 

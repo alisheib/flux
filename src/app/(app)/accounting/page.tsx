@@ -137,10 +137,12 @@ export default function AccountingPage() {
       }),
       { fob: 0, expenses: 0, landed: 0, revenue: 0, profit: 0 }
     );
-    const totalMargin =
+    // Use displayed margin for consistency (avoid mismatch between display & export)
+    const totalMargin = data.averageMargin ?? (
       totals.revenue > 0
         ? ((totals.revenue - totals.landed) / totals.revenue) * 100
-        : 0;
+        : 0
+    );
 
     await exportToExcel({
       sheetName: "P&L Report",
@@ -178,6 +180,8 @@ export default function AccountingPage() {
     });
 
     toast.success("Excel report downloaded");
+    } catch {
+      toast.error("Export failed");
     } finally {
       setExporting(false);
     }

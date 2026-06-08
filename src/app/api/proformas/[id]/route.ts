@@ -156,7 +156,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
     const updated = await prisma.$transaction(async (tx) => {
       if (newItems) {
-        await tx.proformaItem.deleteMany({ where: { proformaId: id } });
+        await tx.proformaItem.deleteMany({ where: { proformaId: id, proforma: { orgId: auth.orgId } } });
       }
       return tx.proforma.update({
         where: { id },

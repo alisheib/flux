@@ -99,7 +99,7 @@ export default function ProfilePage() {
     }
   };
 
-  const initials = (profile?.name || user.name).split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
+  const initials = (profile?.name || user.name || "?").split(" ").map(n => n[0]).filter(Boolean).join("").toUpperCase().slice(0, 2) || "?";
 
   if (loading) {
     return (
@@ -173,7 +173,7 @@ export default function ProfilePage() {
           <form onSubmit={handleSaveName} className="flex items-end gap-3">
             <div className="flex-1 space-y-1.5">
               <Label htmlFor="profile-name">Full Name</Label>
-              <Input id="profile-name" value={name} onChange={e => setName(e.target.value)} placeholder="Enter your name" />
+              <Input id="profile-name" value={name} onChange={e => setName(e.target.value)} placeholder="Enter your name" disabled={savingName} />
             </div>
             <Button type="submit" disabled={savingName} className="btn-brand">
               {savingName ? <Loader2 className="size-4 animate-spin mr-1.5" /> : <Save className="size-4 mr-1.5" />}
@@ -197,16 +197,16 @@ export default function ProfilePage() {
           <form onSubmit={handleChangePassword} className="space-y-4">
             <div className="space-y-1.5">
               <Label>Current Password</Label>
-              <Input type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} placeholder="Enter current password" />
+              <Input type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} placeholder="Enter current password" disabled={savingPassword} />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label>New Password</Label>
-                <Input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="Min 6 characters" />
+                <Input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="Min 6 characters" disabled={savingPassword} />
               </div>
               <div className="space-y-1.5">
                 <Label>Confirm Password</Label>
-                <Input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Re-enter new password" />
+                <Input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Re-enter new password" disabled={savingPassword} />
               </div>
             </div>
             {newPassword && confirmPassword && newPassword !== confirmPassword && (

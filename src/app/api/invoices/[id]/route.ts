@@ -81,6 +81,17 @@ export async function PUT(
     const body = await request.json();
     const { status, dueAt, paidAt, notes, customer, customerPhone, customerEmail, customerAddress } = body;
 
+    const VALID_STATUSES = ["draft", "issued", "overdue", "paid", "cancelled"];
+    if (status !== undefined && !VALID_STATUSES.includes(status)) {
+      return NextResponse.json({ error: `Invalid status. Allowed: ${VALID_STATUSES.join(", ")}` }, { status: 400 });
+    }
+    // Prevent backwards status transitions (paid/cancelled are terminal)
+    if (status !== undefined) {
+      const TERMINAL = ["paid", "cancelled"];
+      if (TERMINAL.includes(existing.status) && status !== existing.status) {
+        return NextResponse.json({ error: `Cannot change status from "${existing.status}" — it is a terminal state` }, { status: 400 });
+      }
+    }
     const updateData: Record<string, unknown> = {};
     if (status !== undefined) updateData.status = status;
     if (dueAt !== undefined) updateData.dueAt = dueAt ? new Date(dueAt) : null;

@@ -1067,7 +1067,7 @@ export default function ShipmentsPage() {
                           Avg Cost / Unit
                         </p>
                         <p className="text-2xl font-semibold tracking-tight text-foreground mt-1">
-                          {formatCurrency(breakdown.avgCostPerUnit, orgCurrency)}
+                          {formatCurrency(breakdown.avgCostPerUnit ?? 0, orgCurrency)}
                         </p>
                       </div>
                     </div>
@@ -1147,7 +1147,7 @@ export default function ShipmentsPage() {
                                     {formatCurrency(product.totalCost, orgCurrency)}
                                   </TableCell>
                                   <TableCell className="text-right text-muted-foreground text-sm">
-                                    {(product.valueShare * 100).toFixed(1)}%
+                                    {(product.valueShare != null ? (product.valueShare * 100).toFixed(1) : "0.0")}%
                                   </TableCell>
                                   <TableCell className="text-right text-foreground text-sm">
                                     {formatCurrency(product.allocatedExpenses, orgCurrency)}

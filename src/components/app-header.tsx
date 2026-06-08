@@ -186,12 +186,13 @@ export function AppHeader({ onMenuToggle }: { onMenuToggle?: () => void } = {}) 
   const pathname = usePathname();
   const { user } = useAuth();
 
-  const initials = user.name
+  const initials = (user.name || "?")
     .split(" ")
     .map((n) => n[0])
+    .filter(Boolean)
     .join("")
     .toUpperCase()
-    .slice(0, 2);
+    .slice(0, 2) || "?";
 
   const pageTitle = getPageTitle(pathname);
   const orgName = user.orgName || "Workspace";
@@ -206,6 +207,7 @@ export function AppHeader({ onMenuToggle }: { onMenuToggle?: () => void } = {}) 
       router.push("/login");
     } catch {
       toast.error("Failed to log out");
+      router.push("/login");
     }
   }
 
@@ -245,7 +247,7 @@ export function AppHeader({ onMenuToggle }: { onMenuToggle?: () => void } = {}) 
           <Search className="size-4" />
           <span className="text-xs">Search...</span>
           <kbd className="pointer-events-none ml-2 hidden select-none rounded border border-border bg-background px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground sm:inline">
-            Cmd+K
+            {typeof navigator !== "undefined" && /mac/i.test(navigator.userAgent) ? "⌘K" : "Ctrl+K"}
           </kbd>
         </Button>
         <Button

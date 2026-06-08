@@ -48,7 +48,8 @@ export async function GET(request: NextRequest) {
       const salesCount = c.sales.length;
       const lastSaleAt = c.sales.length > 0 ? c.sales[0].createdAt : null;
       const isActive = lastSaleAt ? new Date(lastSaleAt) >= ninetyDaysAgo : false;
-      const tags = c.tags ? JSON.parse(c.tags) : [];
+      let tags: string[] = [];
+      if (c.tags) { try { tags = JSON.parse(c.tags); } catch { /* corrupted tags */ } }
 
       return {
         id: c.id,
@@ -137,7 +138,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       ...customer,
-      tags: customer.tags ? JSON.parse(customer.tags) : [],
+      tags: (() => { try { return customer.tags ? JSON.parse(customer.tags) : []; } catch { return []; } })(),
       initials: getInitials(customer.name),
       totalSpent: 0,
       outstanding: 0,

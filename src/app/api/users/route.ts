@@ -74,6 +74,12 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+    if (!/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/[0-9]/.test(password) || !/[^A-Za-z0-9]/.test(password)) {
+      return NextResponse.json(
+        { error: "Password must contain uppercase, lowercase, number, and special character" },
+        { status: 400 }
+      );
+    }
 
     const subCheck = await checkSubscriptionLimit(auth.orgId, "create_user");
     if (!subCheck.allowed) return NextResponse.json({ error: subCheck.reason }, { status: 403 });

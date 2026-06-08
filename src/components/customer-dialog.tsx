@@ -127,7 +127,7 @@ export function CustomerDialog({ open, onOpenChange, mode, initialData, onSaved 
           <DialogDescription>Only name and phone are required. The rest helps with invoicing and outreach.</DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-3.5 py-2">
+        <form onSubmit={(e) => { e.preventDefault(); handleSave(); }} className="space-y-3.5 py-2">
           <div className="space-y-1.5">
             <Label>Name <span className="text-destructive">*</span></Label>
             <Input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Amani Mushi" />
@@ -147,7 +147,7 @@ export function CustomerDialog({ open, onOpenChange, mode, initialData, onSaved 
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label>Phone <span className="text-destructive">*</span></Label>
+              <Label>Phone</Label>
               <div className="flex items-center gap-0 border border-border rounded-[10px] focus-within:ring-2 focus-within:ring-amber-500/20 focus-within:border-amber-500">
                 <span className="pl-3 pr-1 text-sm font-mono text-muted-foreground">+255</span>
                 <Input value={phone} onChange={e => setPhone(e.target.value)} placeholder="712 345 678" className="border-0 focus-visible:ring-0 shadow-none" />
@@ -190,15 +190,14 @@ export function CustomerDialog({ open, onOpenChange, mode, initialData, onSaved 
             <Label>Notes</Label>
             <Textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} placeholder="Anything your team should know (special pricing, preferences)" />
           </div>
-        </div>
-
         <DialogFooter>
-          <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button className="btn-accent" size="sm" onClick={handleSave} disabled={saving}>
+          <Button type="button" variant="ghost" size="sm" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button type="submit" className="btn-accent" size="sm" disabled={saving}>
             {saving ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <Check className="mr-2 h-3.5 w-3.5" />}
             {mode === "add" ? "Add customer" : "Save changes"}
           </Button>
         </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );

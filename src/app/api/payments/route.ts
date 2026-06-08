@@ -120,45 +120,43 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate sale exists and belongs to org
-    const sale = await prisma.sale.findFirst({
+    // Validate sale exists (quick check before expensive transaction)
+    const saleExists = await prisma.sale.findFirst({
       where: { id: saleId, orgId: auth.orgId },
-      include: { payments: true },
+      select: { id: true },
     });
-
-    if (!sale) {
+    if (!saleExists) {
       return NextResponse.json({ error: "Sale not found" }, { status: 404 });
     }
 
-    // Calculate outstanding balance
-    const totalPaid = sale.payments.reduce((sum, p) => sum + p.amount, 0);
-    const outstanding = Math.round((sale.total - totalPaid) * 100) / 100;
-
-    if (outstanding <= 0) {
-      return NextResponse.json(
-        { error: "This sale is already fully paid" },
-        { status: 400 }
-      );
-    }
-
-    if (amount > outstanding + 0.01) {
-      // small tolerance for floating point
-      return NextResponse.json(
-        {
-          error: `Payment amount (${amount}) exceeds outstanding balance (${outstanding})`,
-        },
-        { status: 400 }
-      );
-    }
-
-    // Determine new sale status after this payment
-    const newTotalPaid = totalPaid + amount;
-    const remainingAfterPayment =
-      Math.round((sale.total - newTotalPaid) * 100) / 100;
-    const newStatus = remainingAfterPayment <= 0 ? "completed" : "partial";
-
-    // Create payment and update sale in a transaction
+    // Create payment and update sale in a transaction with row lock
     const payment = await prisma.$transaction(async (tx) => {
+      // Lock sale row to prevent concurrent overpayment
+      const saleRows = await tx.$queryRaw<Array<{ id: string; total: number; status: string }>>`
+        SELECT "id", "total", "status" FROM "Sale"
+        WHERE "id" = ${saleId} AND "orgId" = ${auth.orgId}
+        FOR UPDATE
+      `;
+      const sale = saleRows[0];
+      if (!sale) throw new Error("Sale not found");
+
+      // Get payments sum inside the locked transaction
+      const paymentAgg = await tx.payment.aggregate({
+        where: { saleId },
+        _sum: { amount: true },
+      });
+      const totalPaid = paymentAgg._sum.amount || 0;
+      const outstanding = Math.round((sale.total - totalPaid) * 100) / 100;
+
+      if (outstanding <= 0) throw new Error("This sale is already fully paid");
+      if (amount > outstanding + 0.01) {
+        throw new Error(`Payment amount (${amount}) exceeds outstanding balance (${outstanding})`);
+      }
+
+      const newTotalPaid = totalPaid + amount;
+      const remainingAfterPayment = Math.round((sale.total - newTotalPaid) * 100) / 100;
+      const newStatus = remainingAfterPayment <= 0 ? "completed" : "partial";
+
       const newPayment = await tx.payment.create({
         data: {
           orgId: auth.orgId,
@@ -215,11 +213,15 @@ export async function POST(request: NextRequest) {
       action: "create",
       entity: "payment",
       entityId: payment.id,
-      details: `Payment of ${amount} via ${method} for sale ${sale.saleNumber}. Status: ${newStatus}${entryNote ? " | " + entryNote : ""}`,
+      details: `Payment of ${amount} via ${method} for sale ${saleId}${entryNote ? " | " + entryNote : ""}`,
     });
 
     return NextResponse.json(fullPayment, { status: 201 });
   } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+    if (message.includes("already fully paid") || message.includes("exceeds outstanding")) {
+      return NextResponse.json({ error: message }, { status: 400 });
+    }
     console.error("POST /api/payments error:", error);
     return NextResponse.json(
       { error: "Internal server error" },

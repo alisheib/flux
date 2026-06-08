@@ -159,6 +159,8 @@ export default function ReportsPage() {
     });
 
     toast.success("Report exported to Excel");
+    } catch {
+      toast.error("Export failed");
     } finally {
       setExporting(false);
     }

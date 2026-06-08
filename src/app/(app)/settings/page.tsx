@@ -760,7 +760,7 @@ export default function SettingsPage() {
                   name="exchangeRate"
                   type="number"
                   step="0.01"
-                  min={0}
+                  min={0.01}
                   defaultValue={settings?.exchangeRate ?? 1}
                   className="mt-1.5"
                 />

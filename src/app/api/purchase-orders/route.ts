@@ -91,19 +91,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Supplier not found" }, { status: 404 });
     }
 
-    // Generate PO number
-    const poCount = await prisma.purchaseOrder.count({
-      where: { orgId: auth.orgId },
-    });
-    const poNumber = `PO-${String(poCount + 1).padStart(4, "0")}`;
-
     const subtotal = items.reduce(
       (sum: number, item: { quantityOrdered: number; unitCost: number }) =>
         sum + item.quantityOrdered * item.unitCost,
       0
     );
 
-    const po = await prisma.purchaseOrder.create({
+    // Use transaction with OrgSettings lock to serialize PO number generation
+    const po = await prisma.$transaction(async (tx) => {
+      // Lock OrgSettings row to prevent concurrent PO number collision
+      await tx.$queryRaw`
+        SELECT 1 FROM "OrgSettings" WHERE "orgId" = ${auth.orgId} FOR UPDATE
+      `;
+      const poCount = await tx.purchaseOrder.count({ where: { orgId: auth.orgId } });
+      const poNumber = `PO-${String(poCount + 1).padStart(4, "0")}`;
+
+      return tx.purchaseOrder.create({
       data: {
         orgId: auth.orgId,
         supplierId,
@@ -147,6 +150,7 @@ export async function POST(request: NextRequest) {
           },
         },
       },
+    });
     });
 
     await logAudit({

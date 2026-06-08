@@ -450,7 +450,7 @@ export default function POSPage() {
 
   const openConfirmSale = () => {
     if (cart.length === 0) {
-      toast.error("Cart is empty");
+      toast.info("Cart is empty");
       return;
     }
     // Validate sqm items have area entered
@@ -487,7 +487,7 @@ export default function POSPage() {
 
   const saveAsProforma = async () => {
     if (cart.length === 0) {
-      toast.error("Cart is empty");
+      toast.info("Cart is empty");
       return;
     }
     if (!selectedCustomer?.name && !customerName.trim()) {
@@ -506,7 +506,7 @@ export default function POSPage() {
             return {
               productId: item.productId,
               name: item.name,
-              quantity: isSqm ? area! : item.quantity,
+              quantity: isSqm ? (area || 0) : item.quantity,
               unitPrice: item.unitPrice,
               sellingUnit: item.sellingUnit,
               area: area,
@@ -558,7 +558,7 @@ export default function POSPage() {
             return {
               productId: item.productId,
               name: item.name,
-              quantity: isSqm ? area! : item.quantity,
+              quantity: isSqm ? (area || 0) : item.quantity,
               unitPrice: item.unitPrice,
               total: lineTotal,
               sellingUnit: item.sellingUnit,
@@ -593,7 +593,7 @@ export default function POSPage() {
           const area = isSqm ? getCartItemArea(item) : null;
           return {
             name: item.name,
-            quantity: isSqm ? area! : item.quantity,
+            quantity: isSqm ? (area || 0) : item.quantity,
             unitPrice: item.unitPrice,
             total: getCartItemTotal(item),
             sellingUnit: item.sellingUnit,
@@ -628,7 +628,7 @@ export default function POSPage() {
       `━━━━━━━━━━━━━━━━`,
       `*RECEIPT ${sale.saleNumber}*`,
       ``,
-      `Date: ${new Date(sale.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}`,
+      `Date: ${new Date(sale.createdAt).toLocaleString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}`,
       sale.customer ? `Customer: ${sale.customer}` : "",
       ``,
       `*Items:*`,
@@ -690,7 +690,7 @@ export default function POSPage() {
     // Fallback: text-based WhatsApp message
     const text = generateReceiptText(sale);
     const phone = sale.customerPhone
-      ? sale.customerPhone.replace(/[^0-9+]/g, "").replace(/^\+/, "")
+      ? sale.customerPhone.replace(/[^0-9+]/g, "").replace(/^\+?/, "")
       : "";
 
     const baseUrl = "https://api.whatsapp.com/send";
@@ -1048,7 +1048,7 @@ export default function POSPage() {
                             <div className="flex rounded-md border border-border overflow-hidden text-[10px] font-medium">
                               <button
                                 type="button"
-                                onClick={() => !isSqm || toggleSellingUnit(item.productId)}
+                                onClick={() => isSqm && toggleSellingUnit(item.productId)}
                                 className={`px-2 py-1 transition-colors ${
                                   !isSqm
                                     ? "bg-[#d97706]/15 text-[#d97706]"
@@ -1059,7 +1059,7 @@ export default function POSPage() {
                               </button>
                               <button
                                 type="button"
-                                onClick={() => isSqm || toggleSellingUnit(item.productId)}
+                                onClick={() => !isSqm && toggleSellingUnit(item.productId)}
                                 className={`px-2 py-1 transition-colors ${
                                   isSqm
                                     ? "bg-[#d97706]/15 text-[#d97706]"
@@ -1608,7 +1608,7 @@ export default function POSPage() {
         />
       ) : (
       <Dialog open={receiptDialogOpen} onOpenChange={setReceiptDialogOpen}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg" showCloseButton={false}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
           <DialogHeader className="sr-only">
             <DialogTitle>Sale Complete</DialogTitle>
             <DialogDescription>Receipt details</DialogDescription>

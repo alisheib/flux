@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
 
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || "flux-secret-key-change-in-production-2026"
-);
+const jwtSecretRaw = process.env.JWT_SECRET || (process.env.NODE_ENV === "production" ? "" : "flux-dev-secret-key-not-for-production");
+if (!jwtSecretRaw && typeof process !== "undefined" && process.env.NODE_ENV === "production") {
+  console.error("FATAL: JWT_SECRET environment variable must be set in production");
+}
+const JWT_SECRET = new TextEncoder().encode(jwtSecretRaw || "flux-dev-secret-key-not-for-production");
 
 const publicPaths = [
   "/",

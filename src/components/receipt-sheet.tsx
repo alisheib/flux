@@ -242,7 +242,7 @@ export function ReceiptSheet({
                 </div>
               )}
               <div className="text-[11.5px] capitalize">
-                {sale.paymentMethod.replace(/_/g, " ")}
+                {(sale.paymentMethod || "").replace(/_/g, " ")}
               </div>
             </div>
           </div>
@@ -256,7 +256,7 @@ export function ReceiptSheet({
           <div className="mb-3.5 overflow-hidden rounded-lg border border-border">
             {sale.items.map((item, i) => (
               <div
-                key={i}
+                key={`${item.name}-${i}`}
                 className={`flex items-center gap-2.5 px-3.5 py-3 ${i < sale.items.length - 1 ? "border-b border-border" : ""} ${i % 2 ? "bg-muted/30" : "bg-background"}`}
               >
                 <div className="min-w-0 flex-1">
@@ -306,7 +306,7 @@ export function ReceiptSheet({
             {sale.tendered && sale.tendered > 0 && (
               <>
                 <TotalsRow
-                  label={`Tendered (${sale.paymentMethod.replace(/_/g, " ")})`}
+                  label={`Tendered (${(sale.paymentMethod || "").replace(/_/g, " ")})`}
                   value={formatCurrency(sale.tendered, cur)}
                   muted
                 />
@@ -348,7 +348,13 @@ export function ReceiptSheet({
             <Button
               variant="outline"
               onClick={() => {
-                /* print handled by parent */
+                close();
+                setTimeout(() => {
+                  // Navigate to invoice detail for printing
+                  if ((sale as ReceiptSale & { invoice?: { id: string } }).invoice?.id) {
+                    window.location.href = `/invoices/${(sale as ReceiptSale & { invoice?: { id: string } }).invoice!.id}`;
+                  }
+                }, 220);
               }}
               className="h-12 gap-1.5 rounded-xl text-sm font-medium"
             >

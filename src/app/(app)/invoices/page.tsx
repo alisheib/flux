@@ -797,21 +797,23 @@ export default function InvoicesPage() {
                               Print Invoice
                             </DropdownMenuItem>
                             <DropdownMenuItem
+                              disabled={downloadingPdfId === invoice.id}
                               onClick={(e) => {
                                 e.stopPropagation();
                                 downloadPdf(invoice);
                               }}
                             >
-                              <Download className="mr-2 size-4" />
+                              {downloadingPdfId === invoice.id ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Download className="mr-2 size-4" />}
                               Download PDF
                             </DropdownMenuItem>
                             <DropdownMenuItem
+                              disabled={sharingWhatsAppId === invoice.id}
                               onClick={(e) => {
                                 e.stopPropagation();
                                 shareWhatsApp(invoice);
                               }}
                             >
-                              <MessageCircle className="mr-2 size-4" />
+                              {sharingWhatsAppId === invoice.id ? <Loader2 className="mr-2 size-4 animate-spin" /> : <MessageCircle className="mr-2 size-4" />}
                               Send WhatsApp
                             </DropdownMenuItem>
                             {invoice.status !== "paid" &&
@@ -819,12 +821,13 @@ export default function InvoicesPage() {
                                 <>
                                   <DropdownMenuSeparator />
                                   <DropdownMenuItem
+                                    disabled={markingPaidId === invoice.id}
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       markAsPaid(invoice);
                                     }}
                                   >
-                                    <CheckCircle className="mr-2 size-4" />
+                                    {markingPaidId === invoice.id ? <Loader2 className="mr-2 size-4 animate-spin" /> : <CheckCircle className="mr-2 size-4" />}
                                     Mark as Paid
                                   </DropdownMenuItem>
                                 </>
@@ -1106,7 +1109,7 @@ export default function InvoicesPage() {
                   selectedInvoice.status !== "cancelled" && (
                     <Button
                       size="sm"
-                      onClick={() => markAsPaid(selectedInvoice)}
+                      onClick={async () => { await markAsPaid(selectedInvoice); setDetailDialogOpen(false); }}
                       disabled={markingPaidId === selectedInvoice.id}
                       className="btn-brand gap-1.5 sm:ml-auto"
                     >

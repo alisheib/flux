@@ -74,7 +74,7 @@ export function AppShell({ user, org, children }: AppShellProps) {
   return (
     <AuthProvider user={user} org={org}>
       <SessionGuard>
-      <div className="flex h-screen overflow-hidden">
+      <div className="flex h-dvh overflow-hidden">
         {/* Desktop sidebar */}
         <div className="hidden md:block">
           <AppSidebar />

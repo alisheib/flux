@@ -2,9 +2,11 @@ import { SignJWT, jwtVerify } from "jose";
 import bcrypt from "bcryptjs";
 import { cookies } from "next/headers";
 
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || "flux-secret-key-change-in-production-2026"
-);
+const jwtSecretRaw = process.env.JWT_SECRET || (process.env.NODE_ENV === "production" ? "" : "flux-dev-secret-key-not-for-production");
+if (!jwtSecretRaw) {
+  throw new Error("JWT_SECRET environment variable must be set in production");
+}
+const JWT_SECRET = new TextEncoder().encode(jwtSecretRaw);
 
 const COOKIE_NAME = "flux-token";
 

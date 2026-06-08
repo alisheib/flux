@@ -110,12 +110,13 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
     return canAccessModule(user.role, item.module, customPermissions);
   });
 
-  const initials = user.name
+  const initials = (user.name || "?")
     .split(" ")
     .map((n) => n[0])
+    .filter(Boolean)
     .join("")
     .toUpperCase()
-    .slice(0, 2);
+    .slice(0, 2) || "?";
 
   async function handleLogout() {
     try {
@@ -123,6 +124,7 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
       router.push("/login");
     } catch {
       toast.error("Failed to log out");
+      router.push("/login");
     }
   }
 

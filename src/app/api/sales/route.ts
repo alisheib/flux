@@ -173,10 +173,16 @@ export async function POST(request: NextRequest) {
 
     // Create sale + items + invoice in a transaction, decrement stock
     const sale = await prisma.$transaction(async (tx) => {
-      // Re-check stock INSIDE transaction to prevent race conditions
-      const freshProducts = await tx.product.findMany({
-        where: { id: { in: uniqueProductIds }, orgId: auth.orgId },
-      });
+      // Lock product rows with FOR UPDATE to prevent concurrent overselling
+      const freshProducts = await tx.$queryRaw<Array<{
+        id: string; name: string; stockQty: number; sqmPerUnit: number | null;
+        sellingPrice: number; costPrice: number; active: boolean;
+      }>>`
+        SELECT "id", "name", "stockQty", "sqmPerUnit", "sellingPrice", "costPrice", "active"
+        FROM "Product"
+        WHERE "id" = ANY(${uniqueProductIds}) AND "orgId" = ${auth.orgId}
+        FOR UPDATE
+      `;
       const freshProductMap = new Map(freshProducts.map((p) => [p.id, p]));
 
       // Aggregate total stock needed per product (handles duplicate productIds in items)
@@ -194,7 +200,7 @@ export async function POST(request: NextRequest) {
         stockNeededMap.set(item.productId, (stockNeededMap.get(item.productId) || 0) + stockNeeded);
       }
 
-      // Check aggregated stock per product
+      // Check aggregated stock per product (now safe — rows are locked)
       for (const [productId, totalNeeded] of stockNeededMap) {
         const product = freshProductMap.get(productId)!;
         if (product.stockQty < totalNeeded) {
@@ -202,10 +208,17 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // Get org settings INSIDE transaction to prevent invoice number race
-      const settings = await tx.orgSettings.findUnique({
-        where: { orgId: auth.orgId },
-      });
+      // Lock OrgSettings row to prevent invoice number collision
+      const settingsRows = await tx.$queryRaw<Array<{
+        invoicePrefix: string | null; invoiceNextNum: number | null;
+        receiptPrefix: string | null; receiptNextNum: number | null;
+      }>>`
+        SELECT "invoicePrefix", "invoiceNextNum", "receiptPrefix", "receiptNextNum"
+        FROM "OrgSettings"
+        WHERE "orgId" = ${auth.orgId}
+        FOR UPDATE
+      `;
+      const settings = settingsRows[0] || null;
 
       const invoicePrefix = settings?.invoicePrefix || "INV";
       const invoiceNextNum = settings?.invoiceNextNum || 1;

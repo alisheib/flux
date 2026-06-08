@@ -61,7 +61,10 @@ export default function PhoneCountrySelect({
     [onChange]
   );
 
-  const flag = value ? getUnicodeFlagIcon(value) : "🌐";
+  let flag = "🌐";
+  if (value) {
+    try { flag = getUnicodeFlagIcon(value); } catch { /* invalid code */ }
+  }
 
   return (
     <Popover open={open} onOpenChange={setOpen}>

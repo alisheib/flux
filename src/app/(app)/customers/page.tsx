@@ -136,7 +136,28 @@ export default function CustomersPage() {
             <p className="text-sm text-muted-foreground mt-1">Repeat buyers — separate from walk-in sales. Track balances, history, and contact details.</p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm"><Download className="mr-2 h-3.5 w-3.5" />Export</Button>
+            <Button variant="outline" size="sm" disabled={filtered.length === 0} onClick={() => {
+              import("@/lib/excel-export").then(({ exportToExcel }) => {
+                exportToExcel({
+                  filename: "flux-customers",
+                  sheetName: "Customers",
+                  title: "Customers",
+                  columns: [
+                    { header: "Name", key: "name", width: 24 },
+                    { header: "Company", key: "company", width: 20 },
+                    { header: "TIN", key: "tin", width: 14 },
+                    { header: "Phone", key: "phone", width: 16 },
+                    { header: "Email", key: "email", width: 22 },
+                    { header: "Total Spent", key: "totalSpent", width: 16, type: "currency" as const },
+                    { header: "Outstanding", key: "outstanding", width: 16, type: "currency" as const },
+                    { header: "Status", key: "status", width: 12 },
+                  ],
+                  data: filtered.map(c => ({ name: c.name, company: c.company || "", tin: c.tin || "", phone: c.phone || "", email: c.email || "", totalSpent: c.totalSpent, outstanding: c.outstanding, status: c.status })),
+                  currency,
+                });
+                toast.success("Exported customers");
+              }).catch(() => toast.error("Export failed"));
+            }}><Download className="mr-2 h-3.5 w-3.5" />Export</Button>
             <Button className="btn-accent" size="sm" onClick={() => setDialogOpen(true)}>
               <Plus className="mr-2 h-3.5 w-3.5" />Add customer
             </Button>
@@ -163,7 +184,7 @@ export default function CustomersPage() {
               </button>
             ))}
           </div>
-          <div className="relative w-[320px]">
+          <div className="relative w-full sm:w-[320px]">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
             <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by name, phone, TIN, email..." className="pl-8 h-9 text-[13px]" />
           </div>
@@ -236,7 +257,7 @@ export default function CustomersPage() {
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={e => { e.stopPropagation(); router.push(`/customers/${c.id}`); }}><Eye className="mr-2 h-3.5 w-3.5" />View</DropdownMenuItem>
                             <DropdownMenuItem onClick={e => { e.stopPropagation(); router.push(`/customers/${c.id}`); }}><Pencil className="mr-2 h-3.5 w-3.5" />Edit</DropdownMenuItem>
-                            <DropdownMenuItem onClick={e => { e.stopPropagation(); }}><CreditCard className="mr-2 h-3.5 w-3.5" />Record payment</DropdownMenuItem>
+                            <DropdownMenuItem onClick={e => { e.stopPropagation(); router.push(`/receivables?customer=${c.id}`); }}><CreditCard className="mr-2 h-3.5 w-3.5" />Record payment</DropdownMenuItem>
                             <DropdownMenuItem className="text-destructive" onClick={e => { e.stopPropagation(); handleDeactivate(c.id, c.name); }}><UserX className="mr-2 h-3.5 w-3.5" />Deactivate</DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>

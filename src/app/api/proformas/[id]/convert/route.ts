@@ -112,11 +112,30 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     // Atomic: stock check + Sale + Invoice + Proforma status flip, all under
     // a single transaction so a stock failure rolls back everything.
     const result = await prisma.$transaction(async (tx) => {
-      // Re-fetch products inside the transaction to avoid race conditions
-      // with concurrent sales touching the same stock.
-      const fresh = await tx.product.findMany({
-        where: { id: { in: productIds }, orgId: auth.orgId },
-      });
+      // Lock the proforma row to prevent double-conversion
+      const lockedProforma = await tx.$queryRaw<Array<{ id: string; status: string; convertedToInvoiceId: string | null }>>`
+        SELECT "id", "status", "convertedToInvoiceId" FROM "Proforma"
+        WHERE "id" = ${id} AND "orgId" = ${auth.orgId}
+        FOR UPDATE
+      `;
+      if (lockedProforma[0]?.status === "converted") {
+        // Already converted by a concurrent request — return idempotent
+        const existingInvoice = await tx.invoice.findFirst({
+          where: { id: lockedProforma[0].convertedToInvoiceId || "" },
+          select: { id: true, number: true },
+        });
+        return { alreadyConverted: true, invoice: existingInvoice };
+      }
+
+      // Lock product rows with FOR UPDATE to prevent concurrent overselling
+      const fresh = await tx.$queryRaw<Array<{
+        id: string; name: string; stockQty: number; sqmPerUnit: number | null;
+      }>>`
+        SELECT "id", "name", "stockQty", "sqmPerUnit"
+        FROM "Product"
+        WHERE "id" = ANY(${productIds}) AND "orgId" = ${auth.orgId}
+        FOR UPDATE
+      `;
       const freshMap = new Map(fresh.map((p) => [p.id, p]));
 
       // Aggregate stock needed per product, handling sqm items.
@@ -126,8 +145,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         if (!product) throw new Error(`Product ${item.name} not found`);
 
         let needed: number;
-        if (item.sellingUnit === "sqm" && product.sqmPerUnit && product.sqmPerUnit > 0 && item.area) {
+        if (item.sellingUnit === "sqm" && product.sqmPerUnit && product.sqmPerUnit > 0 && item.area && item.area > 0) {
           needed = item.area / product.sqmPerUnit;
+        } else if (item.sellingUnit === "sqm" && (!item.area || item.area <= 0)) {
+          throw new Error(`Missing area for square-meter item: ${item.name}`);
         } else {
           needed = item.quantity;
         }
@@ -144,8 +165,14 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         }
       }
 
-      // Pull invoice numbering from OrgSettings
-      const settings = await tx.orgSettings.findUnique({ where: { orgId: auth.orgId } });
+      // Lock OrgSettings row for atomic invoice number generation
+      const settingsRows = await tx.$queryRaw<Array<{
+        invoicePrefix: string | null; invoiceNextNum: number | null;
+      }>>`
+        SELECT "invoicePrefix", "invoiceNextNum" FROM "OrgSettings"
+        WHERE "orgId" = ${auth.orgId} FOR UPDATE
+      `;
+      const settings = settingsRows[0] || null;
       const invoicePrefix = settings?.invoicePrefix || "INV";
       const invoiceNextNum = settings?.invoiceNextNum || 1;
       const invoiceNumber = `${invoicePrefix}-${String(invoiceNextNum).padStart(4, "0")}`;
@@ -245,13 +272,18 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       return { proforma: updatedProforma, invoice, sale };
     });
 
+    // Handle idempotent return from concurrent conversion
+    if ("alreadyConverted" in result && result.alreadyConverted) {
+      return NextResponse.json({ proforma, invoice: result.invoice, alreadyConverted: true });
+    }
+
     await logAudit({
       orgId: auth.orgId,
       userId: auth.userId,
       action: "convert",
       entity: "proforma",
       entityId: proforma.id,
-      details: `Converted proforma ${proforma.number} → invoice ${result.invoice.number} (sale ${result.sale.saleNumber}). Payment: ${effectivePayment}.`,
+      details: `Converted proforma ${proforma.number} → invoice ${result.invoice?.number} (sale ${result.sale?.saleNumber}). Payment: ${effectivePayment}.`,
     });
 
     return NextResponse.json(result);

@@ -31,7 +31,7 @@ export async function GET(
     }
 
     const items = await prisma.shipmentItem.findMany({
-      where: { shipmentId: id },
+      where: { shipmentId: id, shipment: { orgId: auth.orgId } },
       include: { product: { select: { id: true, name: true, sku: true } } },
       orderBy: { name: "asc" },
     });

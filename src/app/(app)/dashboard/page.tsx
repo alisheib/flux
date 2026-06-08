@@ -11,6 +11,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
 import {
   Table,
   TableBody,
@@ -133,7 +134,7 @@ export default function DashboardPage() {
           setCurrency(settings.organization?.currency || "USD");
         }
       } catch {
-        // Silently handle — empty state will show
+        toast.error("Failed to load dashboard data");
       } finally {
         setLoading(false);
       }

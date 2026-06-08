@@ -656,7 +656,9 @@ function CustomerDetailDialog({
 
         {/* Footer */}
         <div className="flex flex-col gap-2 border-t border-border px-6 py-3 sm:flex-row sm:items-center">
-          <Button variant="outline" size="sm" className="gap-1.5" onClick={() => customer.phone && window.open('tel:' + customer.phone)}>
+          <Button variant="outline" size="sm" className="gap-1.5" onClick={() => {
+            if (customer.phone) { window.open('tel:' + customer.phone); } else { toast.info("No phone number on file"); }
+          }}>
             <Phone className="size-3.5" />
             Call
           </Button>
@@ -773,7 +775,8 @@ function RecordPaymentDialog({
   const amountNum = parseFloat(amount) || 0;
 
   const handleSave = async () => {
-    if (!customerId || amountNum <= 0) return;
+    if (!customerId) { toast.error("Please select a customer"); return; }
+    if (amountNum <= 0) { toast.error("Enter a valid amount"); return; }
     setSaving(true);
     try {
       await onSave({
@@ -829,6 +832,8 @@ function RecordPaymentDialog({
                 </span>
                 <Input
                   type="number"
+                  min={0.01}
+                  step={0.01}
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                   placeholder="0"
