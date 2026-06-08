@@ -44,6 +44,7 @@ src/
   components/
     app-sidebar.tsx    # Sidebar navigation (always dark)
     app-header.tsx     # Breadcrumb header
+    command-palette.tsx     # Global Cmd+K search — products, customers, invoices, nav
     customer-typeahead.tsx  # Reusable combobox: search customers by name/phone/TIN
     customer-dialog.tsx     # Add/Edit customer dialog (used in list, POS, invoices)
     receipt-sheet.tsx  # Mobile receipt bottom sheet
@@ -62,7 +63,7 @@ src/
 prisma/
   schema.prisma        # 22 models (see below)
 tests/
-  unit/                # 861 tests across 17 files (npm test)
+  unit/                # 919 tests across 19 files (npm test)
 ```
 
 ## Database Models (22)
@@ -167,6 +168,45 @@ Same migration story as the currency feature — additive only, run `npx prisma 
 ### Design source
 The PDF was designed by Claude Design per `Flux main proforma showcase/` (handoff materials deleted post-implementation — the canonical source of truth going forward is `src/lib/proforma-template.ts` itself, which contains inline rationale comments for D1–D8 decisions).
 
+## Concurrency & Data Integrity
+
+All critical financial operations use PostgreSQL row-level locking (`SELECT ... FOR UPDATE` via Prisma `$queryRaw`) inside transactions to prevent race conditions under concurrent multi-user usage:
+
+| Route | What's locked | Why |
+|-------|--------------|-----|
+| `POST /api/sales` | Product rows + OrgSettings | Prevent double-sell inventory + invoice number collision |
+| `POST /api/payments` | Sale row | Prevent overpayment when two people pay same invoice simultaneously |
+| `POST /api/proformas/[id]/convert` | Proforma row + Product rows + OrgSettings | Prevent double-conversion + double stock decrement + number collision |
+| `POST /api/purchase-orders` | OrgSettings (mutex) | Prevent duplicate PO numbers |
+| `PUT /api/settings` (currency change) | Organization row | Prevent currency change while sale is in progress |
+
+### Database constraints (migration `20260608_add_unique_constraints.sql`)
+- `@@unique([orgId, number])` on Invoice — prevents duplicate invoice numbers per org
+- `@@unique([orgId, number])` on Proforma — prevents duplicate proforma numbers per org
+- Partial unique index on `Customer(orgId, tin)` WHERE tin IS NOT NULL — prevents duplicate TINs
+
+### Invoice status state machine
+`paid` and `cancelled` are terminal states — the API rejects any attempt to change status away from these.
+
+## Command Palette (Cmd+K)
+
+Global search accessible from anywhere via `Ctrl+K` (Windows) or `⌘K` (Mac). Searches across products, customers, invoices, and proformas in parallel (250ms debounce, 5 results per category). Also provides quick navigation to any page.
+
+**Code surfaces:**
+- `src/components/command-palette.tsx` — UI component (controlled by AppShell)
+- `src/app/api/search/route.ts` — Parallel Prisma queries, auth-gated, org-scoped
+
+## Security Hardening
+
+- **JWT secret**: Throws in production if `JWT_SECRET` env var is not set (both `lib/auth.ts` and `middleware.ts`)
+- **Rate limiting**: All mutation endpoints (POST/PUT/DELETE/PATCH) rate-limited to 60 req/min/IP in production (middleware-level)
+- **Open redirect prevention**: Login page validates redirect param is relative path (rejects `//evil.com`)
+- **Password complexity**: Enforced on admin user creation (`POST /api/users`) — same rules as registration
+- **IDOR protection**: Proforma item deletes scoped by orgId; shipment items GET scoped by orgId
+- **Status validation**: Invoice PUT validates status enum + terminal state transitions
+- **Error boundaries**: `src/app/(app)/error.tsx` catches page crashes with friendly "Try again" UI
+- **404 page**: `src/app/(app)/not-found.tsx` for clean not-found handling
+
 ## Auth & Roles
 - **Admin:** Full access
 - **Manager:** All except user management
@@ -178,7 +218,7 @@ The PDF was designed by Claude Design per `Flux main proforma showcase/` (handof
 ```bash
 npm run dev          # Start dev server
 npm run build        # Production build
-npm test             # Run 861 unit tests (17 files)
+npm test             # Run 919 unit tests (19 files)
 npx prisma generate  # Regenerate Prisma client after schema changes
 npx prisma db push   # Push schema changes to database
 ```
@@ -263,7 +303,7 @@ If anyone asks "where's the FLUX UI kit?" — point them here. **One reference.*
 - Suppliers + Purchase Orders: CRUD, receiving flow
 - TRA Tally: Tanzania fiscal compliance config
 - Security: Rate limiting, input validation, currency lock, orgId on all mutations
-- Tests: 861 unit tests covering all business logic, UI states, and edge cases
+- Tests: 919 unit tests across 19 files covering all business logic, UI states, and edge cases
 
 ### Phase 1 — Next to Build
 1. **Offline POS** — Service Worker + IndexedDB + sync queue
