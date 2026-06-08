@@ -181,7 +181,7 @@ function NotificationBell() {
 /*  Header                                                            */
 /* ------------------------------------------------------------------ */
 
-export function AppHeader({ onMenuToggle }: { onMenuToggle?: () => void } = {}) {
+export function AppHeader({ onMenuToggle, onSearch }: { onMenuToggle?: () => void; onSearch?: () => void } = {}) {
   const router = useRouter();
   const pathname = usePathname();
   const { user } = useAuth();
@@ -240,9 +240,7 @@ export function AppHeader({ onMenuToggle }: { onMenuToggle?: () => void } = {}) 
         <Button
           variant="ghost"
           className="hidden sm:inline-flex h-9 gap-2 rounded-lg border border-border bg-muted/40 px-3 text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
-          onClick={() => {
-            /* placeholder - could open a command palette in the future */
-          }}
+          onClick={() => onSearch?.()}
         >
           <Search className="size-4" />
           <span className="text-xs">Search...</span>
@@ -254,7 +252,7 @@ export function AppHeader({ onMenuToggle }: { onMenuToggle?: () => void } = {}) 
           variant="ghost"
           size="icon"
           className="sm:hidden size-9"
-          onClick={() => {}}
+          onClick={() => onSearch?.()}
         >
           <Search className="size-4" />
           <span className="sr-only">Search</span>

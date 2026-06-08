@@ -22,6 +22,32 @@ const publicPaths = [
   "/api/seed",
 ];
 
+// ── Simple in-memory rate limiter for middleware (per-IP, mutation endpoints) ──
+const rateLimitStore = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT_WINDOW = 60_000; // 1 minute
+const RATE_LIMIT_MAX = 60; // 60 mutations per minute per IP
+
+function checkRateLimit(ip: string): boolean {
+  if (process.env.NODE_ENV !== "production") return true;
+  const now = Date.now();
+  const entry = rateLimitStore.get(ip);
+  if (!entry || now > entry.resetAt) {
+    rateLimitStore.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW });
+    return true;
+  }
+  entry.count++;
+  return entry.count <= RATE_LIMIT_MAX;
+}
+
+// Cleanup every 2 minutes
+if (typeof globalThis !== "undefined") {
+  const cleanup = () => {
+    const now = Date.now();
+    for (const [k, v] of rateLimitStore) { if (now > v.resetAt) rateLimitStore.delete(k); }
+  };
+  setInterval(cleanup, 120_000);
+}
+
 function addSecurityHeaders(response: NextResponse): NextResponse {
   response.headers.set("X-Content-Type-Options", "nosniff");
   response.headers.set("X-Frame-Options", "DENY");
@@ -49,6 +75,14 @@ export async function middleware(request: NextRequest) {
     pathname.includes(".")
   ) {
     return addSecurityHeaders(NextResponse.next());
+  }
+
+  // Rate limit mutation API requests (POST/PUT/DELETE)
+  if (pathname.startsWith("/api/") && ["POST", "PUT", "DELETE", "PATCH"].includes(request.method)) {
+    const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || request.headers.get("x-real-ip") || "unknown";
+    if (!checkRateLimit(ip)) {
+      return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429 });
+    }
   }
 
   // Check auth token

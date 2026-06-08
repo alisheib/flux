@@ -308,6 +308,7 @@ model Invoice {
   customerRecord Customer?    @relation(fields: [customerId], references: [id], onDelete: SetNull)
   proforma       Proforma?
 
+  @@unique([orgId, number])
   @@index([orgId])
   @@index([customerId])
 }
@@ -616,6 +617,7 @@ model Proforma {
   invoice        Invoice?     @relation(fields: [convertedToInvoiceId], references: [id], onDelete: SetNull)
   items          ProformaItem[]
 
+  @@unique([orgId, number])
   @@index([orgId])
   @@index([orgId, status])
   @@index([customerId])

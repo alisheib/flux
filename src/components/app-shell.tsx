@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { AuthProvider, type AuthUser, type OrgContext } from "@/components/auth-provider";
 import { AppSidebar } from "@/components/app-sidebar";
 import { AppHeader } from "@/components/app-header";
+import { CommandPalette } from "@/components/command-palette";
 import { SessionGuard } from "@/components/session-guard";
 import { Mail, X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -70,10 +71,12 @@ function VerifyBanner({ email }: { email: string }) {
 
 export function AppShell({ user, org, children }: AppShellProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
 
   return (
     <AuthProvider user={user} org={org}>
       <SessionGuard>
+      <CommandPalette open={searchOpen} onOpenChange={setSearchOpen} />
       <div className="flex h-dvh overflow-hidden">
         {/* Desktop sidebar */}
         <div className="hidden md:block">
@@ -95,7 +98,7 @@ export function AppShell({ user, org, children }: AppShellProps) {
 
         <div className="flex flex-1 flex-col overflow-hidden">
           {user.emailVerified === false && <VerifyBanner email={user.email} />}
-          <AppHeader onMenuToggle={() => setMobileMenuOpen(!mobileMenuOpen)} />
+          <AppHeader onMenuToggle={() => setMobileMenuOpen(!mobileMenuOpen)} onSearch={() => setSearchOpen(true)} />
           <main className="flex-1 overflow-y-auto p-3 sm:p-4 lg:p-6">{children}</main>
         </div>
       </div>
