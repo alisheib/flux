@@ -152,6 +152,7 @@ export default function POSPage() {
   const [discountType, setDiscountType] = useState<"amount" | "percent">(
     "amount"
   );
+  const [includeTax, setIncludeTax] = useState(true);
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [notes, setNotes] = useState("");
 
@@ -335,6 +336,7 @@ export default function POSPage() {
     setCart([]);
     setDiscountValue("");
     setDiscountType("amount");
+    setIncludeTax(true);
     setCustomerName("");
     setCustomerPhone("");
     setCustomerEmail("");
@@ -443,7 +445,7 @@ export default function POSPage() {
   }, [subtotal, discountValue, discountType]);
 
   const taxableAmount = subtotal - discountAmount;
-  const taxAmount = (taxableAmount * orgSettings.taxRate) / 100;
+  const taxAmount = includeTax ? (taxableAmount * orgSettings.taxRate) / 100 : 0;
   const total = taxableAmount + taxAmount;
 
   // ── Confirm Sale (opens review dialog) ─────────────────────────────────
@@ -516,7 +518,7 @@ export default function POSPage() {
           customer: selectedCustomer?.name || customerName.trim(),
           customerPhone: selectedCustomer?.phone || customerPhone || null,
           customerEmail: selectedCustomer?.email || customerEmail || null,
-          taxRate: orgSettings.taxRate,
+          taxRate: includeTax ? orgSettings.taxRate : 0,
           discount: discountAmount,
           currency: orgSettings.currency,
           notes: notes || null,
@@ -575,6 +577,7 @@ export default function POSPage() {
           discount: discountAmount,
           total,
           paymentMethod,
+          includeTax,
           notes: notes || null,
           currency: orgSettings.currency,
         }),
@@ -1230,14 +1233,36 @@ export default function POSPage() {
                 </span>
               </div>
 
-              {/* Tax */}
+              {/* Tax toggle */}
               {orgSettings.taxRate > 0 && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">
-                    {orgSettings.taxLabel} ({orgSettings.taxRate}%)
-                  </span>
-                  <span className="text-muted-foreground">
-                    {formatCurrency(taxAmount, orgSettings.currency)}
+                <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center gap-2">
+                    <span className="text-muted-foreground">
+                      {orgSettings.taxLabel} ({orgSettings.taxRate}%)
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setIncludeTax(!includeTax)}
+                      className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                        includeTax
+                          ? "bg-[var(--flux-brand)] border-[var(--flux-brand)]"
+                          : "bg-muted border-border"
+                      }`}
+                      role="switch"
+                      aria-checked={includeTax}
+                      aria-label={`Toggle ${orgSettings.taxLabel}`}
+                    >
+                      <span
+                        className={`pointer-events-none block size-3.5 rounded-full bg-white shadow-sm transition-transform ${
+                          includeTax ? "translate-x-[18px]" : "translate-x-[3px]"
+                        }`}
+                      />
+                    </button>
+                  </div>
+                  <span className="text-muted-foreground tabular-nums">
+                    {includeTax
+                      ? formatCurrency(taxAmount, orgSettings.currency)
+                      : "—"}
                   </span>
                 </div>
               )}
@@ -1534,10 +1559,16 @@ export default function POSPage() {
                   <span className="text-red-500">-{formatCurrency(discountAmount, orgSettings.currency)}</span>
                 </div>
               )}
-              {orgSettings.taxRate > 0 && (
+              {orgSettings.taxRate > 0 && includeTax && (
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">{orgSettings.taxLabel} ({orgSettings.taxRate}%)</span>
                   <span className="text-foreground">{formatCurrency(taxAmount, orgSettings.currency)}</span>
+                </div>
+              )}
+              {orgSettings.taxRate > 0 && !includeTax && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">{orgSettings.taxLabel}</span>
+                  <span className="text-muted-foreground italic text-xs">Excluded</span>
                 </div>
               )}
               <Separator />

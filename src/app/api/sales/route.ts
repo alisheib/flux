@@ -67,7 +67,9 @@ export async function POST(request: NextRequest) {
       paymentMethod,
       currency,
       notes,
+      includeTax: includeTaxRaw,
     } = body;
+    const includeTax = includeTaxRaw !== false;
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json(
@@ -164,7 +166,7 @@ export async function POST(request: NextRequest) {
     );
     const discountAmount = Math.max(0, Math.min(discount || 0, subtotal));
     const taxableAmount = subtotal - discountAmount;
-    const taxRate = org.taxRate;
+    const taxRate = includeTax ? org.taxRate : 0;
     const taxAmount = Math.round(taxableAmount * (taxRate / 100) * 100) / 100;
     const total = Math.round((taxableAmount + taxAmount) * 100) / 100;
 
@@ -236,6 +238,7 @@ export async function POST(request: NextRequest) {
           subtotal,
           taxRate,
           taxAmount,
+          includeTax,
           discount: discountAmount,
           total,
           currency: currency || org.currency,
@@ -289,6 +292,7 @@ export async function POST(request: NextRequest) {
           subtotal,
           taxRate,
           taxAmount,
+          includeTax,
           discount: discountAmount,
           total,
           currency: currency || org.currency,
